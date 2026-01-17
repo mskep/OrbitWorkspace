@@ -1,0 +1,17 @@
+{
+  "id": "youtube_downloader",
+  "name": "YouTube Downloader",
+  "version": "0.1.0",
+  "description": "Download videos quickly with best quality selection.",
+  "icon": "📹",
+  "tags": ["media", "download", "youtube"],
+  "entryRoute": "/tools/youtube",
+  "requiresInternet": true,
+  "permissions": ["NET_ACCESS", "FS_WRITE", "FS_PICKER", "SPAWN_PROCESS"],
+  "premium": false,
+  "defaultConfig": {
+    "downloadPath": "",
+    "format": "best",
+    "audioOnly": false
+  }
+}

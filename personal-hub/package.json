@@ -1,0 +1,55 @@
+{
+  "name": "personal-hub",
+  "version": "0.1.0",
+  "description": "Personal Hub - Admin panel desktop app for Windows",
+  "main": "apps/desktop/electron/main/main.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:electron\"",
+    "dev:renderer": "cd apps/desktop/renderer && npx vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron .",
+    "build": "npm run build:renderer && npm run build:electron",
+    "build:renderer": "cd apps/desktop/renderer && npx vite build",
+    "build:electron": "electron-builder",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.personalhub.app",
+    "productName": "Personal Hub",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Personal Hub"
+    },
+    "files": [
+      "apps/desktop/electron/**/*",
+      "apps/desktop/renderer/dist/**/*",
+      "tools/**/*",
+      "data/**/*"
+    ]
+  }
+}

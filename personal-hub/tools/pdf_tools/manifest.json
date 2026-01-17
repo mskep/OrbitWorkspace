@@ -1,0 +1,13 @@
+{
+  "id": "pdf_tools",
+  "name": "PDF Tools",
+  "version": "0.1.0",
+  "description": "Merge, split, and convert PDF files",
+  "icon": "📄",
+  "tags": ["pdf", "documents", "utilities"],
+  "entryRoute": "/tools/pdf",
+  "requiresInternet": false,
+  "permissions": ["FS_READ", "FS_WRITE", "FS_PICKER"],
+  "premium": false,
+  "defaultConfig": {}
+}
