@@ -24,7 +24,7 @@ function Home() {
   async function loadData() {
     try {
       const [actions, status] = await Promise.all([
-        hubAPI.logs.tail({ limit: 5 }),
+        hubAPI.logs.tail({ limit: 3 }),
         hubAPI.system.getStatus()
       ]);
 

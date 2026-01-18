@@ -4,7 +4,9 @@
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(copy:*)",
+      "Bash(cmd.exe /c \"taskkill /F /PID 102404\")"
     ]
   }
 }

@@ -1,26 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react';
 import hubAPI from '../api/hubApi';
 import {
-  RefreshCw, Download, Search, Filter,
-  CheckCircle, XCircle, AlertCircle, Activity,
-  Clock, User, Settings, ChevronDown
+  RefreshCw, Download, Search,
+  CheckCircle, XCircle, Clock, Activity,
+  User, Settings, ChevronDown
 } from 'lucide-react';
 import Button from './Button';
-import Badge from './Badge';
 import Skeleton from './Skeleton';
 import EmptyState from './EmptyState';
 
-const SEVERITY_CONFIG = {
-  info: { color: 'default', icon: Activity },
-  warning: { color: 'warning', icon: AlertCircle },
-  error: { color: 'danger', icon: XCircle },
-  success: { color: 'success', icon: CheckCircle }
-};
-
-const STATUS_CONFIG = {
-  success: { color: 'success', icon: CheckCircle },
-  error: { color: 'danger', icon: XCircle },
-  pending: { color: 'warning', icon: Clock }
+// Couleurs fixes - pas de variables CSS dynamiques
+const STATUS_STYLES = {
+  success: {
+    bg: '#10b981',
+    badge: 'badge-success',
+    icon: CheckCircle
+  },
+  error: {
+    bg: '#ef4444',
+    badge: 'badge-error',
+    icon: XCircle
+  },
+  pending: {
+    bg: '#f59e0b',
+    badge: 'badge-warning',
+    icon: Clock
+  }
 };
 
 function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
@@ -70,7 +75,6 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
 
       ws.onclose = () => {
         console.log('Disconnected from log stream');
-        // Attempt to reconnect after 5 seconds
         setTimeout(() => {
           if (enableRealtime) {
             connectWebSocket();
@@ -126,6 +130,11 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
     return true;
   });
 
+  // Helper pour obtenir le style du status
+  function getStatusStyle(status) {
+    return STATUS_STYLES[status] || STATUS_STYLES.pending;
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -154,7 +163,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
             Activity Logs
           </h4>
           {enableRealtime && wsRef.current?.readyState === WebSocket.OPEN && (
-            <Badge variant="success">
+            <span className="badge badge-success">
               <div style={{
                 width: '6px',
                 height: '6px',
@@ -164,7 +173,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                 animation: 'pulse 2s infinite'
               }} />
               Live
-            </Badge>
+            </span>
           )}
         </div>
 
@@ -226,10 +235,8 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
       {/* Logs List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {filteredLogs.map((log) => {
-          const severityConfig = SEVERITY_CONFIG[log.severity] || SEVERITY_CONFIG.info;
-          const statusConfig = STATUS_CONFIG[log.status] || STATUS_CONFIG.pending;
-          const SeverityIcon = severityConfig.icon;
-          const StatusIcon = statusConfig.icon;
+          const statusStyle = getStatusStyle(log.status);
+          const StatusIcon = statusStyle.icon;
           const isExpanded = expandedLog === log.uuid;
 
           return (
@@ -256,7 +263,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  backgroundColor: `var(--status-${statusConfig.color})`,
+                  backgroundColor: statusStyle.bg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -301,15 +308,9 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <Badge variant={statusConfig.color}>
+                  <span className={statusStyle.badge}>
                     {log.status}
-                  </Badge>
-                  {log.severity && (
-                    <Badge variant={severityConfig.color}>
-                      <SeverityIcon size={12} style={{ marginRight: '4px' }} />
-                      {log.severity}
-                    </Badge>
-                  )}
+                  </span>
                   <ChevronDown
                     size={16}
                     style={{
@@ -364,9 +365,9 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                     <div style={{
                       marginTop: '12px',
                       padding: '12px',
-                      backgroundColor: 'var(--status-error-bg)',
+                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
                       borderRadius: 'var(--radius-sm)',
-                      borderLeft: '3px solid var(--status-error)'
+                      borderLeft: '3px solid #ef4444'
                     }}>
                       <div style={{
                         color: 'var(--text-tertiary)',
@@ -375,7 +376,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                       }}>
                         Error Message
                       </div>
-                      <div style={{ color: 'var(--status-error)', fontFamily: 'monospace', fontSize: '12px' }}>
+                      <div style={{ color: '#ef4444', fontFamily: 'monospace', fontSize: '12px' }}>
                         {log.error_message}
                       </div>
                     </div>

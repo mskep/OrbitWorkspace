@@ -1,15 +1,16 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Wrench, 
-  Link, 
-  ShoppingBag, 
-  User, 
+import {
+  Home,
+  Wrench,
+  Link,
+  ShoppingBag,
+  User,
   Settings,
   WifiOff
 } from 'lucide-react';
 import { useAppStore } from '../../state/store';
+import orbitLogo from '../../assets/orbitlogo.png';
 
 function Sidebar() {
   const navigate = useNavigate();
@@ -29,8 +30,22 @@ function Sidebar() {
 
   return (
     <div className="sidebar">
-      <div className="sidebar-header">
-        <h1 className="sidebar-title">Hub</h1>
+      <div className="sidebar-header" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '8px'
+        }}>
+          <img
+            src={orbitLogo}
+            alt="Orbit Logo"
+            style={{
+              height: '64px',
+              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
+            }}
+          />
+        </div>
         {!isOnline && (
           <div className="offline-indicator">
             <WifiOff size={12} style={{ marginRight: '4px' }} />

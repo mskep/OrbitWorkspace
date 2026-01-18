@@ -1,7 +1,7 @@
 {
-  "name": "personal-hub",
+  "name": "orbit",
   "version": "0.1.0",
-  "description": "Personal Hub - Admin panel desktop app for Windows",
+  "description": "Orbit - Premium desktop productivity hub for Windows",
   "main": "apps/desktop/electron/main/main.js",
   "author": "Your Name",
   "license": "MIT",
@@ -26,8 +26,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.personalhub.app",
-    "productName": "Personal Hub",
+    "appId": "com.orbit.app",
+    "productName": "Orbit",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -43,7 +43,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Personal Hub"
+      "shortcutName": "Orbit"
     },
     "files": [
       "apps/desktop/electron/**/*",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
+import orbitLogo from '../assets/orbitlogo.png';
 
 function Login() {
   const [username, setUsername] = useState('admin');
@@ -45,8 +46,18 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h1 className="login-title">Personal Hub</h1>
-        <p className="login-subtitle">Sign in to continue</p>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <img
+            src={orbitLogo}
+            alt="Orbit Logo"
+            style={{
+              height: '160px',
+              marginBottom: '24px',
+              filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
+            }}
+          />
+          <p className="login-subtitle">Sign in to continue</p>
+        </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
@@ -54,6 +65,7 @@ function Login() {
             <input
               id="username"
               type="text"
+              className="input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
@@ -66,6 +78,7 @@ function Login() {
             <input
               id="password"
               type="password"
+              className="input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -73,21 +86,28 @@ function Login() {
             />
           </div>
 
-          <div className="form-group checkbox">
-            <label>
+          <div className="form-group">
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}>
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 disabled={loading}
+                style={{ margin: 0 }}
               />
-              Remember me
+              <span>Remember me</span>
             </label>
           </div>
 
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>

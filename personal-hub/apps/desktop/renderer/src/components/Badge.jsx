@@ -16,6 +16,7 @@ function Badge({
     primary: 'badge-primary',
     success: 'badge-success',
     error: 'badge-error',
+    danger: 'badge-error',
     warning: 'badge-warning',
     premium: 'badge-premium'
   };

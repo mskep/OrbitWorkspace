@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import { useAppStore } from '../state/store';
 import {
   User, Shield, Star, Activity, Calendar,
-  CheckCircle, XCircle, Crown, Settings as SettingsIcon
+  CheckCircle, XCircle, Crown, Settings as SettingsIcon, LogOut
 } from 'lucide-react';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Skeleton from '../components/Skeleton';
+import Button from '../components/Button';
 
 const PERMISSION_LABELS = {
   NET_ACCESS: 'Network Access',
@@ -55,9 +57,11 @@ const ROLE_CONFIG = {
 };
 
 function Profile() {
-  const { profile, setProfile } = useAppStore();
+  const navigate = useNavigate();
+  const { profile, setProfile, setSession } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [permissionLoading, setPermissionLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -84,6 +88,19 @@ function Profile() {
       console.error('Error toggling permission:', error);
     } finally {
       setPermissionLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await hubAPI.auth.logout();
+      setSession(null);
+      setProfile(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      setLoggingOut(false);
     }
   }
 
@@ -172,7 +189,7 @@ function Profile() {
 
               {/* Profile Info */}
               <div style={{ flex: 1, paddingTop: '70px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
                   <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>
                     {profile.username}
                   </h2>
@@ -186,6 +203,17 @@ function Profile() {
                       Premium
                     </Badge>
                   )}
+                  <div style={{ marginLeft: 'auto' }}>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={handleLogout}
+                      disabled={loggingOut}
+                    >
+                      <LogOut size={14} />
+                      {loggingOut ? 'Logging out...' : 'Logout'}
+                    </Button>
+                  </div>
                 </div>
 
                 <div style={{
