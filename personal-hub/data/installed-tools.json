@@ -1,0 +1,19 @@
+{
+  "installed": [
+    {
+      "id": "youtube_downloader",
+      "version": "1.0.0",
+      "installedAt": 1705536000000,
+      "lastUsed": 1705622400000,
+      "usageCount": 42
+    },
+    {
+      "id": "pdf_tools",
+      "version": "1.0.0",
+      "installedAt": 1705536000000,
+      "lastUsed": 1705622300000,
+      "usageCount": 28
+    }
+  ],
+  "lastUpdated": 1705622400000
+}

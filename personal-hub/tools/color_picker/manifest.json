@@ -1,0 +1,21 @@
+{
+  "id": "color_picker",
+  "name": "Color Picker & Palette",
+  "version": "1.0.0",
+  "description": "Extract color palettes from images and manage color schemes",
+  "icon": "🎨",
+  "tags": ["design", "utility", "media"],
+  "entryRoute": "/tools/color_picker",
+  "requiresInternet": false,
+  "access": {
+    "allowedRoles": [],
+    "minRoleLevel": 1,
+    "requiresPremium": false
+  },
+  "permissions": ["FS_READ", "FS_PICKER", "CLIPBOARD"],
+  "premium": false,
+  "defaultConfig": {
+    "paletteSize": 9,
+    "savedPalettes": []
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "tools": [
+    {
+      "id": "youtube_downloader",
+      "name": "YouTube Downloader",
+      "version": "1.0.0",
+      "author": "Personal Hub Team",
+      "description": "Download videos from YouTube with quality options",
+      "icon": "🎥",
+      "screenshots": [],
+      "tags": ["media", "download"],
+      "premium": true,
+      "price": 0,
+      "downloads": 15000,
+      "rating": 4.8,
+      "lastUpdated": "2026-01-15",
+      "access": {
+        "allowedRoles": ["ADMIN", "DEVELOPER", "VIP"],
+        "minRoleLevel": 2,
+        "requiresPremium": true,
+        "restrictions": {
+          "maxDailyUsage": 50,
+          "maxFileSizeMB": 500
+        }
+      },
+      "permissions": ["NET_ACCESS", "FS_WRITE", "FS_PICKER", "NOTIFICATIONS"],
+      "defaultConfig": {
+        "quality": "720p",
+        "format": "mp4"
+      }
+    },
+    {
+      "id": "pdf_tools",
+      "name": "PDF Tools",
+      "version": "1.0.0",
+      "author": "Personal Hub Team",
+      "description": "Merge, split, and manipulate PDF files",
+      "icon": "📄",
+      "screenshots": [],
+      "tags": ["productivity", "pdf"],
+      "premium": false,
+      "price": 0,
+      "downloads": 8200,
+      "rating": 4.6,
+      "lastUpdated": "2026-01-10",
+      "access": {
+        "allowedRoles": [],
+        "minRoleLevel": 1,
+        "requiresPremium": false
+      },
+      "permissions": ["FS_READ", "FS_WRITE", "FS_PICKER"],
+      "defaultConfig": {}
+    },
+    {
+      "id": "password_generator",
+      "name": "Password Generator",
+      "version": "1.0.0",
+      "author": "Personal Hub Team",
+      "description": "Generate secure passwords with customizable options",
+      "icon": "🔐",
+      "screenshots": [],
+      "tags": ["security", "utility"],
+      "premium": false,
+      "price": 0,
+      "downloads": 12400,
+      "rating": 4.9,
+      "lastUpdated": "2026-01-18",
+      "featured": true,
+      "new": true,
+      "access": {
+        "allowedRoles": [],
+        "minRoleLevel": 1,
+        "requiresPremium": false
+      },
+      "permissions": ["CLIPBOARD"],
+      "defaultConfig": {
+        "length": 16,
+        "uppercase": true,
+        "lowercase": true,
+        "numbers": true,
+        "symbols": true,
+        "excludeSimilar": false,
+        "noDuplicates": false
+      }
+    },
+    {
+      "id": "color_picker",
+      "name": "Color Picker & Palette",
+      "version": "1.0.0",
+      "author": "Personal Hub Team",
+      "description": "Extract color palettes from images and manage color schemes",
+      "icon": "🎨",
+      "screenshots": [],
+      "tags": ["design", "utility", "media"],
+      "premium": false,
+      "price": 0,
+      "downloads": 9800,
+      "rating": 4.7,
+      "lastUpdated": "2026-01-18",
+      "featured": true,
+      "new": true,
+      "access": {
+        "allowedRoles": [],
+        "minRoleLevel": 1,
+        "requiresPremium": false
+      },
+      "permissions": ["FS_READ", "FS_PICKER", "CLIPBOARD"],
+      "defaultConfig": {
+        "paletteSize": 9,
+        "savedPalettes": []
+      }
+    }
+  ],
+  "categories": ["Media", "Productivity", "Development", "Utilities", "Security", "Design"],
+  "featured": ["password_generator", "color_picker", "youtube_downloader"],
+  "new": ["password_generator", "color_picker"],
+  "popular": ["youtube_downloader", "pdf_tools"],
+  "lastUpdated": 1705622400000
+}

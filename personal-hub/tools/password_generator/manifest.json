@@ -1,0 +1,26 @@
+{
+  "id": "password_generator",
+  "name": "Password Generator",
+  "version": "1.0.0",
+  "description": "Generate secure passwords with customizable options",
+  "icon": "🔐",
+  "tags": ["security", "utility"],
+  "entryRoute": "/tools/password_generator",
+  "requiresInternet": false,
+  "access": {
+    "allowedRoles": [],
+    "minRoleLevel": 1,
+    "requiresPremium": false
+  },
+  "permissions": ["CLIPBOARD"],
+  "premium": false,
+  "defaultConfig": {
+    "length": 16,
+    "uppercase": true,
+    "lowercase": true,
+    "numbers": true,
+    "symbols": true,
+    "excludeSimilar": false,
+    "noDuplicates": false
+  }
+}
