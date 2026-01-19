@@ -8,6 +8,9 @@ if (!app) {
   process.exit(1);
 }
 
+// Disable GPU cache to avoid permission errors
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+
 // Import managers
 const StorageManager = require('./storage');
 const AuthService = require('./security/authService');

@@ -6,7 +6,9 @@
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
       "Bash(copy:*)",
-      "Bash(cmd.exe /c \"taskkill /F /PID 102404\")"
+      "Bash(cmd.exe /c \"taskkill /F /PID 102404\")",
+      "Bash(npm run dev:*)",
+      "Bash(timeout /t 10)"
     ]
   }
 }

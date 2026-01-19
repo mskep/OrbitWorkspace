@@ -11,9 +11,16 @@ function EmptyState({
   className = '',
   ...props
 }) {
+  // Render icon - always treat it as a component to be rendered
+  const IconComponent = icon;
+
   return (
     <div className={`empty-state ${className}`} {...props}>
-      {icon && <div className="empty-state-icon">{icon}</div>}
+      {icon && (
+        <div className="empty-state-icon">
+          <IconComponent size={48} color="var(--text-tertiary)" />
+        </div>
+      )}
       <h3 className="empty-state-title">{title}</h3>
       {description && <p className="empty-state-description">{description}</p>}
       {action && <div className="empty-state-action">{action}</div>}

@@ -1,3 +1,6 @@
+#md
+*.md
+
 # Logs
 logs
 *.log
