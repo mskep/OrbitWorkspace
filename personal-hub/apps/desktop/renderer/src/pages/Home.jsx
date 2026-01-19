@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Zap, 
-  Activity, 
-  Cpu, 
-  ShieldCheck, 
+import {
+  Zap,
+  Activity,
+  Cpu,
+  ShieldCheck,
   ArrowUpRight,
   Sparkles
 } from 'lucide-react';

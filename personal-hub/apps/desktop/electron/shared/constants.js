@@ -1,6 +1,7 @@
 // IPC Channel names
 const IPC_CHANNELS = {
   // Auth
+  AUTH_REGISTER: 'auth:register',
   AUTH_LOGIN: 'auth:login',
   AUTH_LOGOUT: 'auth:logout',
   AUTH_GET_SESSION: 'auth:getSession',
@@ -44,7 +45,65 @@ const IPC_CHANNELS = {
   LOGS_TAIL: 'logs:tail',
   LOGS_SEARCH: 'logs:search',
   LOGS_SUBSCRIBE: 'logs:subscribe',
-  LOGS_UNSUBSCRIBE: 'logs:unsubscribe'
+  LOGS_UNSUBSCRIBE: 'logs:unsubscribe',
+
+  // Workspaces
+  WORKSPACE_GET_ALL: 'workspace:getAll',
+  WORKSPACE_GET_ACTIVE: 'workspace:getActive',
+  WORKSPACE_CREATE: 'workspace:create',
+  WORKSPACE_UPDATE: 'workspace:update',
+  WORKSPACE_DELETE: 'workspace:delete',
+  WORKSPACE_SWITCH: 'workspace:switch',
+  WORKSPACE_GET_TOOLS: 'workspace:getTools',
+  WORKSPACE_ADD_TOOL: 'workspace:addTool',
+  WORKSPACE_REMOVE_TOOL: 'workspace:removeTool',
+
+  // Notes
+  NOTE_GET_ALL: 'note:getAll',
+  NOTE_GET: 'note:get',
+  NOTE_CREATE: 'note:create',
+  NOTE_UPDATE: 'note:update',
+  NOTE_DELETE: 'note:delete',
+  NOTE_SEARCH: 'note:search',
+  NOTE_TOGGLE_PIN: 'note:togglePin',
+
+  // Links
+  LINK_GET_ALL: 'link:getAll',
+  LINK_GET: 'link:get',
+  LINK_CREATE: 'link:create',
+  LINK_UPDATE: 'link:update',
+  LINK_DELETE: 'link:delete',
+  LINK_SEARCH: 'link:search',
+  LINK_TOGGLE_FAVORITE: 'link:toggleFavorite',
+
+  // File References
+  FILE_REF_GET_ALL: 'fileRef:getAll',
+  FILE_REF_GET: 'fileRef:get',
+  FILE_REF_CREATE: 'fileRef:create',
+  FILE_REF_UPDATE: 'fileRef:update',
+  FILE_REF_DELETE: 'fileRef:delete',
+  FILE_REF_SEARCH: 'fileRef:search',
+  FILE_REF_OPEN: 'fileRef:open',
+
+  // Badges
+  BADGE_GET_ALL: 'badge:getAll',
+  BADGE_GET_USER_BADGES: 'badge:getUserBadges',
+  BADGE_ASSIGN: 'badge:assign',
+  BADGE_REVOKE: 'badge:revoke',
+
+  // Inbox
+  INBOX_GET_ALL: 'inbox:getAll',
+  INBOX_GET_UNREAD_COUNT: 'inbox:getUnreadCount',
+  INBOX_MARK_READ: 'inbox:markRead',
+  INBOX_MARK_ALL_READ: 'inbox:markAllRead',
+  INBOX_DELETE: 'inbox:delete',
+  INBOX_DELETE_READ: 'inbox:deleteRead',
+
+  // Admin
+  ADMIN_GET_STATS: 'admin:getStats',
+  ADMIN_GET_USERS: 'admin:getUsers',
+  ADMIN_UPDATE_USER_ROLE: 'admin:updateUserRole',
+  ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus'
 };
 
 // User Roles

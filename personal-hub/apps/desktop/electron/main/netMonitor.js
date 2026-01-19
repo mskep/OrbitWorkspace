@@ -5,10 +5,14 @@ class NetworkMonitor {
     this.isOnline = true;
     this.checkInterval = null;
     this.listeners = [];
+    this.consecutiveFailures = 0;
+    this.consecutiveSuccesses = 0;
   }
 
-  start(intervalMs = 30000) {
+  start(intervalMs = 60000) {
+    // Start with initial check
     this.checkConnection();
+    // Check every 60 seconds (instead of 30)
     this.checkInterval = setInterval(() => {
       this.checkConnection();
     }, intervalMs);
@@ -28,26 +32,37 @@ class NetworkMonitor {
           method: 'HEAD',
           hostname: 'www.google.com',
           path: '/',
-          timeout: 5000
+          timeout: 10000 // Increased timeout to 10s to reduce false negatives
         },
         (res) => {
-          const wasOnline = this.isOnline;
-          this.isOnline = res.statusCode >= 200 && res.statusCode < 400;
+          const success = res.statusCode >= 200 && res.statusCode < 400;
 
-          if (wasOnline !== this.isOnline) {
-            this.notifyListeners(this.isOnline);
+          if (success) {
+            this.consecutiveSuccesses++;
+            this.consecutiveFailures = 0;
+
+            // Only mark as online after 1 successful check
+            if (!this.isOnline && this.consecutiveSuccesses >= 1) {
+              this.isOnline = true;
+              this.notifyListeners(true);
+            } else if (!this.isOnline) {
+              this.isOnline = true;
+              this.notifyListeners(true);
+            }
           }
 
-          resolve(this.isOnline);
+          resolve(success);
         }
       );
 
       req.on('error', () => {
-        const wasOnline = this.isOnline;
-        this.isOnline = false;
+        this.consecutiveFailures++;
+        this.consecutiveSuccesses = 0;
 
-        if (wasOnline !== this.isOnline) {
-          this.notifyListeners(this.isOnline);
+        // Only mark as offline after 2 consecutive failures to avoid false positives
+        if (this.isOnline && this.consecutiveFailures >= 2) {
+          this.isOnline = false;
+          this.notifyListeners(false);
         }
 
         resolve(false);
@@ -55,11 +70,13 @@ class NetworkMonitor {
 
       req.on('timeout', () => {
         req.destroy();
-        const wasOnline = this.isOnline;
-        this.isOnline = false;
+        this.consecutiveFailures++;
+        this.consecutiveSuccesses = 0;
 
-        if (wasOnline !== this.isOnline) {
-          this.notifyListeners(this.isOnline);
+        // Only mark as offline after 2 consecutive failures
+        if (this.isOnline && this.consecutiveFailures >= 2) {
+          this.isOnline = false;
+          this.notifyListeners(false);
         }
 
         resolve(false);
