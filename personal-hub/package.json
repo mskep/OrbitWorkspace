@@ -19,7 +19,8 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.6.2",
-    "crypto-random-string": "^5.0.0"
+    "crypto-random-string": "^5.0.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

@@ -22,7 +22,8 @@
       "Bash(node --version:*)",
       "Bash(node test-migration.js:*)",
       "Bash(npx electron-rebuild:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(cmd /c:*)"
     ]
   }
 }

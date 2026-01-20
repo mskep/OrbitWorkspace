@@ -145,14 +145,7 @@ class ToolRunner {
       return { success: false, error: 'Premium required' };
     }
 
-    // Log action
-    this.storage.logAction({
-      type: 'tool:run',
-      toolId,
-      payload: { action, ...payload },
-      status: 'started',
-      timestamp: Date.now()
-    });
+    // No logging in v0.x (per user requirements)
 
     try {
       if (!tool.service) {
@@ -160,26 +153,8 @@ class ToolRunner {
       }
 
       const result = await tool.service[action](payload);
-
-      this.storage.logAction({
-        type: 'tool:run',
-        toolId,
-        payload: { action },
-        status: 'success',
-        timestamp: Date.now()
-      });
-
       return { success: true, result };
     } catch (error) {
-      this.storage.logAction({
-        type: 'tool:run',
-        toolId,
-        payload: { action },
-        status: 'error',
-        error: error.message,
-        timestamp: Date.now()
-      });
-
       return { success: false, error: error.message };
     }
   }

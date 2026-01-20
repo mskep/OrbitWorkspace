@@ -8,6 +8,7 @@ const AuthService = require('./security/authServiceSQLite');
 const PermissionsManager = require('./permissions');
 const ToolRunner = require('./toolRunner');
 const NetworkMonitor = require('./netMonitor');
+const LogManager = require('./logManager');
 
 // Electron-dependent managers will be required after app is ready
 let TrayManager;
@@ -24,6 +25,7 @@ let permissionsManager;
 let toolRunner;
 let networkMonitor;
 let autoLaunch;
+let logManager;
 let isDev;
 
 function createWindow() {
@@ -88,7 +90,10 @@ async function initializeServices() {
   authService = new AuthService(dbService);
   await authService.initialize();
 
-  permissionsManager = new PermissionsManager(storage);
+  permissionsManager = new PermissionsManager(dbService, authService);
+
+  // Initialize LogManager
+  logManager = new LogManager(dbService.getDB());
 
   toolRunner = new ToolRunner(storage, permissionsManager);
   await toolRunner.initialize();
@@ -208,13 +213,45 @@ function setupIpcHandlers() {
     return autoLaunch.toggle(enabled);
   });
 
-  // Logs handlers
+  // Logs handlers - user-specific only
   ipcMain.handle(IPC_CHANNELS.LOGS_TAIL, async (event, { type, limit }) => {
-    return storage.getActions({ type, limit: limit || 50 });
+    try {
+      const session = await authService.getSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      // Users can only see their own logs
+      const logs = logManager.tail({
+        limit: limit || 50,
+        offset: 0
+      }).filter(log => log.user.id === session.userId);
+
+      return { success: true, logs };
+    } catch (error) {
+      console.error('Failed to get logs:', error);
+      return { success: false, error: error.message };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.LOGS_SEARCH, async (event, query) => {
-    return storage.searchActions(query);
+    try {
+      const session = await authService.getSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      // Force userId filter to only show user's own logs
+      const logs = logManager.search({
+        ...query,
+        userId: session.userId // Force this regardless of what frontend sends
+      });
+
+      return { success: true, logs };
+    } catch (error) {
+      console.error('Failed to search logs:', error);
+      return { success: false, error: error.message };
+    }
   });
 
   // Window controls
@@ -721,8 +758,8 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
-      const files = repos.fileReferences.findByWorkspace(workspaceId);
-      return { success: true, files };
+      const fileRefs = repos.fileReferences.findByWorkspace(workspaceId);
+      return { success: true, fileRefs };
     } catch (error) {
       console.error('Get file references error:', error);
       return { success: false, error: 'Failed to get file references' };
@@ -843,6 +880,28 @@ function setupIpcHandlers() {
     } catch (error) {
       console.error('Open file reference error:', error);
       return { success: false, error: 'Failed to open file' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.FILE_REF_SHOW_IN_FOLDER, async (event, { id }) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      const repos = dbService.getRepositories();
+      const fileRef = repos.fileReferences.findById(id);
+
+      if (!fileRef || fileRef.user_id !== session.userId) {
+        return { success: false, error: 'File reference not found' };
+      }
+
+      // Show in folder/explorer
+      shell.showItemInFolder(fileRef.path);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Show in folder error:', error);
+      return { success: false, error: 'Failed to show in folder' };
     }
   });
 

@@ -114,6 +114,12 @@ class LinksRepository {
     stmt.run(id);
   }
 
+  toggleFavorite(id) {
+    const now = Math.floor(Date.now() / 1000);
+    const stmt = this.db.prepare('UPDATE links SET is_favorite = NOT is_favorite, updated_at = ? WHERE id = ?');
+    stmt.run(now, id);
+  }
+
   count(workspaceId) {
     const stmt = this.db.prepare('SELECT COUNT(*) as count FROM links WHERE workspace_id = ?');
     return stmt.get(workspaceId).count;

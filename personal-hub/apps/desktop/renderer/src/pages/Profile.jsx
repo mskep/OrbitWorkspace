@@ -218,18 +218,31 @@ function Profile() {
 
                 <div style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '24px',
+                  flexDirection: 'column',
+                  gap: '8px',
                   color: 'var(--text-secondary)',
                   fontSize: '14px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Calendar size={14} />
-                    Joined {new Date(profile.createdAt).toLocaleDateString()}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Activity size={14} />
-                    Last login {new Date(profile.lastLoginAt || profile.createdAt).toLocaleDateString()}
+                  {profile.email && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <User size={14} />
+                      {profile.email}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} />
+                      Joined {new Date(profile.createdAt).toLocaleDateString()}
+                    </div>
+                    {profile.status && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Activity size={14} />
+                        Status: <span style={{
+                          color: profile.status === 'ACTIVE' ? '#10b981' : '#ef4444',
+                          fontWeight: '600'
+                        }}>{profile.status}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

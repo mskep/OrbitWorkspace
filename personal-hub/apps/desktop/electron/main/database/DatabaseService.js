@@ -31,7 +31,7 @@ class DatabaseService {
 
       // Step 1: Initialize encryption service
       console.log('🔐 Initializing encryption service...');
-      this.encryption = new EncryptionService();
+      this.encryption = new EncryptionService(this.userDataPath);
 
       // Step 2: Initialize database manager
       console.log('💾 Initializing database manager...');
@@ -63,6 +63,9 @@ class DatabaseService {
 
       // Step 5: Clean up expired sessions
       this.dbManager.cleanupExpiredSessions();
+
+      // Step 6: Clean up corrupted encrypted data (one-time cleanup)
+      this.cleanupCorruptedData();
 
       this.isInitialized = true;
       console.log('✅ DatabaseService initialized successfully!\n');
@@ -109,6 +112,59 @@ class DatabaseService {
     if (this.dbManager) {
       this.dbManager.close();
       this.isInitialized = false;
+    }
+  }
+
+  /**
+   * Clean up corrupted encrypted data
+   * (Notes/Links/FileRefs that can't be decrypted with current key)
+   */
+  cleanupCorruptedData() {
+    try {
+      const db = this.dbManager.getDB(); // Use dbManager directly (called before isInitialized=true)
+      let deletedCount = 0;
+
+      // Check and delete corrupted notes
+      const notes = db.prepare('SELECT id, content_encrypted FROM notes').all();
+      notes.forEach(note => {
+        try {
+          this.encryption.decrypt(note.content_encrypted);
+        } catch (error) {
+          console.warn(`Deleting corrupted note ${note.id}`);
+          db.prepare('DELETE FROM notes WHERE id = ?').run(note.id);
+          deletedCount++;
+        }
+      });
+
+      // Check and delete corrupted links
+      const links = db.prepare('SELECT id, url_encrypted FROM links').all();
+      links.forEach(link => {
+        try {
+          this.encryption.decrypt(link.url_encrypted);
+        } catch (error) {
+          console.warn(`Deleting corrupted link ${link.id}`);
+          db.prepare('DELETE FROM links WHERE id = ?').run(link.id);
+          deletedCount++;
+        }
+      });
+
+      // Check and delete corrupted file references
+      const fileRefs = db.prepare('SELECT id, path_encrypted FROM file_references').all();
+      fileRefs.forEach(fileRef => {
+        try {
+          this.encryption.decrypt(fileRef.path_encrypted);
+        } catch (error) {
+          console.warn(`Deleting corrupted file reference ${fileRef.id}`);
+          db.prepare('DELETE FROM file_references WHERE id = ?').run(fileRef.id);
+          deletedCount++;
+        }
+      });
+
+      if (deletedCount > 0) {
+        console.log(`🧹 Cleaned up ${deletedCount} corrupted encrypted records`);
+      }
+    } catch (error) {
+      console.error('Failed to cleanup corrupted data:', error);
     }
   }
 

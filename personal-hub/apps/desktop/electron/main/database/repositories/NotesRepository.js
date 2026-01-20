@@ -40,21 +40,52 @@ class NotesRepository {
   findByWorkspace(workspaceId) {
     const stmt = this.db.prepare('SELECT * FROM notes WHERE workspace_id = ? ORDER BY is_pinned DESC, updated_at DESC');
     const notes = stmt.all(workspaceId);
-    return notes.map(note => ({
-      ...note,
-      content: this.encryption.decrypt(note.content_encrypted),
-      content_encrypted: undefined
-    }));
+
+    // Filter out notes that can't be decrypted (corrupted or wrong key)
+    const corruptedIds = [];
+    const validNotes = notes.map(note => {
+      try {
+        return {
+          ...note,
+          content: this.encryption.decrypt(note.content_encrypted),
+          content_encrypted: undefined
+        };
+      } catch (error) {
+        corruptedIds.push(note.id);
+        return null; // Will be filtered out
+      }
+    }).filter(note => note !== null);
+
+    if (corruptedIds.length > 0) {
+      console.warn(`⚠️  Skipped ${corruptedIds.length} corrupted note(s) in workspace ${workspaceId}`);
+    }
+
+    return validNotes;
   }
 
   findByUser(userId) {
     const stmt = this.db.prepare('SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC');
     const notes = stmt.all(userId);
-    return notes.map(note => ({
-      ...note,
-      content: this.encryption.decrypt(note.content_encrypted),
-      content_encrypted: undefined
-    }));
+
+    const corruptedIds = [];
+    const validNotes = notes.map(note => {
+      try {
+        return {
+          ...note,
+          content: this.encryption.decrypt(note.content_encrypted),
+          content_encrypted: undefined
+        };
+      } catch (error) {
+        corruptedIds.push(note.id);
+        return null;
+      }
+    }).filter(note => note !== null);
+
+    if (corruptedIds.length > 0) {
+      console.warn(`⚠️  Skipped ${corruptedIds.length} corrupted note(s) for user ${userId}`);
+    }
+
+    return validNotes;
   }
 
   search(workspaceId, query) {
@@ -65,11 +96,26 @@ class NotesRepository {
     `);
     const searchTerm = `%${query}%`;
     const notes = stmt.all(workspaceId, searchTerm, searchTerm);
-    return notes.map(note => ({
-      ...note,
-      content: this.encryption.decrypt(note.content_encrypted),
-      content_encrypted: undefined
-    }));
+
+    const corruptedIds = [];
+    const validNotes = notes.map(note => {
+      try {
+        return {
+          ...note,
+          content: this.encryption.decrypt(note.content_encrypted),
+          content_encrypted: undefined
+        };
+      } catch (error) {
+        corruptedIds.push(note.id);
+        return null;
+      }
+    }).filter(note => note !== null);
+
+    if (corruptedIds.length > 0) {
+      console.warn(`⚠️  Skipped ${corruptedIds.length} corrupted note(s) in search`);
+    }
+
+    return validNotes;
   }
 
   update(id, { title, content, tags, isPinned }) {
@@ -107,6 +153,12 @@ class NotesRepository {
   delete(id) {
     const stmt = this.db.prepare('DELETE FROM notes WHERE id = ?');
     stmt.run(id);
+  }
+
+  togglePin(id) {
+    const now = Math.floor(Date.now() / 1000);
+    const stmt = this.db.prepare('UPDATE notes SET is_pinned = NOT is_pinned, updated_at = ? WHERE id = ?');
+    stmt.run(now, id);
   }
 
   count(workspaceId) {

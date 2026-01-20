@@ -1,4 +1,7 @@
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const { app } = require('electron');
 
 /**
  * EncryptionService - AES-256-GCM encryption for sensitive data
@@ -6,39 +9,63 @@ const crypto = require('crypto');
  * Format: v1:base64(12-byte-iv + ciphertext + 16-byte-tag)
  * Algorithm: AES-256-GCM with random IV per encryption
  *
- * Master key should be stored in environment variable ORBIT_MASTER_KEY
- * If not provided, generates a random key (WARNING: data will be lost on restart)
+ * Master key priority:
+ * 1. ORBIT_MASTER_KEY environment variable (production)
+ * 2. Persisted key file in userData/.orbit-key (development)
+ * 3. Generate and persist new key (first run)
  */
 class EncryptionService {
-  constructor() {
+  constructor(userDataPath = null) {
     this.algorithm = 'aes-256-gcm';
     this.ivLength = 12; // 96 bits recommended for GCM
     this.tagLength = 16; // 128 bits auth tag
     this.keyLength = 32; // 256 bits
     this.version = 'v1';
+    this.userDataPath = userDataPath || (app ? app.getPath('userData') : '.');
 
-    // Get master key from environment or generate temporary one
+    // Get master key from environment, file, or generate new
     this.masterKey = this._getMasterKey();
-
-    if (!process.env.ORBIT_MASTER_KEY) {
-      console.warn('⚠️  ORBIT_MASTER_KEY not set! Using temporary key. Data will be lost on restart!');
-      console.warn('   Set ORBIT_MASTER_KEY environment variable for production use.');
-    }
   }
 
   /**
    * Get or generate master encryption key
+   * Priority: ENV > File > Generate New
    */
   _getMasterKey() {
     const envKey = process.env.ORBIT_MASTER_KEY;
 
     if (envKey) {
-      // Derive 32-byte key from environment string using SHA-256
+      // Use environment key (production)
+      console.log('🔐 Using ORBIT_MASTER_KEY from environment');
       return crypto.createHash('sha256').update(envKey).digest();
     }
 
-    // Generate random key (WARNING: temporary, data will be lost)
-    return crypto.randomBytes(this.keyLength);
+    // Check for persisted key file
+    const keyFilePath = path.join(this.userDataPath, '.orbit-key');
+
+    try {
+      if (fs.existsSync(keyFilePath)) {
+        // Load existing key
+        const keyHex = fs.readFileSync(keyFilePath, 'utf8');
+        console.log('🔐 Using persisted encryption key from', keyFilePath);
+        return Buffer.from(keyHex, 'hex');
+      }
+    } catch (error) {
+      console.error('Failed to read key file:', error.message);
+    }
+
+    // Generate new key and persist it
+    const newKey = crypto.randomBytes(this.keyLength);
+
+    try {
+      fs.writeFileSync(keyFilePath, newKey.toString('hex'), { mode: 0o600 });
+      console.log('🔐 Generated and persisted new encryption key to', keyFilePath);
+    } catch (error) {
+      console.error('Failed to persist key file:', error.message);
+      console.warn('⚠️  Using non-persisted key! Data will be lost on restart!');
+    }
+
+    return newKey;
   }
 
   /**

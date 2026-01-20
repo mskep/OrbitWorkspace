@@ -84,6 +84,7 @@ const IPC_CHANNELS = {
   FILE_REF_DELETE: 'fileRef:delete',
   FILE_REF_SEARCH: 'fileRef:search',
   FILE_REF_OPEN: 'fileRef:open',
+  FILE_REF_SHOW_IN_FOLDER: 'fileRef:showInFolder',
 
   // Badges
   BADGE_GET_ALL: 'badge:getAll',
@@ -198,12 +199,13 @@ const ROLE_PERMISSIONS = {
 // App paths
 const APP_PATHS = {
   USER_DATA: 'userData',
-  AUTH: 'auth.json',
-  PROFILE: 'profile.json',
-  LINKS: 'links.json',
-  TOOLS_CONFIG: 'tools',
-  LOGS: 'logs',
-  DB: 'db.sqlite'
+  // REMOVED in v0.x: No JSON files, all data in SQLite database
+  // AUTH: 'auth.json',     // Now in database: users, sessions tables
+  // PROFILE: 'profile.json', // Now in database: users, user_settings tables
+  // LINKS: 'links.json',   // Now in database: links table
+  TOOLS_CONFIG: 'tools',  // Tool configs can remain in JSON for now
+  LOGS: 'logs',           // Logs remain JSON-based for now
+  DB: 'db.sqlite'         // SQLite database file
 };
 
 // Default profile

@@ -1,36 +1,79 @@
 const { PERMISSIONS } = require('../shared/constants');
 
 class PermissionsManager {
-  constructor(storage) {
-    this.storage = storage;
+  constructor(dbService, authService) {
+    this.dbService = dbService;
+    this.authService = authService;
   }
 
   async getProfile() {
-    let profile = await this.storage.getJson('profile.json');
+    try {
+      const session = await this.authService.getSession();
+      if (!session) {
+        return null;
+      }
 
-    if (!profile) {
-      // Create default profile with all permissions
-      profile = {
-        username: 'admin',
-        permissions: Object.values(PERMISSIONS),
-        premiumEnabled: false,
-        createdAt: Date.now()
+      const repos = this.dbService.getRepositories();
+      const user = repos.users.findById(session.userId);
+      if (!user) {
+        return null;
+      }
+
+      const settings = repos.userSettings.findByUserId(session.userId);
+
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        permissions: Object.values(PERMISSIONS), // All permissions granted by default
+        premiumEnabled: user.role === 'PREMIUM' || user.role === 'ADMIN' || user.role === 'DEV',
+        createdAt: user.created_at
       };
-      await this.storage.setJson('profile.json', profile);
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      return null;
     }
-
-    return profile;
   }
 
   async updateProfile(updates) {
-    const profile = await this.getProfile();
-    const newProfile = { ...profile, ...updates };
-    await this.storage.setJson('profile.json', newProfile);
-    return newProfile;
+    try {
+      const session = await this.authService.getSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      const repos = this.dbService.getRepositories();
+
+      // Note: UserRepository doesn't support updating username/email in v0.x
+      // These would require additional methods if needed in the future
+
+      // Update user role for premium status (PREMIUM, USER, ADMIN, DEV)
+      if (updates.premiumEnabled !== undefined) {
+        const currentUser = repos.users.findById(session.userId);
+        const newRole = updates.premiumEnabled ? 'PREMIUM' : 'USER';
+        // Only update role if not ADMIN or DEV (don't downgrade admins)
+        if (currentUser.role !== 'ADMIN' && currentUser.role !== 'DEV') {
+          repos.users.updateRole(session.userId, newRole);
+        }
+      }
+
+      return await this.getProfile();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   async checkPermissions(toolId, requiredPerms) {
     const profile = await this.getProfile();
+    if (!profile) {
+      return {
+        allowed: false,
+        missingPermissions: requiredPerms
+      };
+    }
 
     // Check each required permission
     const missingPerms = [];
@@ -42,15 +85,7 @@ class PermissionsManager {
 
     const hasPermission = missingPerms.length === 0;
 
-    if (!hasPermission) {
-      this.storage.logAction({
-        type: 'permission:denied',
-        toolId,
-        payload: { requiredPerms, missingPerms },
-        status: 'blocked',
-        timestamp: Date.now()
-      });
-    }
+    // No logging for now (user said no action logs in v0.x)
 
     return {
       allowed: hasPermission,

@@ -99,7 +99,8 @@ contextBridge.exposeInMainWorld('hubAPI', {
     update: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_UPDATE, data),
     delete: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_DELETE, data),
     search: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_SEARCH, data),
-    open: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_OPEN, data)
+    open: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_OPEN, data),
+    showInFolder: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_SHOW_IN_FOLDER, data)
   },
 
   // Badges

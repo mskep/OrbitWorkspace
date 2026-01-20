@@ -3,6 +3,7 @@ import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag } from 'lucide-
 import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
+import Modal from '../components/Modal';
 
 /**
  * Notes Page - Full CRUD for notes with markdown editor
@@ -15,6 +16,7 @@ function Notes() {
   const [selectedNote, setSelectedNote] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, noteId: null, noteTitle: '' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -155,17 +157,16 @@ function Notes() {
     }
   };
 
-  const handleDeleteNote = async (noteId) => {
-    if (!confirm('Delete this note? This action cannot be undone.')) return;
-
+  const handleDeleteNote = async () => {
     try {
-      const result = await hubAPI.notes.delete({ id: noteId });
+      const result = await hubAPI.notes.delete({ id: deleteModal.noteId });
       if (result.success) {
         await loadNotes(activeWorkspace.id);
-        if (selectedNote?.id === noteId) {
+        if (selectedNote?.id === deleteModal.noteId) {
           setSelectedNote(null);
           setIsEditing(false);
         }
+        setDeleteModal({ isOpen: false, noteId: null, noteTitle: '' });
       } else {
         setError(result.error || 'Failed to delete note');
       }
@@ -173,6 +174,10 @@ function Notes() {
       console.error('Failed to delete note:', err);
       setError('Failed to delete note');
     }
+  };
+
+  const openDeleteModal = (noteId, noteTitle) => {
+    setDeleteModal({ isOpen: true, noteId, noteTitle });
   };
 
   const handleTogglePin = async (noteId) => {
@@ -263,7 +268,7 @@ function Notes() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Search notes..."
               style={{
                 width: '100%',
@@ -395,12 +400,24 @@ function Notes() {
             <NoteViewer
               note={selectedNote}
               onEdit={() => handleEditNote(selectedNote)}
-              onDelete={() => handleDeleteNote(selectedNote.id)}
+              onDelete={() => openDeleteModal(selectedNote.id, selectedNote.title)}
               onTogglePin={() => handleTogglePin(selectedNote.id)}
             />
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, noteId: null, noteTitle: '' })}
+        onConfirm={handleDeleteNote}
+        title="Delete Note"
+        message={`Are you sure you want to delete "${deleteModal.noteTitle}"? This action cannot be undone.`}
+        type="confirm"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }
