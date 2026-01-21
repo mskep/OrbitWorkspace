@@ -20,9 +20,7 @@ function ToolCard({ tool }) {
     >
       <div className="tool-card-header">
         <div className="tool-icon">{tool.icon || '🔧'}</div>
-        {tool.premium && !tool.accessible && (
-          <div className="premium-badge">Premium</div>
-        )}
+        {tool.premium && !tool.accessible && <div className="premium-badge">Premium</div>}
         {isLocked && <div className="lock-icon">🔒</div>}
       </div>
 
@@ -40,9 +38,7 @@ function ToolCard({ tool }) {
       )}
 
       {!tool.permissionsGranted && (
-        <div className="tool-warning">
-          Missing permissions: {tool.missingPermissions?.join(', ')}
-        </div>
+        <div className="tool-warning">Missing permissions: {tool.missingPermissions?.join(', ')}</div>
       )}
 
       {tool.premium && !tool.accessible && (

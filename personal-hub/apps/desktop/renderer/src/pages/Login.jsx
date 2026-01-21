@@ -30,7 +30,7 @@ function Login() {
         setProfile(profile);
 
         // Smooth transition before navigation
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
         navigate('/home');
       } else {
         setError(result.error || 'Login failed');
@@ -87,13 +87,15 @@ function Login() {
           </div>
 
           <div className="form-group">
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
               <input
                 type="checkbox"
                 checked={rememberMe}

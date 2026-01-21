@@ -3,15 +3,7 @@ import React from 'react';
 /**
  * Reusable Card component with optional hover effect and gradient top border
  */
-function Card({
-  children,
-  hover = false,
-  gradient = false,
-  padding = 'md',
-  className = '',
-  onClick,
-  ...props
-}) {
+function Card({ children, hover = false, gradient = false, padding = 'md', className = '', onClick, ...props }) {
   const paddingClasses = {
     sm: 'card-padding-sm',
     md: 'card-padding-md',
@@ -24,7 +16,9 @@ function Card({
     gradient ? 'card-gradient' : '',
     paddingClasses[padding],
     className
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const Component = onClick ? 'button' : 'div';
 

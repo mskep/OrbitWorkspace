@@ -95,10 +95,10 @@ function Sidebar() {
     try {
       const result = await hubAPI.workspaces.delete({ id: deleteModal.workspaceId });
       if (result.success) {
-        setWorkspaces(workspaces.filter(w => w.id !== deleteModal.workspaceId));
+        setWorkspaces(workspaces.filter((w) => w.id !== deleteModal.workspaceId));
 
         if (activeWorkspace?.id === deleteModal.workspaceId && workspaces.length > 1) {
-          const nextWorkspace = workspaces.find(w => w.id !== deleteModal.workspaceId);
+          const nextWorkspace = workspaces.find((w) => w.id !== deleteModal.workspaceId);
           if (nextWorkspace) {
             await handleSwitchWorkspace(nextWorkspace.id);
           }
@@ -121,21 +121,23 @@ function Sidebar() {
   ];
 
   // Admin section - only for ADMIN and DEVELOPER roles
-  const adminItems = isAdminOrDev ? [
-    { id: 'admin', label: 'Admin Panel', icon: <Shield size={20} />, path: '/admin', isAdmin: true }
-  ] : [];
+  const adminItems = isAdminOrDev
+    ? [{ id: 'admin', label: 'Admin Panel', icon: <Shield size={20} />, path: '/admin', isAdmin: true }]
+    : [];
 
   const isActive = (path) => location.pathname.startsWith(path);
 
   return (
     <div className="sidebar">
       <div className="sidebar-header" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '8px'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '8px'
+          }}
+        >
           <img
             src={orbitLogo}
             alt="Orbit Logo"
@@ -155,12 +157,14 @@ function Sidebar() {
 
       {/* Collapsible Workspace Switcher */}
       <div style={{ padding: '8px 16px 16px 16px' }}>
-        <div style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-default)',
-          overflow: 'hidden'
-        }}>
+        <div
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-default)',
+            overflow: 'hidden'
+          }}
+        >
           {/* Collapsed View - Active Workspace */}
           <div
             onClick={() => setWorkspaceExpanded(!workspaceExpanded)}
@@ -180,22 +184,26 @@ function Sidebar() {
               e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
             }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              flex: 1,
-              overflow: 'hidden'
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flex: 1,
+                overflow: 'hidden'
+              }}
+            >
               <Check size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-              <span style={{
-                fontSize: '13px',
-                fontWeight: '600',
-                color: 'var(--text-primary)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
+              <span
+                style={{
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: 'var(--text-primary)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 {activeWorkspace?.name || 'No workspace'}
               </span>
             </div>
@@ -208,24 +216,30 @@ function Sidebar() {
 
           {/* Expanded View */}
           {workspaceExpanded && (
-            <div style={{
-              padding: '12px',
-              borderTop: '1px solid var(--border-default)'
-            }}>
+            <div
+              style={{
+                padding: '12px',
+                borderTop: '1px solid var(--border-default)'
+              }}
+            >
               {/* Header with New Button */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px'
-              }}>
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-tertiary)',
-                  letterSpacing: '0.5px'
-                }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px'
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-tertiary)',
+                    letterSpacing: '0.5px'
+                  }}
+                >
                   All Workspaces
                 </span>
                 <button
@@ -295,18 +309,22 @@ function Sidebar() {
               )}
 
               {/* All Workspaces List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}
+              >
                 {workspaces.length === 0 ? (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '16px',
-                    color: 'var(--text-tertiary)',
-                    fontSize: '12px'
-                  }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '16px',
+                      color: 'var(--text-tertiary)',
+                      fontSize: '12px'
+                    }}
+                  >
                     No workspaces
                   </div>
                 ) : (
-                  workspaces.map(workspace => {
+                  workspaces.map((workspace) => {
                     const isActive = workspace.id === activeWorkspace?.id;
                     return (
                       <div
@@ -336,22 +354,26 @@ function Sidebar() {
                           }
                         }}
                       >
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          flex: 1,
-                          overflow: 'hidden'
-                        }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            flex: 1,
+                            overflow: 'hidden'
+                          }}
+                        >
                           {isActive && <Check size={14} color="#fff" />}
-                          <span style={{
-                            fontSize: '13px',
-                            fontWeight: isActive ? '600' : '500',
-                            color: isActive ? '#fff' : 'var(--text-primary)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: isActive ? '600' : '500',
+                              color: isActive ? '#fff' : 'var(--text-primary)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
                             {workspace.name}
                           </span>
                         </div>
@@ -409,11 +431,13 @@ function Sidebar() {
 
         {/* Admin section separator */}
         {adminItems.length > 0 && (
-          <div style={{
-            height: '1px',
-            backgroundColor: 'var(--border-default)',
-            margin: '12px 16px'
-          }} />
+          <div
+            style={{
+              height: '1px',
+              backgroundColor: 'var(--border-default)',
+              margin: '12px 16px'
+            }}
+          />
         )}
 
         {/* Admin menu items */}

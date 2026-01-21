@@ -1,8 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Plus, Search, Star, Edit, Trash2, Save, X, Link as LinkIcon, ExternalLink,
-  File, Folder, FolderOpen, FileText, FileCode, FileImage, FileVideo,
-  FileAudio, FileArchive, Music, Image, Film, Code
+  Plus,
+  Search,
+  Star,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  Link as LinkIcon,
+  ExternalLink,
+  File,
+  Folder,
+  FolderOpen,
+  FileText,
+  FileArchive,
+  Music,
+  Image,
+  Film,
+  Code
 } from 'lucide-react';
 import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
@@ -88,10 +103,7 @@ function Links() {
   const loadFileRefs = async (workspaceId) => {
     try {
       const result = await hubAPI.fileRefs.getAll({ workspaceId });
-      console.log('[Links] File refs loaded:', result);
       if (result.success) {
-        // Log each file ref to debug type field
-        result.fileRefs.forEach(f => console.log('[Links] FileRef:', f.name, 'type:', f.type, 'path:', f.path));
         setFileRefs(result.fileRefs.sort((a, b) => b.created_at - a.created_at));
       }
     } catch (err) {
@@ -230,7 +242,7 @@ function Links() {
         const result = await hubAPI.fileRefs.update({
           id: selectedItem.id,
           name: fileFormData.name,
-          path: fileFormData.path,  // Changed from filePath to path
+          path: fileFormData.path, // Changed from filePath to path
           description: fileFormData.description
         });
 
@@ -247,8 +259,8 @@ function Links() {
         const result = await hubAPI.fileRefs.create({
           workspaceId: activeWorkspace.id,
           name: fileFormData.name,
-          path: fileFormData.path,  // Changed from filePath to path
-          type: fileFormData.type,  // Use type from form (file or folder)
+          path: fileFormData.path, // Changed from filePath to path
+          type: fileFormData.type, // Use type from form (file or folder)
           description: fileFormData.description
         });
 
@@ -350,9 +362,7 @@ function Links() {
       <div className="page">
         <Topbar title="Links & Files" />
         <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>
-            Loading...
-          </div>
+          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading...</div>
         </div>
       </div>
     );
@@ -363,11 +373,7 @@ function Links() {
       <div className="page">
         <Topbar title="Links & Files" />
         <div className="page-content">
-          <EmptyState
-            icon={LinkIcon}
-            title="No Active Workspace"
-            description="Please create or select a workspace."
-          />
+          <EmptyState icon={LinkIcon} title="No Active Workspace" description="Please create or select a workspace." />
         </div>
       </div>
     );
@@ -381,9 +387,20 @@ function Links() {
 
       <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-default)', paddingBottom: '12px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            borderBottom: '1px solid var(--border-default)',
+            paddingBottom: '12px'
+          }}
+        >
           <button
-            onClick={() => { setActiveTab('links'); setIsEditing(false); setSelectedItem(null); }}
+            onClick={() => {
+              setActiveTab('links');
+              setIsEditing(false);
+              setSelectedItem(null);
+            }}
             style={{
               padding: '10px 20px',
               backgroundColor: activeTab === 'links' ? 'var(--accent)' : 'transparent',
@@ -403,7 +420,11 @@ function Links() {
             Quick Links ({links.length})
           </button>
           <button
-            onClick={() => { setActiveTab('files'); setIsEditing(false); setSelectedItem(null); }}
+            onClick={() => {
+              setActiveTab('files');
+              setIsEditing(false);
+              setSelectedItem(null);
+            }}
             style={{
               padding: '10px 20px',
               backgroundColor: activeTab === 'files' ? 'var(--accent)' : 'transparent',
@@ -426,13 +447,15 @@ function Links() {
 
         <div style={{ display: 'flex', gap: '20px' }}>
           {/* List Sidebar */}
-          <div style={{
-            width: '350px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            flexShrink: 0
-          }}>
+          <div
+            style={{
+              width: '350px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              flexShrink: 0
+            }}
+          >
             {/* Create Button */}
             <button
               onClick={activeTab === 'links' ? handleCreateLink : handleCreateFileRef}
@@ -495,25 +518,29 @@ function Links() {
             </div>
 
             {/* List */}
-            <div style={{
-              flex: 1,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              paddingRight: '4px'
-            }}>
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                paddingRight: '4px'
+              }}
+            >
               {currentData.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  color: 'var(--text-tertiary)',
-                  fontSize: '13px'
-                }}>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: 'var(--text-tertiary)',
+                    fontSize: '13px'
+                  }}
+                >
                   {searchQuery ? `No ${activeTab} found` : `No ${activeTab} yet`}
                 </div>
               ) : activeTab === 'links' ? (
-                links.map(link => (
+                links.map((link) => (
                   <LinkCard
                     key={link.id}
                     link={link}
@@ -523,7 +550,7 @@ function Links() {
                   />
                 ))
               ) : (
-                fileRefs.map(fileRef => (
+                fileRefs.map((fileRef) => (
                   <FileRefCard
                     key={fileRef.id}
                     fileRef={fileRef}
@@ -540,18 +567,20 @@ function Links() {
           {/* Editor/Content Area */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {error && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '16px',
-                fontSize: '13px',
-                color: '#ef4444',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
+              <div
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '16px',
+                  fontSize: '13px',
+                  color: '#ef4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
                 <span>{error}</span>
                 <button
                   onClick={() => setError('')}
@@ -623,34 +652,37 @@ function Links() {
 // Link Card Component
 function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
   return (
-    <div style={{
-      padding: '12px',
-      backgroundColor: 'var(--bg-secondary)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-md)',
-      transition: 'all 0.2s'
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.borderColor = 'var(--border-hover)';
-      e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.borderColor = 'var(--border-default)';
-      e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-    }}
+    <div
+      style={{
+        padding: '12px',
+        backgroundColor: 'var(--bg-secondary)',
+        border: '1px solid var(--border-default)',
+        borderRadius: 'var(--radius-md)',
+        transition: 'all 0.2s'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border-hover)';
+        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border-default)';
+        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+      }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-        <h4 style={{
-          margin: 0,
-          fontSize: '14px',
-          fontWeight: '600',
-          color: 'var(--text-primary)',
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          paddingRight: '8px'
-        }}>
+        <h4
+          style={{
+            margin: 0,
+            fontSize: '14px',
+            fontWeight: '600',
+            color: 'var(--text-primary)',
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            paddingRight: '8px'
+          }}
+        >
           {link.title}
         </h4>
         <div style={{ display: 'flex', gap: '4px' }}>
@@ -672,14 +704,16 @@ function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
       </div>
 
       {link.description && (
-        <p style={{
-          margin: '0 0 8px 0',
-          fontSize: '12px',
-          color: 'var(--text-secondary)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
+        <p
+          style={{
+            margin: '0 0 8px 0',
+            fontSize: '12px',
+            color: 'var(--text-secondary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
           {link.description}
         </p>
       )}
@@ -780,7 +814,35 @@ function getFileIcon(path, type) {
   }
 
   // Code files
-  if (['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'html', 'css', 'scss', 'json', 'xml', 'yaml', 'yml', 'sh', 'bat', 'ps1'].includes(ext)) {
+  if (
+    [
+      'js',
+      'jsx',
+      'ts',
+      'tsx',
+      'py',
+      'java',
+      'c',
+      'cpp',
+      'cs',
+      'php',
+      'rb',
+      'go',
+      'rs',
+      'swift',
+      'kt',
+      'html',
+      'css',
+      'scss',
+      'json',
+      'xml',
+      'yaml',
+      'yml',
+      'sh',
+      'bat',
+      'ps1'
+    ].includes(ext)
+  ) {
     return { Icon: Code, color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.1)' };
   }
 
@@ -800,67 +862,75 @@ function getFileIcon(path, type) {
 
 // File Reference Card Component
 function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
-  console.log('[FileRefCard] Rendering:', fileRef.name, 'type:', fileRef.type, 'path:', fileRef.path);
   const { Icon, color, bgColor } = getFileIcon(fileRef.path, fileRef.type);
-  console.log('[FileRefCard] Icon selected:', Icon?.name || Icon, 'color:', color);
 
   return (
-    <div style={{
-      padding: '12px',
-      backgroundColor: 'var(--bg-secondary)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-md)',
-      transition: 'all 0.2s',
-      cursor: 'pointer'
-    }}
-    onClick={onShowInFolder}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.borderColor = 'var(--border-hover)';
-      e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.borderColor = 'var(--border-default)';
-      e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-    }}
+    <div
+      style={{
+        padding: '12px',
+        backgroundColor: 'var(--bg-secondary)',
+        border: '1px solid var(--border-default)',
+        borderRadius: 'var(--radius-md)',
+        transition: 'all 0.2s',
+        cursor: 'pointer'
+      }}
+      onClick={onShowInFolder}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border-hover)';
+        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'var(--border-default)';
+        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+      }}
     >
       <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-        <div style={{
-          padding: '8px',
-          backgroundColor: bgColor,
-          borderRadius: 'var(--radius-md)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+        <div
+          style={{
+            padding: '8px',
+            backgroundColor: bgColor,
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
           <Icon size={20} color={color} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h4 style={{
-            margin: '0 0 4px 0',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: 'var(--text-primary)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>
-            {fileRef.name}
-          </h4>
-          {fileRef.description && (
-            <p style={{
+          <h4
+            style={{
               margin: '0 0 4px 0',
-              fontSize: '12px',
-              color: 'var(--text-secondary)',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'
-            }}>
+            }}
+          >
+            {fileRef.name}
+          </h4>
+          {fileRef.description && (
+            <p
+              style={{
+                margin: '0 0 4px 0',
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
               {fileRef.description}
             </p>
           )}
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             <button
-              onClick={(e) => { e.stopPropagation(); onOpen(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen();
+              }}
               style={{
                 padding: '6px 12px',
                 backgroundColor: 'var(--accent)',
@@ -879,7 +949,10 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
               Open
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
               style={{
                 padding: '4px 8px',
                 backgroundColor: 'var(--bg-tertiary)',
@@ -893,7 +966,10 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
               <Edit size={12} />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
               style={{
                 padding: '4px 8px',
                 backgroundColor: 'var(--bg-tertiary)',
@@ -916,13 +992,15 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
 // Link Editor Component
 function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
   return (
-    <div style={{
-      backgroundColor: 'var(--bg-secondary)',
-      padding: '24px',
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--border-default)',
-      animation: 'fadeIn 0.3s ease-in-out'
-    }}>
+    <div
+      style={{
+        backgroundColor: 'var(--bg-secondary)',
+        padding: '24px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-default)',
+        animation: 'fadeIn 0.3s ease-in-out'
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
           {isNew ? 'New Link' : 'Edit Link'}
@@ -958,7 +1036,15 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              marginBottom: '8px'
+            }}
+          >
             Title *
           </label>
           <input
@@ -982,7 +1068,15 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              marginBottom: '8px'
+            }}
+          >
             URL *
           </label>
           <input
@@ -1005,7 +1099,15 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              marginBottom: '8px'
+            }}
+          >
             Description
           </label>
           <textarea
@@ -1051,13 +1153,15 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
 // File Reference Editor Component
 function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickFile, onPickFolder }) {
   return (
-    <div style={{
-      backgroundColor: 'var(--bg-secondary)',
-      padding: '24px',
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--border-default)',
-      animation: 'fadeIn 0.3s ease-in-out'
-    }}>
+    <div
+      style={{
+        backgroundColor: 'var(--bg-secondary)',
+        padding: '24px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-default)',
+        animation: 'fadeIn 0.3s ease-in-out'
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
           {isNew ? 'New File Reference' : 'Edit File Reference'}
@@ -1093,7 +1197,15 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              marginBottom: '8px'
+            }}
+          >
             Name *
           </label>
           <input
@@ -1117,7 +1229,15 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              marginBottom: '8px'
+            }}
+          >
             File/Folder Path *
           </label>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -1205,7 +1325,15 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
+              marginBottom: '8px'
+            }}
+          >
             Description
           </label>
           <textarea

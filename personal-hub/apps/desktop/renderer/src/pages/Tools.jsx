@@ -56,18 +56,14 @@ function Tools() {
 
     // Tag filter
     if (selectedTags.length > 0) {
-      filtered = filtered.filter((tool) =>
-        selectedTags.every((tag) => tool.tags?.includes(tag))
-      );
+      filtered = filtered.filter((tool) => selectedTags.every((tag) => tool.tags?.includes(tag)));
     }
 
     setFilteredTools(filtered);
   }
 
   function handleTagToggle(tag) {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
 
   if (toolId) {

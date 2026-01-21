@@ -1,24 +1,24 @@
 export const colors = {
   // Background & Surfaces
   bg: {
-    primary: '#0f1115',      // Deep space
-    secondary: '#161920',    // Card/Sidebar
-    tertiary: '#1e222b',     // Hover/Elevation
+    primary: '#0f1115', // Deep space
+    secondary: '#161920', // Card/Sidebar
+    tertiary: '#1e222b', // Hover/Elevation
     hover: 'rgba(255, 255, 255, 0.05)'
   },
 
   // Text Hierarchy
   text: {
-    primary: '#f8fafc',      // Slate 50
-    secondary: '#94a3b8',    // Slate 400
-    tertiary: '#64748b',     // Slate 500
-    disabled: '#334155'      // Slate 700
+    primary: '#f8fafc', // Slate 50
+    secondary: '#94a3b8', // Slate 400
+    tertiary: '#64748b', // Slate 500
+    disabled: '#334155' // Slate 700
   },
 
   // Premium Accents
   accent: {
-    primary: '#6366f1',      // Indigo 500
-    secondary: '#8b5cf6',    // Violet 500
+    primary: '#6366f1', // Indigo 500
+    secondary: '#8b5cf6', // Violet 500
     gradient: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
     hover: '#818cf8',
     active: '#4f46e5',
@@ -27,10 +27,10 @@ export const colors = {
 
   // Semantic Status
   status: {
-    success: '#10b981',      // Emerald 500
-    error: '#ef4444',        // Red 500
-    warning: '#f59e0b',      // Amber 500
-    info: '#3b82f6'          // Blue 500
+    success: '#10b981', // Emerald 500
+    error: '#ef4444', // Red 500
+    warning: '#f59e0b', // Amber 500
+    info: '#3b82f6' // Blue 500
   },
 
   // Borders & Dividers

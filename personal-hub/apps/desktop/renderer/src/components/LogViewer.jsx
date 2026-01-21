@@ -1,9 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import hubAPI from '../api/hubApi';
 import {
-  RefreshCw, Download, Search,
-  CheckCircle, XCircle, Clock, Activity,
-  Settings as SettingsIcon, ChevronDown, AlertTriangle
+  RefreshCw,
+  Download,
+  Search,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Activity,
+  Settings as SettingsIcon,
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import Button from './Button';
 import Skeleton from './Skeleton';
@@ -64,43 +71,51 @@ function LogItem({ log, isExpanded, onToggle }) {
         onClick={onToggle}
       >
         {/* Log Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          flexWrap: 'wrap'
-        }}>
-          {/* Status Icon Circle */}
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            backgroundColor: statusConfig.color,
+        <div
+          style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}
+        >
+          {/* Status Icon Circle */}
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: statusConfig.color,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}
+          >
             <StatusIcon size={16} color="#fff" />
           </div>
 
           {/* Log Details */}
           <div style={{ flex: 1, minWidth: '200px' }}>
-            <div style={{
-              fontWeight: '600',
-              fontSize: '14px',
-              marginBottom: '4px'
-            }}>
+            <div
+              style={{
+                fontWeight: '600',
+                fontSize: '14px',
+                marginBottom: '4px'
+              }}
+            >
               {(log.type || 'Unknown Action').toString()}
             </div>
-            <div style={{
-              fontSize: '12px',
-              color: 'var(--text-tertiary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              flexWrap: 'wrap'
-            }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-tertiary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}
+            >
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Clock size={12} />
                 {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown time'}
@@ -116,16 +131,18 @@ function LogItem({ log, isExpanded, onToggle }) {
 
           {/* Status Badge & Chevron */}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '4px 10px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: '600',
-              backgroundColor: statusConfig.bg,
-              color: statusConfig.color
-            }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: '600',
+                backgroundColor: statusConfig.bg,
+                color: statusConfig.color
+              }}
+            >
               {statusConfig.label}
             </span>
             <ChevronDown
@@ -141,35 +158,43 @@ function LogItem({ log, isExpanded, onToggle }) {
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div style={{
-            marginTop: '16px',
-            paddingTop: '16px',
-            borderTop: '1px solid var(--border-default)',
-            fontSize: '13px'
-          }}>
+          <div
+            style={{
+              marginTop: '16px',
+              paddingTop: '16px',
+              borderTop: '1px solid var(--border-default)',
+              fontSize: '13px'
+            }}
+          >
             {/* Error Message */}
             {log.error && (
-              <div style={{
-                marginBottom: '12px',
-                padding: '12px',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                borderRadius: 'var(--radius-sm)',
-                borderLeft: '3px solid #ef4444'
-              }}>
-                <div style={{
-                  color: 'var(--text-tertiary)',
-                  fontSize: '11px',
-                  marginBottom: '4px',
-                  fontWeight: '600'
-                }}>
+              <div
+                style={{
+                  marginBottom: '12px',
+                  padding: '12px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  borderRadius: 'var(--radius-sm)',
+                  borderLeft: '3px solid #ef4444'
+                }}
+              >
+                <div
+                  style={{
+                    color: 'var(--text-tertiary)',
+                    fontSize: '11px',
+                    marginBottom: '4px',
+                    fontWeight: '600'
+                  }}
+                >
                   Error Message
                 </div>
-                <div style={{
-                  color: '#ef4444',
-                  fontFamily: 'monospace',
-                  fontSize: '12px',
-                  wordBreak: 'break-word'
-                }}>
+                <div
+                  style={{
+                    color: '#ef4444',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    wordBreak: 'break-word'
+                  }}
+                >
                   {log.error.toString()}
                 </div>
               </div>
@@ -178,26 +203,28 @@ function LogItem({ log, isExpanded, onToggle }) {
             {/* Payload */}
             {log.payload && (
               <div>
-                <div style={{
-                  color: 'var(--text-tertiary)',
-                  fontSize: '11px',
-                  marginBottom: '6px',
-                  fontWeight: '600'
-                }}>
+                <div
+                  style={{
+                    color: 'var(--text-tertiary)',
+                    fontSize: '11px',
+                    marginBottom: '6px',
+                    fontWeight: '600'
+                  }}
+                >
                   Payload
                 </div>
-                <pre style={{
-                  padding: '12px',
-                  backgroundColor: 'var(--bg-primary)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '11px',
-                  overflow: 'auto',
-                  margin: 0,
-                  maxHeight: '200px'
-                }}>
-                  {typeof log.payload === 'string'
-                    ? log.payload
-                    : JSON.stringify(log.payload, null, 2)}
+                <pre
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'var(--bg-primary)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '11px',
+                    overflow: 'auto',
+                    margin: 0,
+                    maxHeight: '200px'
+                  }}
+                >
+                  {typeof log.payload === 'string' ? log.payload : JSON.stringify(log.payload, null, 2)}
                 </pre>
               </div>
             )}
@@ -208,12 +235,14 @@ function LogItem({ log, isExpanded, onToggle }) {
   } catch (error) {
     console.error('Error rendering log item:', error, log);
     return (
-      <div style={{
-        padding: '16px',
-        borderRadius: 'var(--radius-md)',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        border: '1px solid #ef4444'
-      }}>
+      <div
+        style={{
+          padding: '16px',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid #ef4444'
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
           <AlertTriangle size={16} />
           <span style={{ fontSize: '14px', fontWeight: '600' }}>Failed to render log</span>
@@ -259,7 +288,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
           const message = JSON.parse(event.data);
           if (message.event === 'log:new') {
             console.log('[LogViewer] New log received:', message.data);
-            setLogs(prevLogs => [message.data, ...prevLogs].slice(0, limit));
+            setLogs((prevLogs) => [message.data, ...prevLogs].slice(0, limit));
           }
         } catch (error) {
           console.error('[LogViewer] Failed to parse WebSocket message:', error);
@@ -297,7 +326,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
       // Handle new format from logManager
       if (result && result.success && Array.isArray(result.logs)) {
         // Transform from new format to expected format
-        const transformedLogs = result.logs.map(log => ({
+        const transformedLogs = result.logs.map((log) => ({
           id: log.id,
           type: log.action?.type || 'unknown',
           status: log.status || 'pending',
@@ -349,7 +378,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
         return [];
       }
 
-      return logs.filter(log => {
+      return logs.filter((log) => {
         try {
           if (!log) return false;
 
@@ -369,12 +398,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
             const error = (log.error || '').toString().toLowerCase();
             const payload = (log.payload || '').toString().toLowerCase();
 
-            return (
-              type.includes(query) ||
-              toolId.includes(query) ||
-              error.includes(query) ||
-              payload.includes(query)
-            );
+            return type.includes(query) || toolId.includes(query) || error.includes(query) || payload.includes(query);
           }
 
           return true;
@@ -402,32 +426,32 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
 
   if (error) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '40px',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          width: '64px',
-          height: '64px',
-          borderRadius: '50%',
-          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+      <div
+        style={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: '20px'
-        }}>
+          padding: '40px',
+          textAlign: 'center'
+        }}
+      >
+        <div
+          style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '20px'
+          }}
+        >
           <AlertTriangle size={32} color="#ef4444" />
         </div>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
-          Failed to load logs
-        </h3>
-        <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>
-          {error}
-        </p>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Failed to load logs</h3>
+        <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>{error}</p>
         <Button onClick={loadLogs}>
           <RefreshCw size={14} />
           Try Again
@@ -440,38 +464,44 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
     <ErrorBoundary>
       <div className="log-viewer">
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-          gap: '16px',
-          flexWrap: 'wrap'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px',
+            gap: '16px',
+            flexWrap: 'wrap'
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Activity size={18} />
               Activity Logs
             </h4>
             {enableRealtime && wsRef.current?.readyState === WebSocket.OPEN && (
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '11px',
-                fontWeight: '600',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                color: '#10b981'
-              }}>
-                <div style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: '#10b981',
-                  animation: 'pulse 2s infinite'
-                }} />
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  color: '#10b981'
+                }}
+              >
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#10b981',
+                    animation: 'pulse 2s infinite'
+                  }}
+                />
                 Live
               </span>
             )}
@@ -491,12 +521,14 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
 
         {/* Filters */}
         {showFilters && (
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: '20px',
-            flexWrap: 'wrap'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              marginBottom: '20px',
+              flexWrap: 'wrap'
+            }}
+          >
             <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
               <Search
                 size={16}
@@ -519,7 +551,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
-              {['all', 'success', 'error', 'pending'].map(status => (
+              {['all', 'success', 'error', 'pending'].map((status) => (
                 <button
                   key={status}
                   onClick={() => {

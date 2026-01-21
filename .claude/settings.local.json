@@ -23,7 +23,10 @@
       "Bash(node test-migration.js:*)",
       "Bash(npx electron-rebuild:*)",
       "Bash(tree:*)",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix:*)",
+      "Bash(npm run format:*)"
     ]
   }
 }

@@ -4,8 +4,16 @@ import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import { useAppStore } from '../state/store';
 import {
-  User, Shield, Star, Activity, Calendar,
-  CheckCircle, XCircle, Crown, Settings as SettingsIcon, LogOut
+  User,
+  Shield,
+  Star,
+  Activity,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Crown,
+  Settings as SettingsIcon,
+  LogOut
 } from 'lucide-react';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -107,7 +115,7 @@ function Profile() {
   function getInitials(username) {
     return username
       .split(' ')
-      .map(part => part[0])
+      .map((part) => part[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -151,48 +159,53 @@ function Profile() {
 
       <div className="page-content">
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-
           {/* Profile Header Card */}
           <Card style={{ marginBottom: '32px', overflow: 'visible' }}>
-            <div style={{
-              background: roleConfig.gradient,
-              height: '120px',
-              margin: '-24px -24px 0 -24px',
-              borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0'
-            }} />
-
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '24px',
-              marginTop: '-60px',
-              padding: '0 24px 24px 24px'
-            }}>
-              {/* Avatar */}
-              <div style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
+            <div
+              style={{
                 background: roleConfig.gradient,
-                border: '4px solid var(--bg-primary)',
+                height: '120px',
+                margin: '-24px -24px 0 -24px',
+                borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0'
+              }}
+            />
+
+            <div
+              style={{
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '36px',
-                fontWeight: '700',
-                color: '#fff',
-                textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                flexShrink: 0
-              }}>
+                alignItems: 'flex-start',
+                gap: '24px',
+                marginTop: '-60px',
+                padding: '0 24px 24px 24px'
+              }}
+            >
+              {/* Avatar */}
+              <div
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  borderRadius: '50%',
+                  background: roleConfig.gradient,
+                  border: '4px solid var(--bg-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '36px',
+                  fontWeight: '700',
+                  color: '#fff',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  flexShrink: 0
+                }}
+              >
                 {profile.avatar || getInitials(profile.username)}
               </div>
 
               {/* Profile Info */}
               <div style={{ flex: 1, paddingTop: '70px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                  <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>
-                    {profile.username}
-                  </h2>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}
+                >
+                  <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>{profile.username}</h2>
                   <Badge variant={roleConfig.color}>
                     <RoleIcon size={12} style={{ marginRight: '4px' }} />
                     {roleConfig.label}
@@ -204,25 +217,22 @@ function Profile() {
                     </Badge>
                   )}
                   <div style={{ marginLeft: 'auto' }}>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={handleLogout}
-                      disabled={loggingOut}
-                    >
+                    <Button variant="danger" size="sm" onClick={handleLogout} disabled={loggingOut}>
                       <LogOut size={14} />
                       {loggingOut ? 'Logging out...' : 'Logout'}
                     </Button>
                   </div>
                 </div>
 
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  color: 'var(--text-secondary)',
-                  fontSize: '14px'
-                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    color: 'var(--text-secondary)',
+                    fontSize: '14px'
+                  }}
+                >
                   {profile.email && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <User size={14} />
@@ -232,7 +242,8 @@ function Profile() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={14} />
-                      Joined {(() => {
+                      Joined{' '}
+                      {(() => {
                         const ts = profile.createdAt;
                         if (!ts || ts <= 0) return '—';
                         // Handle seconds vs milliseconds
@@ -243,11 +254,16 @@ function Profile() {
                     {profile.status && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Activity size={14} />
-                        Status: <span style={{
-                          color: profile.status === 'active' ? '#10b981' : '#ef4444',
-                          fontWeight: '600',
-                          textTransform: 'capitalize'
-                        }}>{profile.status}</span>
+                        Status:{' '}
+                        <span
+                          style={{
+                            color: profile.status === 'active' ? '#10b981' : '#ef4444',
+                            fontWeight: '600',
+                            textTransform: 'capitalize'
+                          }}
+                        >
+                          {profile.status}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -257,23 +273,27 @@ function Profile() {
           </Card>
 
           {/* Stats Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '24px',
-            marginBottom: '32px'
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '24px',
+              marginBottom: '32px'
+            }}
+          >
             <Card>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: 'var(--radius-lg)',
-                  background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
                   <Activity size={28} color="#fff" />
                 </div>
                 <div>
@@ -289,48 +309,48 @@ function Profile() {
 
             <Card>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: 'var(--radius-lg)',
-                  background: 'linear-gradient(135deg, #f093fb, #f5576c)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'linear-gradient(135deg, #f093fb, #f5576c)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
                   <SettingsIcon size={28} color="#fff" />
                 </div>
                 <div>
                   <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
                     {profile.stats?.toolsUsed || 0}
                   </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                    Tools Used
-                  </div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>Tools Used</div>
                 </div>
               </div>
             </Card>
 
             <Card>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: 'var(--radius-lg)',
-                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
                   <User size={28} color="#fff" />
                 </div>
                 <div>
                   <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
                     {profile.stats?.loginCount || 1}
                   </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                    Login Count
-                  </div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>Login Count</div>
                 </div>
               </div>
             </Card>
@@ -338,22 +358,26 @@ function Profile() {
 
           {/* Permissions Section */}
           <Card>
-            <h3 style={{
-              margin: '0 0 20px 0',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '20px'
-            }}>
+            <h3
+              style={{
+                margin: '0 0 20px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '20px'
+              }}
+            >
               <Shield size={20} />
               Permissions & Access
             </h3>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '12px'
-            }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '12px'
+              }}
+            >
               {Object.entries(PERMISSION_LABELS).map(([key, label]) => {
                 const isEnabled = profile.permissions.includes(key);
                 return (
@@ -373,16 +397,18 @@ function Profile() {
                       opacity: permissionLoading ? 0.6 : 1
                     }}
                   >
-                    <div style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      backgroundColor: isEnabled ? 'var(--status-success)' : 'var(--border-default)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
+                    <div
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        backgroundColor: isEnabled ? 'var(--status-success)' : 'var(--border-default)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}
+                    >
                       {isEnabled ? (
                         <CheckCircle size={16} color="#fff" />
                       ) : (
@@ -390,18 +416,22 @@ function Profile() {
                       )}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontWeight: '600',
-                        fontSize: '14px',
-                        color: isEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
-                      }}>
+                      <div
+                        style={{
+                          fontWeight: '600',
+                          fontSize: '14px',
+                          color: isEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
+                        }}
+                      >
                         {label}
                       </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: 'var(--text-tertiary)',
-                        marginTop: '2px'
-                      }}>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: 'var(--text-tertiary)',
+                          marginTop: '2px'
+                        }}
+                      >
                         {isEnabled ? 'Enabled' : 'Disabled'}
                       </div>
                     </div>
@@ -410,7 +440,6 @@ function Profile() {
               })}
             </div>
           </Card>
-
         </div>
       </div>
     </div>

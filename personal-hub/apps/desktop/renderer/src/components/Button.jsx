@@ -30,22 +30,12 @@ function Button({
     lg: 'btn-lg'
   };
 
-  const classes = [
-    baseClasses,
-    variantClasses[variant],
-    sizeClasses[size],
-    fullWidth ? 'btn-full' : '',
-    className
-  ].filter(Boolean).join(' ');
+  const classes = [baseClasses, variantClasses[variant], sizeClasses[size], fullWidth ? 'btn-full' : '', className]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <button
-      type={type}
-      className={classes}
-      onClick={onClick}
-      disabled={disabled}
-      {...props}
-    >
+    <button type={type} className={classes} onClick={onClick} disabled={disabled} {...props}>
       {icon && iconPosition === 'left' && <span className="btn-icon">{icon}</span>}
       {children}
       {icon && iconPosition === 'right' && <span className="btn-icon">{icon}</span>}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Check, Settings, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Check, Trash2 } from 'lucide-react';
 import hubAPI from '../api/hubApi';
 
 /**
@@ -88,18 +88,20 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
   };
 
   const handleDeleteWorkspace = async (workspaceId, workspaceName) => {
-    if (!confirm(`Delete workspace "${workspaceName}"? This will delete all notes, links, and files in this workspace.`)) {
+    if (
+      !confirm(`Delete workspace "${workspaceName}"? This will delete all notes, links, and files in this workspace.`)
+    ) {
       return;
     }
 
     try {
       const result = await hubAPI.workspaces.delete({ id: workspaceId });
       if (result.success) {
-        setWorkspaces(workspaces.filter(w => w.id !== workspaceId));
+        setWorkspaces(workspaces.filter((w) => w.id !== workspaceId));
 
         // If deleted workspace was active, switch to first available
         if (activeWorkspace?.id === workspaceId && workspaces.length > 1) {
-          const nextWorkspace = workspaces.find(w => w.id !== workspaceId);
+          const nextWorkspace = workspaces.find((w) => w.id !== workspaceId);
           if (nextWorkspace) {
             await handleSwitchWorkspace(nextWorkspace.id);
           }
@@ -115,36 +117,44 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
 
   if (loading) {
     return (
-      <div style={{
-        padding: '16px',
-        textAlign: 'center',
-        color: 'var(--text-tertiary)'
-      }}>
+      <div
+        style={{
+          padding: '16px',
+          textAlign: 'center',
+          color: 'var(--text-tertiary)'
+        }}
+      >
         Loading workspaces...
       </div>
     );
   }
 
   return (
-    <div style={{
-      backgroundColor: 'var(--bg-secondary)',
-      borderRadius: 'var(--radius-lg)',
-      padding: '16px',
-      border: '1px solid var(--border-default)'
-    }}>
+    <div
+      style={{
+        backgroundColor: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '16px',
+        border: '1px solid var(--border-default)'
+      }}
+    >
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '16px'
-      }}>
-        <h3 style={{
-          margin: 0,
-          fontSize: '16px',
-          fontWeight: '600',
-          color: 'var(--text-primary)'
-        }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}
+      >
+        <h3
+          style={{
+            margin: 0,
+            fontSize: '16px',
+            fontWeight: '600',
+            color: 'var(--text-primary)'
+          }}
+        >
           Workspaces
         </h3>
         <button
@@ -171,15 +181,17 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
 
       {/* Error Message */}
       {error && (
-        <div style={{
-          padding: '12px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: 'var(--radius-md)',
-          marginBottom: '12px',
-          fontSize: '14px',
-          color: '#ef4444'
-        }}>
+        <div
+          style={{
+            padding: '12px',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '12px',
+            fontSize: '14px',
+            color: '#ef4444'
+          }}
+        >
           {error}
         </div>
       )}
@@ -228,22 +240,26 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
       )}
 
       {/* Workspaces List */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}
+      >
         {workspaces.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '32px',
-            color: 'var(--text-tertiary)',
-            fontSize: '14px'
-          }}>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '32px',
+              color: 'var(--text-tertiary)',
+              fontSize: '14px'
+            }}
+          >
             No workspaces yet. Create one to get started!
           </div>
         ) : (
-          workspaces.map(workspace => {
+          workspaces.map((workspace) => {
             const isActive = activeWorkspace?.id === workspace.id;
 
             return (
@@ -274,18 +290,22 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
                   }
                 }}
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  flex: 1
-                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flex: 1
+                  }}
+                >
                   {isActive && <Check size={18} color="#fff" />}
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: isActive ? '600' : '500',
-                    color: isActive ? '#fff' : 'var(--text-primary)'
-                  }}>
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: isActive ? '600' : '500',
+                      color: isActive ? '#fff' : 'var(--text-primary)'
+                    }}
+                  >
                     {workspace.name}
                   </span>
                 </div>
@@ -307,8 +327,8 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
                       color: 'var(--text-tertiary)',
                       transition: 'color var(--transition-fast)'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                   >
                     <Trash2 size={16} />
                   </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Loader } from 'lucide-react';
 import { useAppStore } from '../state/store';
@@ -17,8 +17,8 @@ function Auth() {
   // Form state
   const [formData, setFormData] = useState({
     identifier: '', // email or username for login
-    email: '',      // for register
-    username: '',   // for register
+    email: '', // for register
+    username: '', // for register
     password: '',
     rememberMe: false
   });
@@ -26,7 +26,7 @@ function Auth() {
   // Handle input change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
@@ -100,7 +100,7 @@ function Auth() {
         } else {
           // Registration success but login failed, switch to login mode
           setMode('login');
-          setFormData(prev => ({ ...prev, identifier: formData.username }));
+          setFormData((prev) => ({ ...prev, identifier: formData.username }));
           setError('Account created! Please log in.');
         }
       } else {
@@ -127,43 +127,51 @@ function Auth() {
   };
 
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
       {/* Animated background */}
-      <div style={{
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        opacity: 0.05,
-        background: `
+      <div
+        style={{
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          opacity: 0.05,
+          background: `
           radial-gradient(circle at 20% 50%, #667eea 0%, transparent 50%),
           radial-gradient(circle at 80% 80%, #764ba2 0%, transparent 50%),
           radial-gradient(circle at 40% 20%, #f093fb 0%, transparent 50%)
         `,
-        animation: 'float 20s ease-in-out infinite'
-      }} />
+          animation: 'float 20s ease-in-out infinite'
+        }}
+      />
 
       {/* Auth Card */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        maxWidth: '440px',
-        margin: '0 20px',
-        animation: 'slideUp 0.6s ease-out'
-      }}>
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '440px',
+          margin: '0 20px',
+          animation: 'slideUp 0.6s ease-out'
+        }}
+      >
         {/* Logo */}
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '32px'
-        }}>
+        <div
+          style={{
+            textAlign: 'center',
+            marginBottom: '32px'
+          }}
+        >
           <img
             src={orbitLogo}
             alt="Orbit"
@@ -174,48 +182,56 @@ function Auth() {
               animation: 'pulse 3s ease-in-out infinite'
             }}
           />
-          <h1 style={{
-            fontSize: '32px',
-            fontWeight: '700',
-            margin: 0,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.5px'
-          }}>
+          <h1
+            style={{
+              fontSize: '32px',
+              fontWeight: '700',
+              margin: 0,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.5px'
+            }}
+          >
             {mode === 'login' ? 'Welcome Back' : 'Create Account'}
           </h1>
-          <p style={{
-            fontSize: '14px',
-            color: 'var(--text-tertiary)',
-            marginTop: '8px'
-          }}>
+          <p
+            style={{
+              fontSize: '14px',
+              color: 'var(--text-tertiary)',
+              marginTop: '8px'
+            }}
+          >
             {mode === 'login' ? 'Sign in to continue to Orbit' : 'Join Orbit and get started'}
           </p>
         </div>
 
         {/* Auth Form Card */}
-        <div style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '40px',
-          border: '1px solid var(--border-default)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(10px)'
-        }}>
+        <div
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '40px',
+            border: '1px solid var(--border-default)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
           <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
             {/* Error Message */}
             {error && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '24px',
-                fontSize: '14px',
-                color: '#ef4444',
-                animation: 'shake 0.5s ease'
-              }}>
+              <div
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '24px',
+                  fontSize: '14px',
+                  color: '#ef4444',
+                  animation: 'shake 0.5s ease'
+                }}
+              >
                 {error}
               </div>
             )}
@@ -294,8 +310,8 @@ function Auth() {
                   justifyContent: 'center',
                   transition: 'color var(--transition-fast)'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -303,19 +319,23 @@ function Auth() {
 
             {/* Remember Me (Login only) */}
             {mode === 'login' && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '24px'
-              }}>
-                <label style={{
+              <div
+                style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  color: 'var(--text-secondary)'
-                }}>
+                  marginBottom: '24px'
+                }}
+              >
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
                   <input
                     type="checkbox"
                     name="rememberMe"
@@ -384,14 +404,15 @@ function Auth() {
           </form>
 
           {/* Switch Mode */}
-          <div style={{
-            marginTop: '24px',
-            textAlign: 'center',
-            fontSize: '14px',
-            color: 'var(--text-tertiary)'
-          }}>
-            {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-            {' '}
+          <div
+            style={{
+              marginTop: '24px',
+              textAlign: 'center',
+              fontSize: '14px',
+              color: 'var(--text-tertiary)'
+            }}
+          >
+            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button
               onClick={switchMode}
               disabled={loading}
@@ -413,12 +434,14 @@ function Auth() {
         </div>
 
         {/* Footer */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '24px',
-          fontSize: '12px',
-          color: 'var(--text-tertiary)'
-        }}>
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '24px',
+            fontSize: '12px',
+            color: 'var(--text-tertiary)'
+          }}
+        >
           Orbit v1.0.0 - Secure & Simple
         </div>
       </div>
@@ -476,14 +499,16 @@ function Auth() {
 function InputField({ icon: Icon, style, ...props }) {
   return (
     <div style={{ position: 'relative', marginBottom: '16px', ...style }}>
-      <div style={{
-        position: 'absolute',
-        left: '16px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: 'var(--text-tertiary)',
-        pointerEvents: 'none'
-      }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: '16px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: 'var(--text-tertiary)',
+          pointerEvents: 'none'
+        }}
+      >
         <Icon size={18} />
       </div>
       <input

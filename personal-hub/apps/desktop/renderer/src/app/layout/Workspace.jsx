@@ -6,14 +6,8 @@ function Workspace({ children }) {
 
   return (
     <div className="workspace">
-      {!isOnline && (
-        <div className="offline-banner">
-          You are currently offline. Some features may be unavailable.
-        </div>
-      )}
-      <div className="workspace-content">
-        {children}
-      </div>
+      {!isOnline && <div className="offline-banner">You are currently offline. Some features may be unavailable.</div>}
+      <div className="workspace-content">{children}</div>
     </div>
   );
 }

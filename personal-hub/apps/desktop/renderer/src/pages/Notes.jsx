@@ -205,9 +205,7 @@ function Notes() {
       <div className="page">
         <Topbar title="Notes" />
         <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>
-            Loading notes...
-          </div>
+          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading notes...</div>
         </div>
       </div>
     );
@@ -234,13 +232,15 @@ function Notes() {
 
       <div className="page-content" style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 100px)' }}>
         {/* Notes List Sidebar */}
-        <div style={{
-          width: '320px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          flexShrink: 0
-        }}>
+        <div
+          style={{
+            width: '320px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            flexShrink: 0
+          }}
+        >
           {/* Create Button */}
           <button
             onClick={handleCreateNote}
@@ -303,36 +303,42 @@ function Notes() {
           </div>
 
           {/* Notes Count */}
-          <div style={{
-            fontSize: '12px',
-            color: 'var(--text-tertiary)',
-            fontWeight: '500',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
+          <div
+            style={{
+              fontSize: '12px',
+              color: 'var(--text-tertiary)',
+              fontWeight: '500',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
             {notes.length} {notes.length === 1 ? 'Note' : 'Notes'}
           </div>
 
           {/* Notes List */}
-          <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            paddingRight: '4px'
-          }}>
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              paddingRight: '4px'
+            }}
+          >
             {notes.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                color: 'var(--text-tertiary)',
-                fontSize: '13px'
-              }}>
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: 'var(--text-tertiary)',
+                  fontSize: '13px'
+                }}
+              >
                 {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
               </div>
             ) : (
-              notes.map(note => (
+              notes.map((note) => (
                 <NoteCard
                   key={note.id}
                   note={note}
@@ -348,18 +354,20 @@ function Notes() {
         {/* Note Content Area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {error && (
-            <div style={{
-              padding: '12px 16px',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '16px',
-              fontSize: '13px',
-              color: '#ef4444',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '16px',
+                fontSize: '13px',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
               <span>{error}</span>
               <button
                 onClick={() => setError('')}
@@ -450,21 +458,26 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-        <h4 style={{
-          margin: 0,
-          fontSize: '14px',
-          fontWeight: '600',
-          color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          paddingRight: '8px'
-        }}>
+        <h4
+          style={{
+            margin: 0,
+            fontSize: '14px',
+            fontWeight: '600',
+            color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            paddingRight: '8px'
+          }}
+        >
           {note.title}
         </h4>
         <button
-          onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePin();
+          }}
           style={{
             padding: '4px',
             background: 'none',
@@ -481,40 +494,50 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
         </button>
       </div>
 
-      <p style={{
-        margin: '0 0 8px 0',
-        fontSize: '12px',
-        color: 'var(--text-secondary)',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        lineHeight: '1.5'
-      }}>
+      <p
+        style={{
+          margin: '0 0 8px 0',
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          lineHeight: '1.5'
+        }}
+      >
         {note.content || 'No content'}
       </p>
 
       {note.tags && (
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          {note.tags.split(',').slice(0, 3).map((tag, i) => (
-            <span key={i} style={{
-              padding: '2px 6px',
-              backgroundColor: 'var(--bg-tertiary)',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '10px',
-              color: 'var(--text-tertiary)',
-              fontWeight: '500'
-            }}>
-              {tag.trim()}
-            </span>
-          ))}
+          {note.tags
+            .split(',')
+            .slice(0, 3)
+            .map((tag, i) => (
+              <span
+                key={i}
+                style={{
+                  padding: '2px 6px',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '10px',
+                  color: 'var(--text-tertiary)',
+                  fontWeight: '500'
+                }}
+              >
+                {tag.trim()}
+              </span>
+            ))}
           {note.tags.split(',').length > 3 && (
-            <span style={{
-              padding: '2px 6px',
-              fontSize: '10px',
-              color: 'var(--text-tertiary)'
-            }}>
+            <span
+              style={{
+                padding: '2px 6px',
+                fontSize: '10px',
+                color: 'var(--text-tertiary)'
+              }}
+            >
               +{note.tags.split(',').length - 3}
             </span>
           )}
@@ -531,17 +554,19 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
 // Note Editor Component
 function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
   return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '16px',
-      backgroundColor: 'var(--bg-secondary)',
-      padding: '24px',
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--border-default)',
-      overflow: 'hidden'
-    }}>
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        backgroundColor: 'var(--bg-secondary)',
+        padding: '24px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-default)',
+        overflow: 'hidden'
+      }}
+    >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
@@ -603,13 +628,16 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
 
       {/* Tags */}
       <div style={{ position: 'relative' }}>
-        <Tag size={16} style={{
-          position: 'absolute',
-          left: '12px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          color: 'var(--text-tertiary)'
-        }} />
+        <Tag
+          size={16}
+          style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'var(--text-tertiary)'
+          }}
+        />
         <input
           type="text"
           value={formData.tags}
@@ -655,43 +683,50 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
 // Note Viewer Component
 function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
   return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '20px',
-      backgroundColor: 'var(--bg-secondary)',
-      padding: '24px',
-      borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--border-default)',
-      overflowY: 'auto'
-    }}>
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        backgroundColor: 'var(--bg-secondary)',
+        padding: '24px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-default)',
+        overflowY: 'auto'
+      }}
+    >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '16px' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{
-            margin: '0 0 12px 0',
-            fontSize: '28px',
-            fontWeight: '700',
-            color: 'var(--text-primary)',
-            wordBreak: 'break-word'
-          }}>
+          <h1
+            style={{
+              margin: '0 0 12px 0',
+              fontSize: '28px',
+              fontWeight: '700',
+              color: 'var(--text-primary)',
+              wordBreak: 'break-word'
+            }}
+          >
             {note.title}
           </h1>
           {note.tags && (
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {note.tags.split(',').map((tag, i) => (
-                <span key={i} style={{
-                  padding: '6px 12px',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '12px',
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
+                <span
+                  key={i}
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
                   <Tag size={12} />
                   {tag.trim()}
                 </span>
@@ -744,35 +779,35 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
       </div>
 
       {/* Content */}
-      <div style={{
-        flex: 1,
-        padding: '20px',
-        backgroundColor: 'var(--bg-tertiary)',
-        borderRadius: 'var(--radius-md)',
-        fontSize: '15px',
-        lineHeight: '1.8',
-        color: 'var(--text-primary)',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word'
-      }}>
-        {note.content || (
-          <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-            No content
-          </span>
-        )}
+      <div
+        style={{
+          flex: 1,
+          padding: '20px',
+          backgroundColor: 'var(--bg-tertiary)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: '15px',
+          lineHeight: '1.8',
+          color: 'var(--text-primary)',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word'
+        }}
+      >
+        {note.content || <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>No content</span>}
       </div>
 
       {/* Metadata */}
-      <div style={{
-        padding: '16px',
-        backgroundColor: 'var(--bg-tertiary)',
-        borderRadius: 'var(--radius-md)',
-        fontSize: '12px',
-        color: 'var(--text-tertiary)',
-        display: 'flex',
-        gap: '24px',
-        flexWrap: 'wrap'
-      }}>
+      <div
+        style={{
+          padding: '16px',
+          backgroundColor: 'var(--bg-tertiary)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: '12px',
+          color: 'var(--text-tertiary)',
+          display: 'flex',
+          gap: '24px',
+          flexWrap: 'wrap'
+        }}
+      >
         <div>
           <span style={{ fontWeight: '600' }}>Created:</span> {new Date(note.created_at * 1000).toLocaleString()}
         </div>

@@ -9,7 +9,16 @@ import { X, AlertTriangle } from 'lucide-react';
  * - alert: Alert dialog with OK button
  * - info: Info dialog with OK button
  */
-function Modal({ isOpen, onClose, onConfirm, title, message, type = 'confirm', confirmText = 'Confirm', cancelText = 'Cancel' }) {
+function Modal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  type = 'confirm',
+  confirmText = 'Confirm',
+  cancelText = 'Cancel'
+}) {
   if (!isOpen) return null;
 
   const handleConfirm = () => {
@@ -47,31 +56,37 @@ function Modal({ isOpen, onClose, onConfirm, title, message, type = 'confirm', c
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '16px'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {type === 'confirm' && (
-              <div style={{
-                padding: '8px',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                borderRadius: 'var(--radius-md)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div
+                style={{
+                  padding: '8px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
                 <AlertTriangle size={20} color="#ef4444" />
               </div>
             )}
-            <h3 style={{
-              margin: 0,
-              fontSize: '18px',
-              fontWeight: '600',
-              color: 'var(--text-primary)'
-            }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '18px',
+                fontWeight: '600',
+                color: 'var(--text-primary)'
+              }}
+            >
               {title}
             </h3>
           </div>
@@ -102,21 +117,25 @@ function Modal({ isOpen, onClose, onConfirm, title, message, type = 'confirm', c
         </div>
 
         {/* Message */}
-        <p style={{
-          margin: '0 0 24px 0',
-          fontSize: '14px',
-          lineHeight: '1.6',
-          color: 'var(--text-secondary)'
-        }}>
+        <p
+          style={{
+            margin: '0 0 24px 0',
+            fontSize: '14px',
+            lineHeight: '1.6',
+            color: 'var(--text-secondary)'
+          }}
+        >
           {message}
         </p>
 
         {/* Actions */}
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          justifyContent: 'flex-end'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}
+        >
           {type === 'confirm' && (
             <button
               onClick={onClose}

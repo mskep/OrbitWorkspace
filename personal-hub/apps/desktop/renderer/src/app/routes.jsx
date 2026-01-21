@@ -29,8 +29,6 @@ function ProtectedRoute({ children }) {
 }
 
 function AppRoutes() {
-  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-
   return (
     <Router>
       <Routes>

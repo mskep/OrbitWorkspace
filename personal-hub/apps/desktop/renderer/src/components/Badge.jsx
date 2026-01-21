@@ -3,14 +3,7 @@ import React from 'react';
 /**
  * Reusable Badge component for status, tags, and labels
  */
-function Badge({
-  children,
-  variant = 'default',
-  size = 'md',
-  icon = null,
-  className = '',
-  ...props
-}) {
+function Badge({ children, variant = 'default', size = 'md', icon = null, className = '', ...props }) {
   const variantClasses = {
     default: 'badge-default',
     primary: 'badge-primary',
@@ -27,12 +20,7 @@ function Badge({
     lg: 'badge-lg'
   };
 
-  const classes = [
-    'badge',
-    variantClasses[variant],
-    sizeClasses[size],
-    className
-  ].filter(Boolean).join(' ');
+  const classes = ['badge', variantClasses[variant], sizeClasses[size], className].filter(Boolean).join(' ');
 
   return (
     <span className={classes} {...props}>
