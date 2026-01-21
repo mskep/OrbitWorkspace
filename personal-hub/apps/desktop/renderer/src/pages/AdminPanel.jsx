@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Shield,
   Users,
@@ -8,7 +8,10 @@ import {
   Settings as SettingsIcon,
   AlertTriangle,
   User,
-  Clock
+  Clock,
+  Search,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -228,9 +231,19 @@ function StatItem({ label, value, color }) {
   );
 }
 
+// Helper function to format dates safely
+function formatDate(ts) {
+  if (!ts || ts <= 0) return '—';
+  const msTs = ts < 1e12 ? ts * 1000 : ts;
+  return new Date(msTs).toLocaleDateString();
+}
+
 // Users Section
 function UsersSection({ users, loading, onRefresh }) {
+  const profile = useAppStore((state) => state.profile);
   const [updatingUser, setUpdatingUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
   const handleUpdateRole = async (userId, newRole) => {
     try {
@@ -260,6 +273,75 @@ function UsersSection({ users, loading, onRefresh }) {
     }
   };
 
+  // Check if user is the current admin (can't modify self)
+  const isSelf = (userId) => profile?.id === userId;
+
+  // Handle sorting
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Filter and sort users
+  const filteredAndSortedUsers = useMemo(() => {
+    let result = [...users];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(user =>
+        user.username?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      // Handle string comparison
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal?.toLowerCase() || '';
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [users, searchQuery, sortConfig]);
+
+  // Sortable header component
+  const SortableHeader = ({ label, sortKey }) => {
+    const isActive = sortConfig.key === sortKey;
+    return (
+      <th
+        onClick={() => handleSort(sortKey)}
+        style={{
+          padding: '12px',
+          textAlign: 'left',
+          fontSize: '13px',
+          fontWeight: '600',
+          color: isActive ? 'var(--accent)' : 'var(--text-tertiary)',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {label}
+          {isActive && (
+            sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+          )}
+        </div>
+      </th>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -272,14 +354,39 @@ function UsersSection({ users, loading, onRefresh }) {
 
   return (
     <Card>
-      <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>
-        User Management
-      </h3>
-      <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>
-        Manage user accounts, roles, and permissions
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>
+            User Management
+          </h3>
+          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: '4px 0 0 0' }}>
+            Manage user accounts, roles, and permissions
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: '8px 12px 8px 34px',
+                fontSize: '13px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-default)',
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                width: '220px',
+                outline: 'none'
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
-      {users.length === 0 ? (
+      {filteredAndSortedUsers.length === 0 ? (
         <div style={{
           padding: '40px',
           textAlign: 'center',
@@ -288,7 +395,7 @@ function UsersSection({ users, loading, onRefresh }) {
         }}>
           <Users size={48} color="var(--text-tertiary)" style={{ marginBottom: '16px' }} />
           <p style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>
-            No users found
+            {searchQuery ? 'No users found matching your search' : 'No users found'}
           </p>
         </div>
       ) : (
@@ -296,86 +403,96 @@ function UsersSection({ users, loading, onRefresh }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>User</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>Email</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>Role</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>Status</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>Created</th>
+                <SortableHeader label="User" sortKey="username" />
+                <SortableHeader label="Email" sortKey="email" />
+                <SortableHeader label="Role" sortKey="role" />
+                <SortableHeader label="Status" sortKey="status" />
+                <SortableHeader label="Created" sortKey="created_at" />
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id} style={{ borderBottom: '1px solid var(--border-default)' }}>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--accent-glow)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <User size={16} color="var(--accent)" />
+              {filteredAndSortedUsers.map((user) => {
+                const isCurrentUser = isSelf(user.id);
+                const isActive = user.status === 'active';
+                return (
+                  <tr key={user.id} style={{ borderBottom: '1px solid var(--border-default)', opacity: isCurrentUser ? 0.7 : 1 }}>
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--accent-glow)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <User size={16} color="var(--accent)" />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '14px', fontWeight: '500' }}>{user.username}</span>
+                          {isCurrentUser && (
+                            <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>(You)</span>
+                          )}
+                        </div>
                       </div>
-                      <span style={{ fontSize: '14px', fontWeight: '500' }}>{user.username}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                    {user.email}
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                      disabled={updatingUser === user.id}
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-default)',
-                        backgroundColor: 'var(--bg-tertiary)',
-                        color: 'var(--text-primary)',
-                        cursor: updatingUser === user.id ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      <option value="USER">User</option>
-                      <option value="PREMIUM">Premium</option>
-                      <option value="ADMIN">Admin</option>
-                      <option value="DEVELOPER">Developer</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <select
-                      value={user.status}
-                      onChange={(e) => handleUpdateStatus(user.id, e.target.value)}
-                      disabled={updatingUser === user.id}
-                      style={{
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-default)',
-                        backgroundColor: user.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        color: user.status === 'ACTIVE' ? '#10b981' : '#ef4444',
-                        cursor: updatingUser === user.id ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
-                      <option value="BANNED">Banned</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-tertiary)' }}>
-                      <Clock size={14} />
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{ padding: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                      {user.email}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                        disabled={updatingUser === user.id || isCurrentUser}
+                        title={isCurrentUser ? "You cannot modify your own role" : ""}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-default)',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          color: 'var(--text-primary)',
+                          cursor: (updatingUser === user.id || isCurrentUser) ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        <option value="USER">User</option>
+                        <option value="PREMIUM">Premium</option>
+                        <option value="DEV">Developer</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <select
+                        value={user.status}
+                        onChange={(e) => handleUpdateStatus(user.id, e.target.value)}
+                        disabled={updatingUser === user.id || isCurrentUser}
+                        title={isCurrentUser ? "You cannot modify your own status" : ""}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-default)',
+                          backgroundColor: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                          color: isActive ? '#10b981' : '#ef4444',
+                          cursor: (updatingUser === user.id || isCurrentUser) ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        <option value="active">Active</option>
+                        <option value="disabled">Disabled</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-tertiary)' }}>
+                        <Clock size={14} />
+                        {formatDate(user.created_at)}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

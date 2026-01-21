@@ -291,16 +291,30 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
       setError(null);
       console.log('[LogViewer] Loading logs with limit:', limit);
 
-      const data = await hubAPI.logs.tail({ limit });
-      console.log('[LogViewer] Logs loaded:', data);
-      console.log('[LogViewer] First log sample:', data && data[0]);
+      const result = await hubAPI.logs.tail({ limit });
+      console.log('[LogViewer] Logs result:', result);
 
-      // Validation des données
-      if (!Array.isArray(data)) {
-        throw new Error('Logs data is not an array');
+      // Handle new format from logManager
+      if (result && result.success && Array.isArray(result.logs)) {
+        // Transform from new format to expected format
+        const transformedLogs = result.logs.map(log => ({
+          id: log.id,
+          type: log.action?.type || 'unknown',
+          status: log.status || 'pending',
+          timestamp: log.timestamp,
+          tool_id: log.action?.tool?.id || null,
+          error: log.error || null,
+          payload: log.request || null,
+          username: log.user?.username || null
+        }));
+        setLogs(transformedLogs);
+      } else if (Array.isArray(result)) {
+        // Old format - direct array
+        setLogs(result);
+      } else {
+        console.warn('[LogViewer] Unexpected logs format:', result);
+        setLogs([]);
       }
-
-      setLogs(data);
     } catch (err) {
       console.error('[LogViewer] Error loading logs:', err);
       setError(err.message || 'Failed to load logs');

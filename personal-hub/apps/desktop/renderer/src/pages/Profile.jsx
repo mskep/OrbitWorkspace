@@ -36,14 +36,14 @@ const ROLE_CONFIG = {
     icon: Shield,
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
   },
-  DEVELOPER: {
+  DEV: {
     label: 'Developer',
     color: 'primary',
     icon: SettingsIcon,
     gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
   },
-  VIP: {
-    label: 'VIP Member',
+  PREMIUM: {
+    label: 'Premium',
     color: 'warning',
     icon: Crown,
     gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
@@ -232,14 +232,21 @@ function Profile() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={14} />
-                      Joined {new Date(profile.createdAt).toLocaleDateString()}
+                      Joined {(() => {
+                        const ts = profile.createdAt;
+                        if (!ts || ts <= 0) return '—';
+                        // Handle seconds vs milliseconds
+                        const msTs = ts < 1e12 ? ts * 1000 : ts;
+                        return new Date(msTs).toLocaleDateString();
+                      })()}
                     </div>
                     {profile.status && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Activity size={14} />
                         Status: <span style={{
-                          color: profile.status === 'ACTIVE' ? '#10b981' : '#ef4444',
-                          fontWeight: '600'
+                          color: profile.status === 'active' ? '#10b981' : '#ef4444',
+                          fontWeight: '600',
+                          textTransform: 'capitalize'
                         }}>{profile.status}</span>
                       </div>
                     )}

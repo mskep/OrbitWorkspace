@@ -36,7 +36,7 @@ function Sidebar() {
   const [workspaceExpanded, setWorkspaceExpanded] = useState(false);
 
   // Check if user is admin or developer
-  const isAdminOrDev = profile?.role === 'ADMIN' || profile?.role === 'DEVELOPER';
+  const isAdminOrDev = profile?.role === 'ADMIN' || profile?.role === 'DEV';
 
   useEffect(() => {
     loadWorkspaces();
@@ -140,7 +140,7 @@ function Sidebar() {
             src={orbitLogo}
             alt="Orbit Logo"
             style={{
-              height: '64px',
+              height: '72px',
               filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
             }}
           />

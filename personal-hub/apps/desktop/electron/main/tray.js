@@ -1,5 +1,6 @@
 const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 class TrayManager {
   constructor(mainWindow) {
@@ -8,21 +9,25 @@ class TrayManager {
   }
 
   create() {
-    // For now, use a simple icon placeholder
-    // You should replace this with an actual icon file later
-    const iconPath = path.join(__dirname, '../../../renderer/public/icon.png');
+    const iconPath = path.join(__dirname, '../../renderer/src/assets/v2.png');
 
-    // Fallback if icon doesn't exist
     let icon;
     try {
-      icon = nativeImage.createFromPath(iconPath);
+      if (!fs.existsSync(iconPath)) {
+        icon = nativeImage.createEmpty();
+      } else {
+        icon = nativeImage.createFromPath(iconPath);
+        if (!icon.isEmpty()) {
+          const traySize = process.platform === 'win32' ? 32 : 22;
+          icon = icon.resize({ width: traySize, height: traySize });
+        }
+      }
     } catch (error) {
-      // Create a simple 16x16 empty icon as fallback
       icon = nativeImage.createEmpty();
     }
 
     this.tray = new Tray(icon);
-    this.tray.setToolTip('Personal Hub');
+    this.tray.setToolTip('Orbit - Personal Hub');
 
     this.updateContextMenu();
 
@@ -38,7 +43,7 @@ class TrayManager {
   updateContextMenu(quickActions = []) {
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'Open Personal Hub',
+        label: 'Open Orbit',
         click: () => {
           this.mainWindow.show();
         }

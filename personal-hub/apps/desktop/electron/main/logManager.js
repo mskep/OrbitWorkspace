@@ -63,10 +63,61 @@ class LogManager {
   }
 
   /**
+   * Sanitize sensitive data from payloads before logging
+   * SECURITY: Never log passwords, tokens, or other sensitive data
+   */
+  sanitizePayload(payload, actionType) {
+    if (!payload) return null;
+
+    // List of sensitive fields to redact
+    const sensitiveFields = [
+      'password', 'password_hash', 'token', 'accessToken', 'refreshToken',
+      'secret', 'apiKey', 'api_key', 'privateKey', 'private_key',
+      'credentials', 'authorization', 'auth'
+    ];
+
+    // For auth actions, be extra careful - only log minimal info
+    if (actionType && actionType.startsWith('auth:')) {
+      // For auth:register and auth:login, only log that it happened, not the details
+      if (actionType === 'auth:register') {
+        return { action: 'user_registration', email: '[REDACTED]', username: '[REDACTED]' };
+      }
+      if (actionType === 'auth:login') {
+        return { action: 'user_login', identifier: '[REDACTED]' };
+      }
+      // For other auth actions, redact everything
+      return { action: actionType, details: '[REDACTED]' };
+    }
+
+    // Deep clone and sanitize
+    const sanitized = JSON.parse(JSON.stringify(payload));
+
+    const redactSensitive = (obj) => {
+      if (typeof obj !== 'object' || obj === null) return obj;
+
+      for (const key of Object.keys(obj)) {
+        const lowerKey = key.toLowerCase();
+        if (sensitiveFields.some(field => lowerKey.includes(field.toLowerCase()))) {
+          obj[key] = '[REDACTED]';
+        } else if (typeof obj[key] === 'object') {
+          redactSensitive(obj[key]);
+        }
+      }
+      return obj;
+    };
+
+    return redactSensitive(sanitized);
+  }
+
+  /**
    * Log an action
    */
   log(logData) {
     try {
+      // Sanitize payload before storing
+      const sanitizedPayload = this.sanitizePayload(logData.payload, logData.type);
+      const sanitizedResponse = this.sanitizePayload(logData.response, logData.type);
+
       const logEntry = {
         uuid: uuidv4(),
         timestamp: Date.now(),
@@ -82,8 +133,8 @@ class LogManager {
         tool_name: logData.toolName || null,
         action_name: logData.action || null,
 
-        request_payload: logData.payload ? JSON.stringify(logData.payload) : null,
-        response_data: logData.response ? JSON.stringify(logData.response) : null,
+        request_payload: sanitizedPayload ? JSON.stringify(sanitizedPayload) : null,
+        response_data: sanitizedResponse ? JSON.stringify(sanitizedResponse) : null,
 
         status: logData.status || 'success',
         error_message: logData.error || null,

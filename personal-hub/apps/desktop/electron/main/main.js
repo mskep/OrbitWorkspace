@@ -45,7 +45,8 @@ function createWindow() {
     frame: false,
     show: false,
     backgroundColor: '#1a1a1a',
-    titleBarStyle: 'hidden'
+    titleBarStyle: 'hidden',
+    icon: path.join(__dirname, '../../renderer/src/assets/v2.png')
   });
 
   // Load the app
@@ -115,17 +116,61 @@ async function initializeServices() {
 }
 
 function setupIpcHandlers() {
-  // Auth handlers
+  // Auth handlers - with secure logging
   ipcMain.handle(IPC_CHANNELS.AUTH_REGISTER, async (event, { email, username, password }) => {
-    return authService.register(email, username, password);
+    const startTime = Date.now();
+    const result = await authService.register(email, username, password);
+
+    // Log registration attempt (no sensitive data)
+    logManager.log({
+      type: 'auth:register',
+      userId: result.success ? result.userId : null,
+      username: result.success ? username : null,
+      status: result.success ? 'success' : 'error',
+      error: result.error || null,
+      duration: Date.now() - startTime,
+      // Payload is sanitized by logManager - no password/email logged
+      payload: { action: 'register' }
+    });
+
+    return result;
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_LOGIN, async (event, { identifier, password, rememberMe }) => {
-    return authService.login(identifier, password, rememberMe);
+    const startTime = Date.now();
+    const result = await authService.login(identifier, password, rememberMe);
+
+    // Log login attempt (no sensitive data)
+    logManager.log({
+      type: 'auth:login',
+      userId: result.success ? result.session?.userId : null,
+      username: result.success ? result.session?.username : null,
+      status: result.success ? 'success' : 'error',
+      error: result.error || null,
+      duration: Date.now() - startTime,
+      // Payload is sanitized by logManager - no password logged
+      payload: { action: 'login' }
+    });
+
+    return result;
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_LOGOUT, async () => {
-    return authService.logout();
+    const session = await authService.getSession();
+    const result = await authService.logout();
+
+    // Log logout
+    if (session) {
+      logManager.log({
+        type: 'auth:logout',
+        userId: session.userId,
+        username: session.username,
+        status: 'success',
+        payload: { action: 'logout' }
+      });
+    }
+
+    return result;
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_GET_SESSION, async () => {

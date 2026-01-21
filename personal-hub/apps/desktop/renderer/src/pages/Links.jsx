@@ -36,7 +36,8 @@ function Links() {
   const [fileFormData, setFileFormData] = useState({
     name: '',
     path: '',
-    description: ''
+    description: '',
+    type: 'file' // 'file' or 'folder'
   });
 
   useEffect(() => {
@@ -87,7 +88,10 @@ function Links() {
   const loadFileRefs = async (workspaceId) => {
     try {
       const result = await hubAPI.fileRefs.getAll({ workspaceId });
+      console.log('[Links] File refs loaded:', result);
       if (result.success) {
+        // Log each file ref to debug type field
+        result.fileRefs.forEach(f => console.log('[Links] FileRef:', f.name, 'type:', f.type, 'path:', f.path));
         setFileRefs(result.fileRefs.sort((a, b) => b.created_at - a.created_at));
       }
     } catch (err) {
@@ -138,7 +142,7 @@ function Links() {
   const handleCreateFileRef = () => {
     setIsEditing(true);
     setSelectedItem(null);
-    setFileFormData({ name: '', path: '', description: '' });
+    setFileFormData({ name: '', path: '', description: '', type: 'file' });
     setError('');
   };
 
@@ -159,8 +163,9 @@ function Links() {
     setSelectedItem(fileRef);
     setFileFormData({
       name: fileRef.name,
-      path: fileRef.file_path_encrypted ? '********' : fileRef.file_path,
-      description: fileRef.description || ''
+      path: fileRef.path || (fileRef.file_path_encrypted ? '********' : fileRef.file_path),
+      description: fileRef.description || '',
+      type: fileRef.type || 'file'
     });
     setError('');
   };
@@ -243,7 +248,7 @@ function Links() {
           workspaceId: activeWorkspace.id,
           name: fileFormData.name,
           path: fileFormData.path,  // Changed from filePath to path
-          type: 'file',  // Default type
+          type: fileFormData.type,  // Use type from form (file or folder)
           description: fileFormData.description
         });
 
@@ -318,7 +323,7 @@ function Links() {
     try {
       const path = await hubAPI.fs.pickFile();
       if (path) {
-        setFileFormData({ ...fileFormData, path });
+        setFileFormData({ ...fileFormData, path, type: 'file' });
       }
     } catch (err) {
       console.error('Failed to pick file:', err);
@@ -329,7 +334,7 @@ function Links() {
     try {
       const path = await hubAPI.fs.pickFolder();
       if (path) {
-        setFileFormData({ ...fileFormData, path });
+        setFileFormData({ ...fileFormData, path, type: 'folder' });
       }
     } catch (err) {
       console.error('Failed to pick folder:', err);
@@ -737,51 +742,67 @@ function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
 
 // Helper function to get file icon and color based on extension
 function getFileIcon(path, type) {
-  // If it's a folder
+  // If it's explicitly a folder
   if (type === 'folder') {
     return { Icon: Folder, color: '#FFA500', bgColor: 'rgba(255, 165, 0, 0.1)' };
   }
 
+  // Guard against invalid path - return generic file icon
+  if (!path || typeof path !== 'string') {
+    return { Icon: File, color: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.1)' };
+  }
+
+  // Get the filename from path
+  const filename = path.split(/[/\\]/).pop() || '';
+
+  // Check if it looks like a folder (no extension in the last part)
+  // Also check for common folder indicators
+  if (!filename.includes('.') || path.endsWith('/') || path.endsWith('\\')) {
+    return { Icon: Folder, color: '#FFA500', bgColor: 'rgba(255, 165, 0, 0.1)' };
+  }
+
   // Get file extension
-  const ext = path.split('.').pop()?.toLowerCase() || '';
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
 
   // Image files
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'].includes(ext)) {
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico', 'tiff', 'raw'].includes(ext)) {
     return { Icon: Image, color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.1)' };
   }
 
   // Video files
-  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'].includes(ext)) {
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v'].includes(ext)) {
     return { Icon: Film, color: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.1)' };
   }
 
   // Audio files
-  if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext)) {
+  if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'].includes(ext)) {
     return { Icon: Music, color: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.1)' };
   }
 
   // Code files
-  if (['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt'].includes(ext)) {
+  if (['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'html', 'css', 'scss', 'json', 'xml', 'yaml', 'yml', 'sh', 'bat', 'ps1'].includes(ext)) {
     return { Icon: Code, color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.1)' };
   }
 
   // Archive files
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) {
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'].includes(ext)) {
     return { Icon: FileArchive, color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.1)' };
   }
 
   // Text/Document files
-  if (['txt', 'md', 'doc', 'docx', 'pdf', 'rtf'].includes(ext)) {
+  if (['txt', 'md', 'doc', 'docx', 'pdf', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
     return { Icon: FileText, color: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.1)' };
   }
 
-  // Default file icon
-  return { Icon: File, color: 'var(--accent)', bgColor: 'var(--accent-glow)' };
+  // Default file icon - always return a visible icon
+  return { Icon: File, color: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.1)' };
 }
 
 // File Reference Card Component
 function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
+  console.log('[FileRefCard] Rendering:', fileRef.name, 'type:', fileRef.type, 'path:', fileRef.path);
   const { Icon, color, bgColor } = getFileIcon(fileRef.path, fileRef.type);
+  console.log('[FileRefCard] Icon selected:', Icon?.name || Icon, 'color:', color);
 
   return (
     <div style={{

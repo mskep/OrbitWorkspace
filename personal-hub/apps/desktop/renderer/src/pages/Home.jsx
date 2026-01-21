@@ -10,12 +10,14 @@ import {
 import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../state/store';
 
 function Home() {
   const [recentActions, setRecentActions] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const profile = useAppStore((state) => state.profile);
 
   useEffect(() => {
     loadData();
@@ -23,12 +25,17 @@ function Home() {
 
   async function loadData() {
     try {
-      const [actions, status] = await Promise.all([
-        hubAPI.logs.tail({ limit: 3 }),
+      const [logsResult, status] = await Promise.all([
+        hubAPI.logs.tail({ limit: 5 }),
         hubAPI.system.getStatus()
       ]);
 
-      setRecentActions(actions || []);
+      // logs.tail returns { success, logs }
+      if (logsResult?.success && logsResult.logs) {
+        setRecentActions(logsResult.logs);
+      } else {
+        setRecentActions([]);
+      }
       setSystemStatus(status);
     } catch (error) {
       console.error('Error loading home data:', error);
@@ -59,10 +66,9 @@ function Home() {
               <Sparkles size={14} />
               SYSTEM READY
             </div>
-            <h1 className="hero-title">Welcome back, User</h1>
-            <p className="hero-subtitle">
-              Your personal productivity hub is optimized and running smoothly. 
-              Manage your tools and workflows from one central dashboard.
+            <h1 className="hero-title">Welcome back, {profile?.username || 'User'}</h1>
+            <p className="hero-subtitle" style={{ maxWidth: '600px', wordWrap: 'break-word' }}>
+              Your personal productivity hub is optimized and running smoothly. Manage your tools and workflows from one central dashboard.
             </p>
           </div>
         </section>
@@ -112,10 +118,14 @@ function Home() {
               <div className="skeleton" style={{ height: '100px', width: '100%' }}></div>
             ) : recentActions.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {recentActions.map((action, i) => (
-                  <div key={i} style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 500 }}>{action.type}</span>
-                    <span style={{ color: 'var(--text-tertiary)' }}>{new Date(action.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                {recentActions.slice(0, 5).map((action, i) => (
+                  <div key={action.id || i} style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 500, color: action.status === 'error' ? 'var(--status-error)' : 'var(--text-primary)' }}>
+                      {action.type || action.action?.type || 'Activity'}
+                    </span>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>
+                      {action.timestamp ? new Date(action.timestamp < 1e12 ? action.timestamp * 1000 : action.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </span>
                   </div>
                 ))}
               </div>
