@@ -232,8 +232,12 @@ class AuthServiceSQLite {
         loginTime: Date.now()
       };
 
-      // Persist token for session restore on next launch
-      this._persistToken(sessionData.token);
+      // Only persist token for session restore if rememberMe is checked
+      if (rememberMe) {
+        this._persistToken(sessionData.token);
+      } else {
+        this._clearPersistedToken();
+      }
 
       const result = { success: true, session: this.currentSession };
 

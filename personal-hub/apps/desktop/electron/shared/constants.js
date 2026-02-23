@@ -5,6 +5,7 @@ const IPC_CHANNELS = {
   AUTH_LOGIN: 'auth:login',
   AUTH_LOGOUT: 'auth:logout',
   AUTH_GET_SESSION: 'auth:getSession',
+  AUTH_CHANGE_PASSWORD: 'auth:changePassword',
 
   // Profile
   PROFILE_GET: 'profile:get',
@@ -108,7 +109,8 @@ const IPC_CHANNELS = {
 
   // Recovery / Crypto
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
-  CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile'
+  CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile',
+  CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile'
 };
 
 // User Roles

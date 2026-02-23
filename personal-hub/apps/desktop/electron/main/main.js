@@ -171,6 +171,11 @@ function setupIpcHandlers() {
         payload: { action: 'login' }
       });
 
+      // Strip token from response to renderer
+      if (result.success && result.session) {
+        const { token, ...safeSession } = result.session;
+        return { ...result, session: safeSession };
+      }
       return result;
     } catch (error) {
       console.error('Login error:', error);
@@ -197,7 +202,15 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_GET_SESSION, async () => {
-    return authService.getSession();
+    const session = await authService.getSession();
+    if (!session) return null;
+    // Don't expose token to renderer
+    const { token, ...safeSession } = session;
+    return safeSession;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AUTH_CHANGE_PASSWORD, async (event, { oldPassword, newPassword }) => {
+    return authService.changePassword(oldPassword, newPassword);
   });
 
   // Profile handlers
@@ -232,10 +245,14 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_GET_CONFIG, async (event, toolId) => {
+    const session = await authService.getSession();
+    if (!session) return {};
     return toolRunner.getToolConfig(toolId);
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_SET_CONFIG, async (event, { toolId, config }) => {
+    const session = await authService.getSession();
+    if (!session) return { error: 'Not authenticated' };
     return toolRunner.setToolConfig(toolId, config);
   });
 
@@ -1259,12 +1276,22 @@ function setupIpcHandlers() {
       }
 
       const repos = dbService.getRepositories();
+      const db = dbService.getDB();
+
+      const countTable = (table) => db.prepare(`SELECT COUNT(*) as c FROM ${table}`).get().c;
 
       const stats = {
         totalUsers: repos.users.count(),
         activeUsers: repos.users.countActive(30),
         disabledUsers: repos.users.countDisabled(),
-        usersPerMonth: repos.users.getUsersPerMonth(12)
+        usersPerMonth: repos.users.getUsersPerMonth(12),
+        totalWorkspaces: countTable('workspaces'),
+        totalNotes: countTable('notes'),
+        totalLinks: countTable('links'),
+        totalFileRefs: countTable('file_references'),
+        activeTools: countTable('workspace_tools'),
+        totalBadges: countTable('badges'),
+        totalInboxItems: countTable('inbox_messages')
       };
 
       return { success: true, stats };
@@ -1306,6 +1333,9 @@ function setupIpcHandlers() {
 
       const repos = dbService.getRepositories();
       const user = repos.users.findById(userId);
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
       const oldRole = user.role;
 
       repos.users.updateRole(userId, role);
@@ -1364,20 +1394,40 @@ function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.CRYPTO_RECOVER_WITH_FILE, async (event, { newPassword }) => {
+  // Pick recovery file — no auth guard (used on login page)
+  ipcMain.handle(IPC_CHANNELS.CRYPTO_PICK_RECOVERY_FILE, async () => {
     try {
-      // Open file picker for .orbit-recovery file
       const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
         title: 'Select Recovery Key File',
-        filters: [{ name: 'Text Files', extensions: ['txt'] }],
+        filters: [{ name: 'Recovery Files', extensions: ['txt'] }],
         properties: ['openFile'],
       });
+      if (canceled || !filePaths.length) return null;
+      return { filePath: filePaths[0], fileName: require('path').basename(filePaths[0]) };
+    } catch (error) {
+      console.error('Pick recovery file error:', error);
+      return null;
+    }
+  });
 
-      if (canceled || !filePaths.length) {
-        return { success: false, error: 'Cancelled' };
+  ipcMain.handle(IPC_CHANNELS.CRYPTO_RECOVER_WITH_FILE, async (event, { newPassword, filePath }) => {
+    try {
+      let recoveryFilePath = filePath;
+
+      // Fallback: open file picker if no filePath provided
+      if (!recoveryFilePath) {
+        const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+          title: 'Select Recovery Key File',
+          filters: [{ name: 'Recovery Files', extensions: ['txt'] }],
+          properties: ['openFile'],
+        });
+        if (canceled || !filePaths.length) {
+          return { success: false, error: 'Cancelled' };
+        }
+        recoveryFilePath = filePaths[0];
       }
 
-      const fileContent = fs.readFileSync(filePaths[0], 'utf-8');
+      const fileContent = fs.readFileSync(recoveryFilePath, 'utf-8');
       const result = await authService.recoverWithFile(fileContent, newPassword);
       return result;
     } catch (error) {

@@ -6,6 +6,7 @@ const IPC_CHANNELS = {
   AUTH_LOGIN: 'auth:login',
   AUTH_LOGOUT: 'auth:logout',
   AUTH_GET_SESSION: 'auth:getSession',
+  AUTH_CHANGE_PASSWORD: 'auth:changePassword',
   PROFILE_GET: 'profile:get',
   PROFILE_UPDATE: 'profile:update',
   PERMISSIONS_CHECK: 'permissions:check',
@@ -71,6 +72,7 @@ const IPC_CHANNELS = {
   ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus',
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
   CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile',
+  CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile',
 };
 
 contextBridge.exposeInMainWorld('hubAPI', {
@@ -79,7 +81,8 @@ contextBridge.exposeInMainWorld('hubAPI', {
     register: (credentials) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_REGISTER, credentials),
     login: (credentials) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_LOGIN, credentials),
     logout: () => ipcRenderer.invoke(IPC_CHANNELS.AUTH_LOGOUT),
-    getSession: () => ipcRenderer.invoke(IPC_CHANNELS.AUTH_GET_SESSION)
+    getSession: () => ipcRenderer.invoke(IPC_CHANNELS.AUTH_GET_SESSION),
+    changePassword: (data) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_CHANGE_PASSWORD, data)
   },
 
   // Profile
@@ -203,6 +206,7 @@ contextBridge.exposeInMainWorld('hubAPI', {
   crypto: {
     saveRecoveryFile: (data) => ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_SAVE_RECOVERY_FILE, data),
     recoverWithFile: (data) => ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_RECOVER_WITH_FILE, data),
+    pickRecoveryFile: () => ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_PICK_RECOVERY_FILE),
   },
 
   // Window controls

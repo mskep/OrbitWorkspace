@@ -159,7 +159,14 @@ class ToolRunner {
     }
   }
 
+  _validateToolId(toolId) {
+    // Prevent path traversal: only allow alphanumeric, hyphens, underscores
+    return typeof toolId === 'string' && /^[a-zA-Z0-9_-]+$/.test(toolId);
+  }
+
   async getToolConfig(toolId) {
+    if (!this._validateToolId(toolId)) return {};
+
     const configPath = `tools/${toolId}.json`;
     let config = await this.storage.getJson(configPath);
 
@@ -175,6 +182,10 @@ class ToolRunner {
   }
 
   async setToolConfig(toolId, configPatch) {
+    if (!this._validateToolId(toolId)) {
+      return { error: 'Invalid tool ID' };
+    }
+
     const configPath = `tools/${toolId}.json`;
     const currentConfig = await this.getToolConfig(toolId);
     const newConfig = { ...currentConfig, ...configPatch };

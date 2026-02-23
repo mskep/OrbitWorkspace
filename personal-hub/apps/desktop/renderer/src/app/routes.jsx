@@ -28,6 +28,17 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function AdminRoute({ children }) {
+  const profile = useAppStore((state) => state.profile);
+  const role = profile?.role;
+
+  if (role !== 'ADMIN' && role !== 'DEV') {
+    return <Navigate to="/home" replace />;
+  }
+
+  return children;
+}
+
 function AppRoutes() {
   return (
     <Router>
@@ -51,7 +62,7 @@ function AppRoutes() {
                     <Route path="/store" element={<Store />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
-                    <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                     <Route path="/offline" element={<Offline />} />
                   </Routes>
                 </Workspace>

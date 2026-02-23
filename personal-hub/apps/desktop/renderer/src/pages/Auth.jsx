@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Loader, Download, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Loader, Download, ShieldCheck, FileKey, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 import orbitLogo from '../assets/orbitlogo.png';
@@ -9,33 +9,37 @@ function Auth() {
   const navigate = useNavigate();
   const { setSession, setProfile } = useAppStore();
 
-  const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [mode, setMode] = useState('login'); // 'login', 'register', 'recover'
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [recoveryPrompt, setRecoveryPrompt] = useState(null); // { content, username }
+  const [success, setSuccess] = useState('');
+  const [recoveryPrompt, setRecoveryPrompt] = useState(null);
 
-  // Form state
   const [formData, setFormData] = useState({
-    identifier: '', // email or username for login
-    email: '', // for register
-    username: '', // for register
+    identifier: '',
+    email: '',
+    username: '',
     password: '',
+    confirmPassword: '',
     rememberMe: false
   });
 
-  // Handle input change
+  // Recovery state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [recoveryFile, setRecoveryFile] = useState(null); // { filePath, fileName }
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    // Clear error on input change
     if (error) setError('');
+    if (success) setSuccess('');
   };
 
-  // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -50,14 +54,9 @@ function Auth() {
 
       if (result.success) {
         setSession(result.session);
-
-        // Get profile
         const profileResult = await hubAPI.profile.get();
-        if (profileResult) {
-          setProfile(profileResult);
-        }
+        if (profileResult) setProfile(profileResult);
 
-        // If this is a migrated account, show recovery file prompt
         if (result.cryptoMigrated && result.recoveryFileContent) {
           setRecoveryPrompt({
             content: result.recoveryFileContent,
@@ -67,20 +66,25 @@ function Auth() {
           navigate('/home');
         }
       } else {
-        setError(result.error || 'Authentication failed');
+        setError(result.error || 'Invalid credentials');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle register
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
 
     try {
       const result = await hubAPI.auth.register({
@@ -90,7 +94,6 @@ function Auth() {
       });
 
       if (result.success) {
-        // Auto-login after successful registration
         const loginResult = await hubAPI.auth.login({
           identifier: formData.username,
           password: formData.password,
@@ -99,13 +102,9 @@ function Auth() {
 
         if (loginResult.success) {
           setSession(loginResult.session);
-
           const profileResult = await hubAPI.profile.get();
-          if (profileResult) {
-            setProfile(profileResult);
-          }
+          if (profileResult) setProfile(profileResult);
 
-          // Show recovery file prompt if available (from registration)
           if (result.recoveryFileContent) {
             setRecoveryPrompt({
               content: result.recoveryFileContent,
@@ -115,22 +114,76 @@ function Auth() {
             navigate('/home');
           }
         } else {
-          // Registration success but login failed, switch to login mode
           setMode('login');
           setFormData((prev) => ({ ...prev, identifier: formData.username }));
-          setError('Account created! Please log in.');
+          setSuccess('Account created! Please sign in.');
         }
       } else {
         setError(result.error || 'Registration failed');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle recovery file download
+  // Recovery: pick file first, then submit
+  const handlePickRecoveryFile = async () => {
+    try {
+      const result = await hubAPI.crypto.pickRecoveryFile();
+      if (result) {
+        setRecoveryFile(result);
+        if (error) setError('');
+      }
+    } catch (err) {
+      setError('Failed to open file picker.');
+    }
+  };
+
+  const handleRecover = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!recoveryFile) {
+      setError('Please select your recovery file first.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await hubAPI.crypto.recoverWithFile({
+        newPassword: newPassword,
+        filePath: recoveryFile.filePath
+      });
+
+      if (result.success) {
+        setMode('login');
+        setSuccess('Password reset successful! Please sign in with your new password.');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setRecoveryFile(null);
+      } else {
+        setError(result.error || 'Recovery failed. Check your file and try again.');
+      }
+    } catch (err) {
+      setError('Recovery failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveRecoveryFile = async () => {
     if (!recoveryPrompt) return;
     try {
@@ -150,518 +203,337 @@ function Auth() {
     navigate('/home');
   };
 
-  // Switch mode
-  const switchMode = () => {
-    setMode(mode === 'login' ? 'register' : 'login');
+  const switchMode = (newMode) => {
+    setMode(newMode);
     setError('');
-    setFormData({
-      identifier: '',
-      email: '',
-      username: '',
-      password: '',
-      rememberMe: false
-    });
+    setSuccess('');
+    setFormData({ identifier: '', email: '', username: '', password: '', confirmPassword: '', rememberMe: false });
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setRecoveryFile(null);
   };
 
   return (
-    <div
-      style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Animated background */}
-      <div
-        style={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          opacity: 0.05,
-          background: `
-          radial-gradient(circle at 20% 50%, #667eea 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, #764ba2 0%, transparent 50%),
-          radial-gradient(circle at 40% 20%, #f093fb 0%, transparent 50%)
-        `,
-          animation: 'float 20s ease-in-out infinite'
-        }}
-      />
+    <div className="auth-page">
+      {/* Ambient background */}
+      <div className="auth-bg">
+        <div className="auth-bg-orb auth-bg-orb-1" />
+        <div className="auth-bg-orb auth-bg-orb-2" />
+        <div className="auth-bg-orb auth-bg-orb-3" />
+        <div className="auth-bg-grid" />
+      </div>
 
-      {/* Auth Card */}
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: '440px',
-          margin: '0 20px',
-          animation: 'slideUp 0.6s ease-out'
-        }}
-      >
-        {/* Logo */}
-        <div
-          style={{
-            textAlign: 'center',
-            marginBottom: '32px'
-          }}
-        >
-          <img
-            src={orbitLogo}
-            alt="Orbit"
-            style={{
-              height: '80px',
-              marginBottom: '16px',
-              filter: 'drop-shadow(0 4px 12px rgba(102, 126, 234, 0.3))',
-              animation: 'pulse 3s ease-in-out infinite'
-            }}
-          />
-          <h1
-            style={{
-              fontSize: '32px',
-              fontWeight: '700',
-              margin: 0,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '-0.5px'
-            }}
-          >
-            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p
-            style={{
-              fontSize: '14px',
-              color: 'var(--text-tertiary)',
-              marginTop: '8px'
-            }}
-          >
-            {mode === 'login' ? 'Sign in to continue to Orbit' : 'Join Orbit and get started'}
-          </p>
+      <div className="auth-container">
+        {/* Left: Branding */}
+        <div className="auth-brand">
+          <img src={orbitLogo} alt="Orbit" className="auth-logo" />
+          <h1 className="auth-brand-title">Orbit</h1>
+          <p className="auth-brand-subtitle">Your secure productivity hub</p>
+          <div className="auth-brand-features">
+            <div className="auth-feature">
+              <ShieldCheck size={16} />
+              <span>Zero-knowledge encryption</span>
+            </div>
+            <div className="auth-feature">
+              <Lock size={16} />
+              <span>Local-first, private by design</span>
+            </div>
+            <div className="auth-feature">
+              <FileKey size={16} />
+              <span>Recovery file backup</span>
+            </div>
+          </div>
         </div>
 
-        {/* Auth Form Card */}
-        <div
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '40px',
-            border: '1px solid var(--border-default)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-          <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
-            {/* Error Message */}
-            {error && (
-              <div
-                style={{
-                  padding: '12px 16px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '24px',
-                  fontSize: '14px',
-                  color: '#ef4444',
-                  animation: 'shake 0.5s ease'
-                }}
-              >
-                {error}
-              </div>
-            )}
+        {/* Right: Form */}
+        <div className="auth-form-section">
+          {/* Mode tabs */}
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => switchMode('login')}
+              disabled={loading}
+            >
+              <LogIn size={16} />
+              Sign In
+            </button>
+            <button
+              className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
+              onClick={() => switchMode('register')}
+              disabled={loading}
+            >
+              <UserPlus size={16} />
+              Register
+            </button>
+          </div>
 
-            {/* Register Fields */}
-            {mode === 'register' && (
-              <>
-                <InputField
-                  icon={Mail}
-                  type="email"
-                  name="email"
-                  placeholder="Email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  autoComplete="email"
-                />
-
-                <InputField
-                  icon={User}
-                  type="text"
-                  name="username"
-                  placeholder="Username (3-20 characters)"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  autoComplete="username"
-                  pattern="[a-zA-Z0-9_]{3,20}"
-                  title="3-20 characters, letters, numbers, and underscores only"
-                />
-              </>
-            )}
-
-            {/* Login Field */}
-            {mode === 'login' && (
-              <InputField
-                icon={User}
-                type="text"
-                name="identifier"
-                placeholder="Email or Username"
-                value={formData.identifier}
-                onChange={handleChange}
-                required
-                autoComplete="username"
-              />
-            )}
-
-            {/* Password Field */}
-            <div style={{ position: 'relative', marginBottom: '20px' }}>
-              <InputField
-                icon={Lock}
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder={mode === 'register' ? 'Password (min 6 characters)' : 'Password'}
-                value={formData.password}
-                onChange={handleChange}
-                required
-                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                minLength={mode === 'register' ? 6 : undefined}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-tertiary)',
-                  cursor: 'pointer',
-                  padding: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'color var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+          {/* Error / Success */}
+          {error && (
+            <div className="auth-alert auth-alert-error">
+              <AlertCircle size={16} />
+              {error}
             </div>
+          )}
+          {success && (
+            <div className="auth-alert auth-alert-success">
+              <ShieldCheck size={16} />
+              {success}
+            </div>
+          )}
 
-            {/* Remember Me (Login only) */}
-            {mode === 'login' && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginBottom: '24px'
-                }}
-              >
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    color: 'var(--text-secondary)'
-                  }}
-                >
+          {/* Login Form */}
+          {mode === 'login' && (
+            <form onSubmit={handleLogin} className="auth-form">
+              <div className="auth-input-group">
+                <label>Email or Username</label>
+                <div className="auth-input-wrapper">
+                  <User size={18} className="auth-input-icon" />
+                  <input
+                    type="text"
+                    name="identifier"
+                    placeholder="Enter your email or username"
+                    value={formData.identifier}
+                    onChange={handleChange}
+                    required
+                    autoComplete="username"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Password</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="auth-options">
+                <label className="auth-checkbox">
                   <input
                     type="checkbox"
                     name="rememberMe"
                     checked={formData.rememberMe}
                     onChange={handleChange}
-                    style={{
-                      width: '18px',
-                      height: '18px',
-                      cursor: 'pointer',
-                      accentColor: '#667eea'
-                    }}
                   />
                   <span>Remember me</span>
                 </label>
+                <button type="button" className="auth-link" onClick={() => switchMode('recover')}>
+                  Forgot password?
+                </button>
               </div>
-            )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all var(--transition-fast)',
-                opacity: loading ? 0.7 : 1,
-                transform: loading ? 'scale(0.98)' : 'scale(1)',
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
-                }
-              }}
-            >
-              {loading ? (
-                <>
-                  <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                  <span>{mode === 'login' ? 'Signing in...' : 'Creating account...'}</span>
-                </>
-              ) : (
-                <>
-                  {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                  <span>{mode === 'login' ? 'Sign In' : 'Create Account'}</span>
-                </>
-              )}
-            </button>
-          </form>
+              <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
+                {loading ? (
+                  <><Loader size={18} className="auth-spinner" /> Signing in...</>
+                ) : (
+                  <><LogIn size={18} /> Sign In</>
+                )}
+              </button>
+            </form>
+          )}
 
-          {/* Switch Mode */}
-          <div
-            style={{
-              marginTop: '24px',
-              textAlign: 'center',
-              fontSize: '14px',
-              color: 'var(--text-tertiary)'
-            }}
-          >
-            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-            <button
-              onClick={switchMode}
-              disabled={loading}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#667eea',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                textDecoration: 'none',
-                transition: 'color var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.color = '#764ba2')}
-              onMouseLeave={(e) => !loading && (e.currentTarget.style.color = '#667eea')}
-            >
-              {mode === 'login' ? 'Create one' : 'Sign in'}
-            </button>
+          {/* Register Form */}
+          {mode === 'register' && (
+            <form onSubmit={handleRegister} className="auth-form">
+              <div className="auth-input-group">
+                <label>Email</label>
+                <div className="auth-input-wrapper">
+                  <Mail size={18} className="auth-input-icon" />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Username</label>
+                <div className="auth-input-wrapper">
+                  <User size={18} className="auth-input-icon" />
+                  <input
+                    type="text"
+                    name="username"
+                    placeholder="3-20 characters, letters & numbers"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                    autoComplete="username"
+                    pattern="[a-zA-Z0-9_]{3,20}"
+                    title="3-20 characters, letters, numbers, and underscores only"
+                  />
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Password</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Min 6 characters"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                  <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Confirm Password</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    placeholder="Repeat your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
+                {loading ? (
+                  <><Loader size={18} className="auth-spinner" /> Creating account...</>
+                ) : (
+                  <><UserPlus size={18} /> Create Account</>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Recovery Form */}
+          {mode === 'recover' && (
+            <form onSubmit={handleRecover} className="auth-form">
+              <div className="auth-recover-info">
+                <FileKey size={24} />
+                <p>
+                  Orbit uses zero-knowledge encryption. To reset your password,
+                  you need the recovery file generated when you created your account.
+                </p>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Recovery File</label>
+                <button
+                  type="button"
+                  className={`auth-file-picker ${recoveryFile ? 'has-file' : ''}`}
+                  onClick={handlePickRecoveryFile}
+                >
+                  <FileKey size={18} />
+                  <span>{recoveryFile ? recoveryFile.fileName : 'Select recovery file...'}</span>
+                  {recoveryFile && <ShieldCheck size={16} className="auth-file-check" />}
+                </button>
+              </div>
+
+              <div className="auth-input-group">
+                <label>New Password</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Min 6 characters"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); if (error) setError(''); }}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    autoFocus
+                  />
+                  <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="auth-input-group">
+                <label>Confirm New Password</label>
+                <div className="auth-input-wrapper">
+                  <Lock size={18} className="auth-input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Repeat new password"
+                    value={confirmNewPassword}
+                    onChange={(e) => { setConfirmNewPassword(e.target.value); if (error) setError(''); }}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
+                {loading ? (
+                  <><Loader size={18} className="auth-spinner" /> Recovering...</>
+                ) : (
+                  <><ShieldCheck size={18} /> Reset Password</>
+                )}
+              </button>
+
+              <button type="button" className="auth-back-link" onClick={() => switchMode('login')}>
+                Back to Sign In
+              </button>
+            </form>
+          )}
+
+          {/* Footer */}
+          <div className="auth-footer">
+            Orbit v0.1.0
           </div>
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: '24px',
-            fontSize: '12px',
-            color: 'var(--text-tertiary)'
-          }}
-        >
-          Orbit v1.0.0 - Secure & Simple
         </div>
       </div>
 
-      {/* Recovery File Prompt */}
+      {/* Recovery File Save Prompt (post-register/migrate) */}
       {recoveryPrompt && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '40px',
-              maxWidth: '480px',
-              width: '90%',
-              border: '1px solid var(--border-default)',
-              boxShadow: '0 16px 64px rgba(0, 0, 0, 0.5)',
-              textAlign: 'center'
-            }}
-          >
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px'
-              }}
-            >
-              <ShieldCheck size={32} color="#667eea" />
+        <div className="auth-overlay">
+          <div className="auth-modal">
+            <div className="auth-modal-icon">
+              <ShieldCheck size={32} />
             </div>
-
-            <h2 style={{ margin: '0 0 12px', fontSize: '22px', fontWeight: '700' }}>Save Your Recovery Key</h2>
-
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
+            <h2>Save Your Recovery Key</h2>
+            <p>
               This is your <strong>only way</strong> to recover your data if you forget your password.
               Orbit uses zero-knowledge encryption — we cannot reset your password for you.
-              Save this file somewhere safe.
+              <br />Save this file somewhere safe.
             </p>
-
-            <button
-              onClick={handleSaveRecoveryFile}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                marginBottom: '12px',
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-              }}
-            >
+            <button className="btn btn-primary btn-lg btn-full" onClick={handleSaveRecoveryFile}>
               <Download size={18} />
               Download Recovery File
             </button>
-
-            <button
-              onClick={handleSkipRecovery}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'transparent',
-                color: 'var(--text-tertiary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '13px',
-                cursor: 'pointer'
-              }}
-            >
+            <button className="auth-skip-btn" onClick={handleSkipRecovery}>
               Skip for now (not recommended)
             </button>
           </div>
         </div>
       )}
-
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-        }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translate(0, 0) rotate(0deg);
-          }
-          33% {
-            transform: translate(30px, -30px) rotate(120deg);
-          }
-          66% {
-            transform: translate(-20px, 20px) rotate(240deg);
-          }
-        }
-
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
-        }
-
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// Input Field Component
-function InputField({ icon: Icon, style, ...props }) {
-  return (
-    <div style={{ position: 'relative', marginBottom: '16px', ...style }}>
-      <div
-        style={{
-          position: 'absolute',
-          left: '16px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          color: 'var(--text-tertiary)',
-          pointerEvents: 'none'
-        }}
-      >
-        <Icon size={18} />
-      </div>
-      <input
-        {...props}
-        style={{
-          width: '100%',
-          padding: '14px 16px 14px 48px',
-          backgroundColor: 'var(--bg-tertiary)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '15px',
-          color: 'var(--text-primary)',
-          outline: 'none',
-          transition: 'all var(--transition-fast)',
-          boxSizing: 'border-box'
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = '#667eea';
-          e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = 'var(--border-default)';
-          e.target.style.boxShadow = 'none';
-        }}
-      />
     </div>
   );
 }
