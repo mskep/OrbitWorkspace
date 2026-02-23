@@ -20,6 +20,7 @@ import {
   Code
 } from 'lucide-react';
 import hubAPI from '../api/hubApi';
+import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
@@ -28,10 +29,11 @@ import Modal from '../components/Modal';
  * Links Page - Quick Links and File References management
  */
 function Links() {
+  const activeWorkspace = useAppStore((state) => state.activeWorkspace);
+  const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
   const [activeTab, setActiveTab] = useState('links'); // 'links' or 'files'
   const [links, setLinks] = useState([]);
   const [fileRefs, setFileRefs] = useState([]);
-  const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -57,7 +59,7 @@ function Links() {
 
   useEffect(() => {
     loadWorkspaceAndData();
-  }, []);
+  }, [activeWorkspace?.id]);
 
   const loadWorkspaceAndData = async () => {
     try {

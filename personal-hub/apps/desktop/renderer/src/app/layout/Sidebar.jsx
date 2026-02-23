@@ -26,10 +26,11 @@ function Sidebar() {
   const location = useLocation();
   const isOnline = useAppStore((state) => state.isOnline);
   const profile = useAppStore((state) => state.profile);
+  const activeWorkspace = useAppStore((state) => state.activeWorkspace);
+  const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
 
   // Workspace state
   const [workspaces, setWorkspaces] = useState([]);
-  const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [creating, setCreating] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, workspaceId: null, workspaceName: '' });
@@ -63,7 +64,6 @@ function Sidebar() {
       const result = await hubAPI.workspaces.switch({ workspaceId });
       if (result.success) {
         setActiveWorkspace(result.workspace);
-        window.location.reload(); // Refresh to update all workspace-dependent data
       }
     } catch (err) {
       console.error('Failed to switch workspace:', err);

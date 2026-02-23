@@ -19,6 +19,10 @@ export const useAppStore = create((set) => ({
   tools: [],
   setTools: (tools) => set({ tools }),
 
+  // Active workspace
+  activeWorkspace: null,
+  setActiveWorkspace: (workspace) => set({ activeWorkspace: workspace }),
+
   // Current route/page
   currentPage: 'home',
   setCurrentPage: (page) => set({ currentPage: page })

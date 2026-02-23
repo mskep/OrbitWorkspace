@@ -231,16 +231,22 @@ function setupIpcHandlers() {
     return permissionsManager.setPermission(perm, enabled);
   });
 
-  // Tools handlers
+  // Tools handlers (auth-guarded)
   ipcMain.handle(IPC_CHANNELS.TOOLS_LIST, async () => {
+    const session = await authService.getSession();
+    if (!session) return [];
     return toolRunner.listTools();
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_GET, async (event, toolId) => {
+    const session = await authService.getSession();
+    if (!session) return null;
     return toolRunner.getTool(toolId);
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_RUN, async (event, { toolId, action, payload }) => {
+    const session = await authService.getSession();
+    if (!session) return { success: false, error: 'Not authenticated' };
     return toolRunner.runTool(toolId, action, payload);
   });
 
@@ -324,6 +330,8 @@ function setupIpcHandlers() {
 
   // System handlers (auth-guarded)
   ipcMain.handle(IPC_CHANNELS.SYSTEM_GET_STATUS, async () => {
+    const session = await authService.getSession();
+    if (!session) return null;
     return {
       online: networkMonitor.getStatus(),
       appVersion: app.getVersion(),

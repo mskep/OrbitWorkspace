@@ -3,6 +3,7 @@ import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag, Eye, Code } fr
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import hubAPI from '../api/hubApi';
+import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
@@ -11,8 +12,9 @@ import Modal from '../components/Modal';
  * Notes Page - Full CRUD for notes with markdown editor
  */
 function Notes() {
+  const activeWorkspace = useAppStore((state) => state.activeWorkspace);
+  const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
   const [notes, setNotes] = useState([]);
-  const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNote, setSelectedNote] = useState(null);
@@ -29,7 +31,7 @@ function Notes() {
 
   useEffect(() => {
     loadWorkspaceAndNotes();
-  }, []);
+  }, [activeWorkspace?.id]);
 
   const loadWorkspaceAndNotes = async () => {
     try {

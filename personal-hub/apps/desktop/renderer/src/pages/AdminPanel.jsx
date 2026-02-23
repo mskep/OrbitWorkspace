@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Shield,
   Users,
@@ -11,7 +11,11 @@ import {
   Clock,
   Search,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Award,
+  Plus,
+  X,
+  CheckCircle
 } from 'lucide-react';
 import Card from '../components/Card';
 import { useAppStore } from '../state/store';
@@ -241,6 +245,64 @@ function UsersSection({ users, loading, onRefresh }) {
   const [updatingUser, setUpdatingUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+  const [expandedUser, setExpandedUser] = useState(null); // userId or null
+  const [allBadges, setAllBadges] = useState([]);
+  const [userBadges, setUserBadges] = useState({}); // { userId: [badgeId, ...] }
+  const [badgeLoading, setBadgeLoading] = useState(false);
+
+  useEffect(() => {
+    loadBadges();
+  }, []);
+
+  const loadBadges = async () => {
+    try {
+      const result = await hubAPI.badges.getAll();
+      if (result.success) setAllBadges(result.badges);
+    } catch (err) {
+      console.error('Failed to load badges:', err);
+    }
+  };
+
+  const loadUserBadges = async (userId) => {
+    try {
+      const result = await hubAPI.badges.getUserBadges({ userId });
+      if (result.success) {
+        setUserBadges((prev) => ({
+          ...prev,
+          [userId]: result.badges.map((b) => b.id)
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to load user badges:', err);
+    }
+  };
+
+  const toggleExpand = async (userId) => {
+    if (expandedUser === userId) {
+      setExpandedUser(null);
+    } else {
+      setExpandedUser(userId);
+      if (!userBadges[userId]) {
+        await loadUserBadges(userId);
+      }
+    }
+  };
+
+  const handleToggleBadge = async (userId, badgeId, hasIt) => {
+    try {
+      setBadgeLoading(true);
+      if (hasIt) {
+        await hubAPI.badges.revoke({ userId, badgeId });
+      } else {
+        await hubAPI.badges.assign({ userId, badgeId });
+      }
+      await loadUserBadges(userId);
+    } catch (err) {
+      console.error('Failed to toggle badge:', err);
+    } finally {
+      setBadgeLoading(false);
+    }
+  };
 
   const handleUpdateRole = async (userId, newRole) => {
     try {
@@ -409,6 +471,9 @@ function UsersSection({ users, loading, onRefresh }) {
                 <SortableHeader label="Role" sortKey="role" />
                 <SortableHeader label="Status" sortKey="status" />
                 <SortableHeader label="Created" sortKey="created_at" />
+                <th style={{ padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>
+                  Badges
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -416,8 +481,8 @@ function UsersSection({ users, loading, onRefresh }) {
                 const isCurrentUser = isSelf(user.id);
                 const isActive = user.status === 'active';
                 return (
+                  <React.Fragment key={user.id}>
                   <tr
-                    key={user.id}
                     style={{ borderBottom: '1px solid var(--border-default)', opacity: isCurrentUser ? 0.7 : 1 }}
                   >
                     <td style={{ padding: '12px' }}>
@@ -506,9 +571,85 @@ function UsersSection({ users, loading, onRefresh }) {
                         {formatDate(user.created_at)}
                       </div>
                     </td>
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => toggleExpand(user.id)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border-default)',
+                            backgroundColor: expandedUser === user.id ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
+                            color: expandedUser === user.id ? 'var(--accent)' : 'var(--text-tertiary)',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            transition: 'all 150ms ease'
+                          }}
+                        >
+                          <Award size={12} />
+                          {(userBadges[user.id] || []).length || 0}
+                        </button>
+                        {expandedUser === user.id && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: '100%',
+                              marginTop: '4px',
+                              zIndex: 20,
+                              backgroundColor: 'var(--bg-secondary)',
+                              border: '1px solid var(--border-default)',
+                              borderRadius: 'var(--radius-md)',
+                              padding: '8px',
+                              minWidth: '180px',
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+                            }}
+                          >
+                            {allBadges.map((badge) => {
+                              const hasBadge = (userBadges[user.id] || []).includes(badge.id);
+                              return (
+                                <button
+                                  key={badge.id}
+                                  onClick={() => handleToggleBadge(user.id, badge.id, hasBadge)}
+                                  disabled={badgeLoading}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    padding: '6px 8px',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: 'none',
+                                    backgroundColor: hasBadge ? `${badge.color}15` : 'transparent',
+                                    color: hasBadge ? badge.color : 'var(--text-secondary)',
+                                    fontSize: '12px',
+                                    cursor: badgeLoading ? 'not-allowed' : 'pointer',
+                                    fontFamily: 'inherit',
+                                    transition: 'background-color 150ms ease',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  <span style={{ fontSize: '14px', lineHeight: 1 }}>{badge.icon}</span>
+                                  <span style={{ flex: 1 }}>{badge.display_name}</span>
+                                  {hasBadge && (
+                                    <CheckCircle size={12} style={{ color: badge.color, flexShrink: 0 }} />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </td>
                   </tr>
-                );
-              })}
+                </React.Fragment>
+              );
+            })}
             </tbody>
           </table>
         </div>

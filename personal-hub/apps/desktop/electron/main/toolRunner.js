@@ -70,6 +70,7 @@ class ToolRunner {
   async listTools() {
     const tools = [];
     const profile = await this.permissionsManager.getProfile();
+    if (!profile) return [];
     const isPremium = profile.premiumEnabled;
 
     for (const [id, tool] of this.loadedTools) {
@@ -102,6 +103,7 @@ class ToolRunner {
     }
 
     const profile = await this.permissionsManager.getProfile();
+    if (!profile) return null;
     const isPremium = profile.premiumEnabled;
     const isAccessible = !tool.manifest.premium || isPremium;
 

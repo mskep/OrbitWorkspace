@@ -74,6 +74,9 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  // User badges
+  const [userBadges, setUserBadges] = useState([]);
+
   // Password change state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
@@ -88,8 +91,14 @@ function Profile() {
 
   async function loadProfile() {
     try {
-      const profileData = await hubAPI.profile.get();
+      const [profileData, badgesResult] = await Promise.all([
+        hubAPI.profile.get(),
+        hubAPI.badges.getUserBadges({})
+      ]);
       setProfile(profileData);
+      if (badgesResult.success) {
+        setUserBadges(badgesResult.badges);
+      }
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -252,6 +261,27 @@ function Profile() {
                       Premium
                     </Badge>
                   )}
+                  {userBadges.map((badge) => (
+                    <span
+                      key={badge.id}
+                      title={badge.description}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        backgroundColor: `${badge.color}15`,
+                        color: badge.color,
+                        border: `1px solid ${badge.color}30`
+                      }}
+                    >
+                      <span>{badge.icon}</span>
+                      {badge.display_name}
+                    </span>
+                  ))}
                   <div style={{ marginLeft: 'auto' }}>
                     <Button variant="danger" size="sm" onClick={handleLogout} disabled={loggingOut}>
                       <LogOut size={14} />
