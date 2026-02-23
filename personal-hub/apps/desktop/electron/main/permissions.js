@@ -1,9 +1,17 @@
-const { PERMISSIONS } = require('../shared/constants');
+const { ROLE_PERMISSIONS } = require('../shared/constants');
 
 class PermissionsManager {
   constructor(dbService, authService) {
     this.dbService = dbService;
     this.authService = authService;
+  }
+
+  /**
+   * Get permissions for a role from the ROLE_PERMISSIONS map.
+   * Falls back to USER permissions if role not found.
+   */
+  _getPermissionsForRole(role) {
+    return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.USER || [];
   }
 
   async getProfile() {
@@ -19,15 +27,13 @@ class PermissionsManager {
         return null;
       }
 
-      const settings = repos.userSettings.findByUserId(session.userId);
-
       return {
         id: user.id,
         username: user.username,
         email: user.email,
         role: user.role,
         status: user.status,
-        permissions: Object.values(PERMISSIONS), // All permissions granted by default
+        permissions: this._getPermissionsForRole(user.role),
         premiumEnabled: user.role === 'PREMIUM' || user.role === 'ADMIN' || user.role === 'DEV',
         createdAt: user.created_at
       };
@@ -44,21 +50,8 @@ class PermissionsManager {
         return { success: false, error: 'Not authenticated' };
       }
 
-      const repos = this.dbService.getRepositories();
-
-      // Note: UserRepository doesn't support updating username/email in v0.x
-      // These would require additional methods if needed in the future
-
-      // Update user role for premium status (PREMIUM, USER, ADMIN, DEV)
-      if (updates.premiumEnabled !== undefined) {
-        const currentUser = repos.users.findById(session.userId);
-        const newRole = updates.premiumEnabled ? 'PREMIUM' : 'USER';
-        // Only update role if not ADMIN or DEV (don't downgrade admins)
-        if (currentUser.role !== 'ADMIN' && currentUser.role !== 'DEV') {
-          repos.users.updateRole(session.userId, newRole);
-        }
-      }
-
+      // Users cannot self-promote roles — only admins can change roles
+      // Premium toggle is disabled for self-service
       return await this.getProfile();
     } catch (error) {
       console.error('Error updating profile:', error);

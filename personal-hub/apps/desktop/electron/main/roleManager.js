@@ -83,7 +83,7 @@ class RoleManager {
           'Unlimited Usage'
         ]
       },
-      DEVELOPER: {
+      DEV: {
         label: 'Developer',
         description: 'Development tools access',
         color: '#6366f1',
@@ -95,8 +95,8 @@ class RoleManager {
           'Tool Installation'
         ]
       },
-      VIP: {
-        label: 'VIP',
+      PREMIUM: {
+        label: 'Premium',
         description: 'Premium tools access',
         color: '#f59e0b',
         capabilities: [

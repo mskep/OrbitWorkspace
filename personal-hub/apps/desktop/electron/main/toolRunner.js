@@ -153,7 +153,7 @@ class ToolRunner {
       }
 
       const result = await tool.service[action](payload);
-      return { success: true, result };
+      return { success: true, ...result };
     } catch (error) {
       return { success: false, error: error.message };
     }

@@ -43,19 +43,22 @@ class DatabaseService {
       const db = this.dbManager.getDB();
       this.repos = createRepositories(db, this.encryption);
 
-      // Step 4: Run migration if needed
+      // Step 4: Run migration if needed (only when legacy users.json exists)
       const migrator = new DataMigrator(this.userDataPath, this.repos, this.encryption);
       if (migrator.needsMigration()) {
-        console.log('🔄 Migration needed, starting...');
-        await migrator.migrate();
+        const result = await migrator.migrate();
 
-        // Run tests
-        console.log('🧪 Running migration tests...');
-        const testResults = await migrator.testMigration();
+        // Only run verification tests if users were actually migrated
+        if (result.users > 0) {
+          console.log('🧪 Running migration tests...');
+          const testResults = await migrator.testMigration();
 
-        if (!testResults.passed) {
-          console.error('❌ Migration tests failed!');
-          throw new Error('Migration verification failed');
+          if (!testResults.passed) {
+            console.error('❌ Migration tests failed!');
+            throw new Error('Migration verification failed');
+          }
+        } else {
+          console.log('✅ Fresh install — no users to migrate, awaiting first registration');
         }
       } else {
         console.log('✅ No migration needed (database already populated)');

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 // Import managers (non-electron dependent)
 const StorageManager = require('./storage');
@@ -28,6 +29,21 @@ let autoLaunch;
 let logManager;
 let isDev;
 
+// Suppress Chromium GPU/disk cache errors on Windows
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+
+// Delete corrupted Service Worker storage BEFORE Chromium initializes it
+// This must run synchronously before app.whenReady()
+try {
+  const swPath = path.join(app.getPath('userData'), 'Service Worker');
+  if (fs.existsSync(swPath)) {
+    fs.rmSync(swPath, { recursive: true, force: true });
+  }
+} catch (_) {
+  // Ignore — folder may be locked on first run, cleared next launch
+}
+
 function createWindow() {
   isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -40,7 +56,7 @@ function createWindow() {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     },
     frame: false,
     show: false,
@@ -83,12 +99,13 @@ async function initializeServices() {
   const healthCheck = await dbService.healthCheck();
   console.log('💊 Database health check:', healthCheck);
 
-  // Initialize old storage manager (for logs compatibility)
+  // Storage manager (still used by toolRunner for JSON-based tool configs)
+  // TODO: migrate tool configs to SQLite, then remove StorageManager entirely
   storage = new StorageManager(userDataPath);
   await storage.initialize();
 
   // Initialize auth service with SQLite database
-  authService = new AuthService(dbService);
+  authService = new AuthService(dbService, userDataPath);
   await authService.initialize();
 
   permissionsManager = new PermissionsManager(dbService, authService);
@@ -118,41 +135,47 @@ async function initializeServices() {
 function setupIpcHandlers() {
   // Auth handlers - with secure logging
   ipcMain.handle(IPC_CHANNELS.AUTH_REGISTER, async (event, { email, username, password }) => {
-    const startTime = Date.now();
-    const result = await authService.register(email, username, password);
+    try {
+      const startTime = Date.now();
+      const result = await authService.register(email, username, password);
 
-    // Log registration attempt (no sensitive data)
-    logManager.log({
-      type: 'auth:register',
-      userId: result.success ? result.userId : null,
-      username: result.success ? username : null,
-      status: result.success ? 'success' : 'error',
-      error: result.error || null,
-      duration: Date.now() - startTime,
-      // Payload is sanitized by logManager - no password/email logged
-      payload: { action: 'register' }
-    });
+      logManager.log({
+        type: 'auth:register',
+        userId: result.success ? result.userId : null,
+        username: result.success ? username : null,
+        status: result.success ? 'success' : 'error',
+        error: result.error || null,
+        duration: Date.now() - startTime,
+        payload: { action: 'register' }
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, error: 'Registration failed' };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_LOGIN, async (event, { identifier, password, rememberMe }) => {
-    const startTime = Date.now();
-    const result = await authService.login(identifier, password, rememberMe);
+    try {
+      const startTime = Date.now();
+      const result = await authService.login(identifier, password, rememberMe);
 
-    // Log login attempt (no sensitive data)
-    logManager.log({
-      type: 'auth:login',
-      userId: result.success ? result.session?.userId : null,
-      username: result.success ? result.session?.username : null,
-      status: result.success ? 'success' : 'error',
-      error: result.error || null,
-      duration: Date.now() - startTime,
-      // Payload is sanitized by logManager - no password logged
-      payload: { action: 'login' }
-    });
+      logManager.log({
+        type: 'auth:login',
+        userId: result.success ? result.session?.userId : null,
+        username: result.success ? result.session?.username : null,
+        status: result.success ? 'success' : 'error',
+        error: result.error || null,
+        duration: Date.now() - startTime,
+        payload: { action: 'login' }
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Login failed' };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_LOGOUT, async () => {
@@ -216,35 +239,73 @@ function setupIpcHandlers() {
     return toolRunner.setToolConfig(toolId, config);
   });
 
-  // Filesystem handlers
-  ipcMain.handle(IPC_CHANNELS.FS_PICK_FILE, async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openFile']
-    });
-    return result.canceled ? null : result.filePaths[0];
+  // Filesystem handlers (auth-guarded)
+  ipcMain.handle(IPC_CHANNELS.FS_PICK_FILE, async (event, options) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return null;
+
+      const dialogOptions = { properties: ['openFile'] };
+      if (options?.filters) dialogOptions.filters = options.filters;
+      if (options?.title) dialogOptions.title = options.title;
+
+      const result = await dialog.showOpenDialog(mainWindow, dialogOptions);
+      return result.canceled ? null : result.filePaths[0];
+    } catch (error) {
+      console.error('Pick file error:', error);
+      return null;
+    }
   });
 
-  ipcMain.handle(IPC_CHANNELS.FS_PICK_FOLDER, async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory']
-    });
-    return result.canceled ? null : result.filePaths[0];
+  ipcMain.handle(IPC_CHANNELS.FS_PICK_FOLDER, async (event, options) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return null;
+
+      const dialogOptions = { properties: ['openDirectory'] };
+      if (options?.title) dialogOptions.title = options.title;
+
+      const result = await dialog.showOpenDialog(mainWindow, dialogOptions);
+      return result.canceled ? null : result.filePaths[0];
+    } catch (error) {
+      console.error('Pick folder error:', error);
+      return null;
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.FS_SAVE_FILE, async (event, { defaultPath, filters }) => {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      defaultPath,
-      filters
-    });
-    return result.canceled ? null : result.filePath;
+    try {
+      const session = await authService.getSession();
+      if (!session) return null;
+
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath,
+        filters
+      });
+      return result.canceled ? null : result.filePath;
+    } catch (error) {
+      console.error('Save file dialog error:', error);
+      return null;
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.FS_OPEN_PATH, async (event, filePath) => {
-    shell.openPath(filePath);
-    return { success: true };
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      const errorMessage = await shell.openPath(filePath);
+      if (errorMessage) {
+        return { success: false, error: errorMessage };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Open path error:', error);
+      return { success: false, error: 'Failed to open path' };
+    }
   });
 
-  // System handlers
+  // System handlers (auth-guarded)
   ipcMain.handle(IPC_CHANNELS.SYSTEM_GET_STATUS, async () => {
     return {
       online: networkMonitor.getStatus(),
@@ -255,6 +316,9 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle(IPC_CHANNELS.SYSTEM_SET_AUTOLAUNCH, async (event, enabled) => {
+    const session = await authService.getSession();
+    if (!session) return { success: false, error: 'Not authenticated' };
+
     return autoLaunch.toggle(enabled);
   });
 
@@ -674,6 +738,25 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.LINK_GET, async (event, { id }) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      const repos = dbService.getRepositories();
+      const link = repos.links.findById(id);
+
+      if (!link || link.user_id !== session.userId) {
+        return { success: false, error: 'Link not found' };
+      }
+
+      return { success: true, link };
+    } catch (error) {
+      console.error('Get link error:', error);
+      return { success: false, error: 'Failed to get link' };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.LINK_CREATE, async (event, { workspaceId, title, url, description, tags, isFavorite }) => {
     try {
       const session = await authService.getSession();
@@ -808,6 +891,25 @@ function setupIpcHandlers() {
     } catch (error) {
       console.error('Get file references error:', error);
       return { success: false, error: 'Failed to get file references' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.FILE_REF_GET, async (event, { id }) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      const repos = dbService.getRepositories();
+      const fileRef = repos.fileReferences.findById(id);
+
+      if (!fileRef || fileRef.user_id !== session.userId) {
+        return { success: false, error: 'File reference not found' };
+      }
+
+      return { success: true, file: fileRef };
+    } catch (error) {
+      console.error('Get file reference error:', error);
+      return { success: false, error: 'Failed to get file reference' };
     }
   });
 
@@ -1235,6 +1337,52 @@ function setupIpcHandlers() {
     } catch (error) {
       console.error('Update user status error:', error);
       return { success: false, error: 'Failed to update user status' };
+    }
+  });
+
+  // ============================================================
+  // RECOVERY / CRYPTO
+  // ============================================================
+
+  ipcMain.handle(IPC_CHANNELS.CRYPTO_SAVE_RECOVERY_FILE, async (event, { content, username }) => {
+    try {
+      const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Recovery Key',
+        defaultPath: `orbit-recovery-${username}.txt`,
+        filters: [{ name: 'Text Files', extensions: ['txt'] }],
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Cancelled' };
+      }
+
+      fs.writeFileSync(filePath, content, 'utf-8');
+      return { success: true, path: filePath };
+    } catch (error) {
+      console.error('Save recovery file error:', error);
+      return { success: false, error: 'Failed to save recovery file' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.CRYPTO_RECOVER_WITH_FILE, async (event, { newPassword }) => {
+    try {
+      // Open file picker for .orbit-recovery file
+      const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+        title: 'Select Recovery Key File',
+        filters: [{ name: 'Text Files', extensions: ['txt'] }],
+        properties: ['openFile'],
+      });
+
+      if (canceled || !filePaths.length) {
+        return { success: false, error: 'Cancelled' };
+      }
+
+      const fileContent = fs.readFileSync(filePaths[0], 'utf-8');
+      const result = await authService.recoverWithFile(fileContent, newPassword);
+      return result;
+    } catch (error) {
+      console.error('Recovery error:', error);
+      return { success: false, error: 'Recovery failed' };
     }
   });
 }

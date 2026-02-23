@@ -104,22 +104,26 @@ const IPC_CHANNELS = {
   ADMIN_GET_STATS: 'admin:getStats',
   ADMIN_GET_USERS: 'admin:getUsers',
   ADMIN_UPDATE_USER_ROLE: 'admin:updateUserRole',
-  ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus'
+  ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus',
+
+  // Recovery / Crypto
+  CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
+  CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile'
 };
 
 // User Roles
 const ROLES = {
   ADMIN: 'ADMIN',
-  DEVELOPER: 'DEVELOPER',
-  VIP: 'VIP',
+  DEV: 'DEV',
+  PREMIUM: 'PREMIUM',
   USER: 'USER'
 };
 
 // Role Levels (higher = more permissions)
 const ROLE_LEVELS = {
   ADMIN: 4,
-  DEVELOPER: 3,
-  VIP: 2,
+  DEV: 3,
+  PREMIUM: 2,
   USER: 1
 };
 
@@ -162,7 +166,7 @@ const ROLE_PERMISSIONS = {
     'SYSTEM_CONFIG',
     'INSTALL_TOOLS'
   ],
-  DEVELOPER: [
+  DEV: [
     'NET_ACCESS',
     'FS_READ',
     'FS_WRITE',
@@ -176,7 +180,7 @@ const ROLE_PERMISSIONS = {
     'VIEW_ALL_LOGS',
     'INSTALL_TOOLS'
   ],
-  VIP: [
+  PREMIUM: [
     'NET_ACCESS',
     'FS_READ',
     'FS_WRITE',
@@ -205,44 +209,7 @@ const APP_PATHS = {
   // LINKS: 'links.json',   // Now in database: links table
   TOOLS_CONFIG: 'tools',  // Tool configs can remain in JSON for now
   LOGS: 'logs',           // Logs remain JSON-based for now
-  DB: 'db.sqlite'         // SQLite database file
-};
-
-// Default profile
-const DEFAULT_PROFILE = {
-  userId: null,
-  username: 'admin',
-  email: 'admin@personalhub.local',
-  role: 'ADMIN',
-  roleLevel: 4,
-  avatar: {
-    type: 'initials',
-    color: '#6366f1',
-    initials: 'AD'
-  },
-  createdAt: Date.now(),
-  lastLogin: Date.now(),
-  loginCount: 0,
-  premium: true,
-  premiumSince: Date.now(),
-  premiumUntil: null,
-  permissions: {
-    granted: ROLE_PERMISSIONS.ADMIN,
-    denied: [],
-    restricted: []
-  },
-  settings: {
-    theme: 'dark',
-    language: 'en',
-    notifications: true,
-    autoLaunch: false
-  },
-  stats: {
-    totalActions: 0,
-    toolsUsed: 0,
-    favoriteTools: [],
-    lastActiveTools: []
-  }
+  DB: 'orbit.db'           // SQLite database file
 };
 
 // Log severities
@@ -268,7 +235,7 @@ module.exports = {
   PERMISSIONS,
   ROLE_PERMISSIONS,
   APP_PATHS,
-  DEFAULT_PROFILE,
+
   LOG_SEVERITY,
   LOG_CATEGORY
 };

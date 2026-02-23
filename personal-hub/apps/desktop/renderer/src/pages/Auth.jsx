@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Loader } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Loader, Download, ShieldCheck } from 'lucide-react';
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 import orbitLogo from '../assets/orbitlogo.png';
@@ -13,6 +13,7 @@ function Auth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [recoveryPrompt, setRecoveryPrompt] = useState(null); // { content, username }
 
   // Form state
   const [formData, setFormData] = useState({
@@ -56,7 +57,15 @@ function Auth() {
           setProfile(profileResult);
         }
 
-        navigate('/home');
+        // If this is a migrated account, show recovery file prompt
+        if (result.cryptoMigrated && result.recoveryFileContent) {
+          setRecoveryPrompt({
+            content: result.recoveryFileContent,
+            username: result.session.username
+          });
+        } else {
+          navigate('/home');
+        }
       } else {
         setError(result.error || 'Authentication failed');
       }
@@ -96,7 +105,15 @@ function Auth() {
             setProfile(profileResult);
           }
 
-          navigate('/home');
+          // Show recovery file prompt if available (from registration)
+          if (result.recoveryFileContent) {
+            setRecoveryPrompt({
+              content: result.recoveryFileContent,
+              username: formData.username
+            });
+          } else {
+            navigate('/home');
+          }
         } else {
           // Registration success but login failed, switch to login mode
           setMode('login');
@@ -111,6 +128,26 @@ function Auth() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle recovery file download
+  const handleSaveRecoveryFile = async () => {
+    if (!recoveryPrompt) return;
+    try {
+      await hubAPI.crypto.saveRecoveryFile({
+        content: recoveryPrompt.content,
+        username: recoveryPrompt.username
+      });
+    } catch (err) {
+      console.error('Failed to save recovery file:', err);
+    }
+    setRecoveryPrompt(null);
+    navigate('/home');
+  };
+
+  const handleSkipRecovery = () => {
+    setRecoveryPrompt(null);
+    navigate('/home');
   };
 
   // Switch mode
@@ -445,6 +482,97 @@ function Auth() {
           Orbit v1.0.0 - Secure & Simple
         </div>
       </div>
+
+      {/* Recovery File Prompt */}
+      {recoveryPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '40px',
+              maxWidth: '480px',
+              width: '90%',
+              border: '1px solid var(--border-default)',
+              boxShadow: '0 16px 64px rgba(0, 0, 0, 0.5)',
+              textAlign: 'center'
+            }}
+          >
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px'
+              }}
+            >
+              <ShieldCheck size={32} color="#667eea" />
+            </div>
+
+            <h2 style={{ margin: '0 0 12px', fontSize: '22px', fontWeight: '700' }}>Save Your Recovery Key</h2>
+
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
+              This is your <strong>only way</strong> to recover your data if you forget your password.
+              Orbit uses zero-knowledge encryption — we cannot reset your password for you.
+              Save this file somewhere safe.
+            </p>
+
+            <button
+              onClick={handleSaveRecoveryFile}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+              }}
+            >
+              <Download size={18} />
+              Download Recovery File
+            </button>
+
+            <button
+              onClick={handleSkipRecovery}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'transparent',
+                color: 'var(--text-tertiary)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Skip for now (not recommended)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* CSS Animations */}
       <style>{`

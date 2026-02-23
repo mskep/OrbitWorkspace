@@ -1,13 +1,55 @@
 const { hashPassword, verifyPassword, generateToken } = require('./crypto');
+const SyncCrypto = require('./syncCrypto');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * AuthService - SQLite-based authentication with multi-user support
- * Uses database repositories instead of JSON files
+ *
+ * Integrates SyncCrypto for zero-knowledge encryption:
+ *   - Registration: generates crypto bundle (salt, encryptedMasterKey, recoveryBlob)
+ *   - Login: unlocks masterKey from encrypted storage
+ *   - Logout: zeroes masterKey from memory
+ *   - Password change: re-wraps masterKey with new derived key
  */
 class AuthServiceSQLite {
-  constructor(dbService) {
+  constructor(dbService, userDataPath) {
     this.dbService = dbService;
     this.currentSession = null;
+    this.syncCrypto = new SyncCrypto();
+    this.tokenFilePath = path.join(userDataPath, '.session-token');
+  }
+
+  /**
+   * Persist session token to disk (for restore on next launch)
+   */
+  _persistToken(token) {
+    try {
+      fs.writeFileSync(this.tokenFilePath, token, 'utf-8');
+    } catch (_) { /* non-critical */ }
+  }
+
+  /**
+   * Read persisted token from disk
+   */
+  _readPersistedToken() {
+    try {
+      if (fs.existsSync(this.tokenFilePath)) {
+        return fs.readFileSync(this.tokenFilePath, 'utf-8').trim();
+      }
+    } catch (_) { /* non-critical */ }
+    return null;
+  }
+
+  /**
+   * Clear persisted token from disk
+   */
+  _clearPersistedToken() {
+    try {
+      if (fs.existsSync(this.tokenFilePath)) {
+        fs.unlinkSync(this.tokenFilePath);
+      }
+    } catch (_) { /* non-critical */ }
   }
 
   async initialize() {
@@ -53,13 +95,17 @@ class AuthServiceSQLite {
         return { success: false, error: 'Invalid credentials' };
       }
 
+      // First user ever registered gets ADMIN role
+      const userCount = repos.users.count();
+      const role = userCount === 0 ? 'ADMIN' : 'USER';
+
       // Create new user
       const passwordHash = await hashPassword(password);
       const newUser = repos.users.create({
         username,
         email: email.toLowerCase(),
         passwordHash,
-        role: 'USER',
+        role,
         status: 'active'
       });
 
@@ -68,6 +114,24 @@ class AuthServiceSQLite {
 
       // Create user settings with active workspace
       repos.userSettings.create(newUser.id, workspace.id);
+
+      // Generate zero-knowledge crypto bundle
+      const cryptoBundle = await this.syncCrypto.generateRegistrationBundle(password);
+
+      // Store crypto material in user_crypto table
+      repos.userCrypto.create({
+        userId: newUser.id,
+        salt: cryptoBundle.salt,
+        encryptedMasterKey: cryptoBundle.encryptedMasterKey,
+        recoveryBlob: cryptoBundle.recoveryBlob,
+        kdfParams: cryptoBundle.kdfParams,
+      });
+
+      // Generate recovery file content
+      const recoveryFileContent = this.syncCrypto.generateRecoveryFileContent(
+        cryptoBundle.recoveryKey,
+        username
+      );
 
       // Create welcome message
       repos.inbox.createSystemNotification(
@@ -84,7 +148,8 @@ class AuthServiceSQLite {
           username: newUser.username,
           email: newUser.email,
           role: newUser.role
-        }
+        },
+        recoveryFileContent
       };
     } catch (error) {
       console.error('Register error:', error);
@@ -123,6 +188,34 @@ class AuthServiceSQLite {
         return { success: false, error: 'Invalid credentials' };
       }
 
+      // Unlock zero-knowledge crypto
+      let recoveryFileContent = null;
+      const userCrypto = repos.userCrypto.findByUserId(user.id);
+
+      if (userCrypto) {
+        // Existing user with crypto — unlock masterKey
+        await this.syncCrypto.unlockWithPassword(
+          password,
+          userCrypto.salt,
+          userCrypto.encrypted_master_key,
+          userCrypto.kdf_params
+        );
+      } else {
+        // Existing user WITHOUT crypto (pre-Phase 3 account) — generate bundle now
+        const cryptoBundle = await this.syncCrypto.generateRegistrationBundle(password);
+        repos.userCrypto.create({
+          userId: user.id,
+          salt: cryptoBundle.salt,
+          encryptedMasterKey: cryptoBundle.encryptedMasterKey,
+          recoveryBlob: cryptoBundle.recoveryBlob,
+          kdfParams: cryptoBundle.kdfParams,
+        });
+        recoveryFileContent = this.syncCrypto.generateRecoveryFileContent(
+          cryptoBundle.recoveryKey,
+          user.username
+        );
+      }
+
       // Create session in database
       const sessionData = repos.sessions.create(user.id, rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60);
 
@@ -139,7 +232,18 @@ class AuthServiceSQLite {
         loginTime: Date.now()
       };
 
-      return { success: true, session: this.currentSession };
+      // Persist token for session restore on next launch
+      this._persistToken(sessionData.token);
+
+      const result = { success: true, session: this.currentSession };
+
+      // If this is a migrated account, include recovery file for one-time download
+      if (recoveryFileContent) {
+        result.recoveryFileContent = recoveryFileContent;
+        result.cryptoMigrated = true;
+      }
+
+      return result;
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Login failed' };
@@ -159,6 +263,10 @@ class AuthServiceSQLite {
       }
     }
 
+    // Zero masterKey from memory
+    this.syncCrypto.lock();
+
+    this._clearPersistedToken();
     this.currentSession = null;
     return { success: true };
   }
@@ -171,34 +279,36 @@ class AuthServiceSQLite {
   }
 
   /**
-   * Restore session from database
+   * Restore session from persisted token file
+   * Only restores the exact session this device logged into (not any global latest)
    */
   async restoreSession() {
     try {
-      const repos = this.dbService.getRepositories();
+      const token = this._readPersistedToken();
+      if (!token) {
+        return null;
+      }
 
-      // Get all active sessions for now (in real app, store token in local storage)
-      // For now, we'll just check if there's any active session
+      const repos = this.dbService.getRepositories();
       const db = this.dbService.getDB();
       const now = Math.floor(Date.now() / 1000);
 
+      // Look up this specific token — not "latest session"
       const session = db.prepare(`
         SELECT s.*, u.username, u.email, u.role
         FROM sessions s
         JOIN users u ON s.user_id = u.id
-        WHERE s.expires_at > ? AND u.status = 'active'
-        ORDER BY s.created_at DESC
-        LIMIT 1
-      `).get(now);
+        WHERE s.token = ? AND s.expires_at > ? AND u.status = 'active'
+      `).get(token, now);
 
       if (!session) {
+        // Token expired or invalid — clean up
+        this._clearPersistedToken();
         return null;
       }
 
-      // Update last activity
-      repos.sessions.updateActivity(session.id);
+      repos.sessions.updateActivity(session.token);
 
-      // Restore session
       this.currentSession = {
         userId: session.user_id,
         username: session.username,
@@ -247,7 +357,22 @@ class AuthServiceSQLite {
       // Hash new password
       const newHash = await hashPassword(newPassword);
 
-      // Update password
+      // Re-wrap masterKey with new password (zero-knowledge crypto)
+      const userCrypto = repos.userCrypto.findByUserId(user.id);
+      if (userCrypto) {
+        const newCrypto = await this.syncCrypto.changePassword(
+          oldPassword, newPassword,
+          userCrypto.salt,
+          userCrypto.encrypted_master_key
+        );
+        repos.userCrypto.updatePasswordCrypto(user.id, {
+          salt: newCrypto.salt,
+          encryptedMasterKey: newCrypto.encryptedMasterKey,
+          kdfParams: this.syncCrypto.getDefaultKdfParams(),
+        });
+      }
+
+      // Update password hash
       const db = this.dbService.getDB();
       db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, user.id);
 
@@ -337,6 +462,74 @@ class AuthServiceSQLite {
       console.error('Update role error:', error);
       return { success: false, error: 'Failed to update role' };
     }
+  }
+
+  /**
+   * Recover account using recovery file (password reset)
+   * Unlocks masterKey with recovery key, re-wraps with new password
+   */
+  async recoverWithFile(recoveryFileContent, newPassword) {
+    try {
+      if (!recoveryFileContent || !newPassword || newPassword.length < 6) {
+        return { success: false, error: 'Invalid recovery data' };
+      }
+
+      // Parse recovery key from file
+      const recoveryKeyHex = this.syncCrypto.parseRecoveryFile(recoveryFileContent);
+
+      // We need to find which user this recovery key belongs to
+      // Try all users' recovery blobs (there should be few users on a local app)
+      const db = this.dbService.getDB();
+      const allCrypto = db.prepare('SELECT uc.*, u.username FROM user_crypto uc JOIN users u ON uc.user_id = u.id').all();
+
+      let matchedUser = null;
+      let masterKey = null;
+
+      for (const entry of allCrypto) {
+        try {
+          masterKey = this.syncCrypto.unlockWithRecoveryKey(recoveryKeyHex, entry.recovery_blob);
+          matchedUser = entry;
+          break;
+        } catch (_) {
+          // Wrong recovery key for this user, try next
+          continue;
+        }
+      }
+
+      if (!matchedUser || !masterKey) {
+        return { success: false, error: 'Invalid recovery key' };
+      }
+
+      // Re-wrap masterKey with new password
+      const newSalt = this.syncCrypto.generateSalt();
+      const newDerivedKey = await this.syncCrypto.deriveKey(newPassword, newSalt);
+      const newEncryptedMasterKey = this.syncCrypto._wrapKey(masterKey, newDerivedKey);
+
+      const repos = this.dbService.getRepositories();
+
+      // Update crypto material
+      repos.userCrypto.updatePasswordCrypto(matchedUser.user_id, {
+        salt: newSalt.toString('hex'),
+        encryptedMasterKey: newEncryptedMasterKey.toString('base64'),
+        kdfParams: this.syncCrypto.getDefaultKdfParams(),
+      });
+
+      // Hash and update password
+      const newHash = await hashPassword(newPassword);
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, matchedUser.user_id);
+
+      return { success: true, username: matchedUser.username };
+    } catch (error) {
+      console.error('Recovery error:', error);
+      return { success: false, error: 'Recovery failed' };
+    }
+  }
+
+  /**
+   * Get the SyncCrypto instance (for use by sync engine)
+   */
+  getSyncCrypto() {
+    return this.syncCrypto;
   }
 }
 

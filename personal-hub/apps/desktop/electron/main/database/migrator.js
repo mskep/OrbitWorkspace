@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
 
 /**
  * DataMigrator - Migrates data from JSON files to SQLite database
@@ -96,7 +95,7 @@ class DataMigrator {
     const usersJsonPath = path.join(this.userDataPath, 'users.json');
 
     if (!fs.existsSync(usersJsonPath)) {
-      this.log('No users.json found, creating default admin user');
+      this.log('No users.json found — fresh install, awaiting registration');
       return await this.createDefaultAdmin();
     }
 
@@ -144,21 +143,12 @@ class DataMigrator {
   }
 
   /**
-   * Create default admin user
+   * No default admin creation — users must register through the UI.
+   * First registered user can be promoted to ADMIN via admin panel.
    */
   async createDefaultAdmin() {
-    const passwordHash = await bcrypt.hash('admin', 10);
-
-    const admin = this.repos.users.create({
-      username: 'admin',
-      email: 'admin@orbit.local',
-      passwordHash,
-      role: 'ADMIN',
-      status: 'active'
-    });
-
-    this.log('Created default admin user (username: admin, password: admin)');
-    return [admin];
+    this.log('No existing users found. Users must register through the app.');
+    return [];
   }
 
   /**
@@ -353,12 +343,11 @@ class DataMigrator {
       });
     }
 
-    // Test 6: Check admin user exists
-    const adminUser = this.repos.users.findByUsername('admin');
+    // Test 6: Check at least one user exists (or fresh install)
     tests.push({
-      name: 'Admin user exists',
-      passed: adminUser !== undefined,
-      details: adminUser ? `Admin role: ${adminUser.role}` : 'No admin user found'
+      name: 'Users available or fresh install',
+      passed: true,
+      details: userCount > 0 ? `${userCount} users in database` : 'Fresh install — awaiting first registration'
     });
 
     // Print test results

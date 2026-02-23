@@ -18,7 +18,7 @@ function Home() {
 
   async function loadData() {
     try {
-      const [logsResult, status] = await Promise.all([hubAPI.logs.tail({ limit: 5 }), hubAPI.system.getStatus()]);
+      const [logsResult, status] = await Promise.all([hubAPI.logs.tail({ limit: 3 }), hubAPI.system.getStatus()]);
 
       // logs.tail returns { success, logs }
       if (logsResult?.success && logsResult.logs) {
@@ -131,7 +131,7 @@ function Home() {
               <div className="skeleton" style={{ height: '100px', width: '100%' }}></div>
             ) : recentActions.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {recentActions.slice(0, 5).map((action, i) => (
+                {recentActions.slice(0, 3).map((action, i) => (
                   <div
                     key={action.id || i}
                     style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}

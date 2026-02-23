@@ -74,7 +74,10 @@ class DatabaseManager {
         name: '001_initial_schema',
         sql: this._getInitialSchemaMigration()
       },
-      // Future migrations will be added here
+      {
+        name: '002_sync_infrastructure',
+        sql: this._getSyncInfrastructureMigration()
+      },
     ];
 
     // Apply pending migrations
@@ -288,6 +291,116 @@ class DatabaseManager {
       CREATE INDEX idx_inbox_user_id ON inbox_messages(user_id);
       CREATE INDEX idx_inbox_unread ON inbox_messages(user_id, is_read);
       CREATE INDEX idx_inbox_created ON inbox_messages(created_at DESC);
+    `;
+  }
+
+  /**
+   * Sync infrastructure migration
+   * Adds sync columns to all syncable tables + sync_queue + sync_conflicts
+   */
+  _getSyncInfrastructureMigration() {
+    return `
+      -- Add sync columns to workspaces
+      ALTER TABLE workspaces ADD COLUMN sync_version INTEGER DEFAULT 0;
+      ALTER TABLE workspaces ADD COLUMN sync_status TEXT DEFAULT 'synced';
+      ALTER TABLE workspaces ADD COLUMN lamport_clock INTEGER DEFAULT 0;
+      ALTER TABLE workspaces ADD COLUMN last_modified_device TEXT;
+
+      -- Add sync columns to notes
+      ALTER TABLE notes ADD COLUMN sync_version INTEGER DEFAULT 0;
+      ALTER TABLE notes ADD COLUMN sync_status TEXT DEFAULT 'synced';
+      ALTER TABLE notes ADD COLUMN lamport_clock INTEGER DEFAULT 0;
+      ALTER TABLE notes ADD COLUMN last_modified_device TEXT;
+
+      -- Add sync columns to links
+      ALTER TABLE links ADD COLUMN sync_version INTEGER DEFAULT 0;
+      ALTER TABLE links ADD COLUMN sync_status TEXT DEFAULT 'synced';
+      ALTER TABLE links ADD COLUMN lamport_clock INTEGER DEFAULT 0;
+      ALTER TABLE links ADD COLUMN last_modified_device TEXT;
+
+      -- Add sync columns to file_references
+      ALTER TABLE file_references ADD COLUMN sync_version INTEGER DEFAULT 0;
+      ALTER TABLE file_references ADD COLUMN sync_status TEXT DEFAULT 'synced';
+      ALTER TABLE file_references ADD COLUMN lamport_clock INTEGER DEFAULT 0;
+      ALTER TABLE file_references ADD COLUMN last_modified_device TEXT;
+
+      -- Add sync columns to user_settings
+      ALTER TABLE user_settings ADD COLUMN sync_version INTEGER DEFAULT 0;
+      ALTER TABLE user_settings ADD COLUMN sync_status TEXT DEFAULT 'synced';
+      ALTER TABLE user_settings ADD COLUMN lamport_clock INTEGER DEFAULT 0;
+      ALTER TABLE user_settings ADD COLUMN last_modified_device TEXT;
+
+      -- Sync queue: stores pending changes when offline
+      CREATE TABLE sync_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        op_id TEXT NOT NULL UNIQUE,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        operation TEXT NOT NULL,
+        encrypted_payload TEXT,
+        lamport_clock INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        retry_count INTEGER DEFAULT 0,
+        last_error TEXT,
+        CONSTRAINT chk_operation CHECK (operation IN ('create', 'update', 'delete'))
+      );
+
+      CREATE INDEX idx_sync_queue_clock ON sync_queue(lamport_clock ASC);
+      CREATE INDEX idx_sync_queue_entity ON sync_queue(entity_type, entity_id);
+
+      -- Sync conflicts: stores losing versions for user review
+      CREATE TABLE sync_conflicts (
+        id TEXT PRIMARY KEY,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        losing_data TEXT NOT NULL,
+        winning_device TEXT NOT NULL,
+        losing_device TEXT NOT NULL,
+        resolved_at INTEGER NOT NULL,
+        user_reviewed INTEGER DEFAULT 0
+      );
+
+      CREATE INDEX idx_sync_conflicts_entity ON sync_conflicts(entity_type, entity_id);
+      CREATE INDEX idx_sync_conflicts_unreviewed ON sync_conflicts(user_reviewed) WHERE user_reviewed = 0;
+
+      -- Device tracking
+      CREATE TABLE devices (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        device_name TEXT NOT NULL,
+        device_fingerprint TEXT NOT NULL UNIQUE,
+        last_seen_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX idx_devices_user ON devices(user_id);
+
+      -- Sync metadata: tracks last sync state per device
+      CREATE TABLE sync_metadata (
+        user_id TEXT NOT NULL,
+        device_id TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        last_synced_clock INTEGER DEFAULT 0,
+        last_synced_at INTEGER,
+        PRIMARY KEY (user_id, device_id, entity_type),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+      );
+
+      -- User crypto keys: stores encrypted master key + recovery blob
+      -- kdf_params stored as JSON for future upgrades (memory, iterations, parallelism)
+      CREATE TABLE user_crypto (
+        user_id TEXT PRIMARY KEY,
+        salt TEXT NOT NULL,
+        encrypted_master_key TEXT NOT NULL,
+        recovery_blob TEXT NOT NULL,
+        key_version INTEGER DEFAULT 1,
+        kdf_params TEXT NOT NULL DEFAULT '{"algorithm":"argon2id","memoryCost":65536,"timeCost":3,"parallelism":4,"hashLength":32}',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
     `;
   }
 

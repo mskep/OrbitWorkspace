@@ -27,7 +27,7 @@ class UserRepository {
       VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
     `);
 
-    stmt.run(id, username, email.toLowerCase(), passwordHash, role, status, now);
+    stmt.run(id, username.toLowerCase(), email.toLowerCase(), passwordHash, role, status, now);
 
     return this.findById(id);
   }

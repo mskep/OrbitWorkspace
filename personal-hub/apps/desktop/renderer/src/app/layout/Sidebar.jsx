@@ -120,7 +120,7 @@ function Sidebar() {
     { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' }
   ];
 
-  // Admin section - only for ADMIN and DEVELOPER roles
+  // Admin section - only for ADMIN and DEV roles
   const adminItems = isAdminOrDev
     ? [{ id: 'admin', label: 'Admin Panel', icon: <Shield size={20} />, path: '/admin', isAdmin: true }]
     : [];

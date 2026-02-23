@@ -7,6 +7,7 @@ const LinksRepository = require('./LinksRepository');
 const FileReferencesRepository = require('./FileReferencesRepository');
 const BadgesRepository = require('./BadgesRepository');
 const InboxRepository = require('./InboxRepository');
+const UserCryptoRepository = require('./UserCryptoRepository');
 
 /**
  * Initialize all repositories with database and encryption service
@@ -21,7 +22,8 @@ function createRepositories(db, encryptionService) {
     links: new LinksRepository(db, encryptionService),
     fileReferences: new FileReferencesRepository(db, encryptionService),
     badges: new BadgesRepository(db),
-    inbox: new InboxRepository(db, encryptionService)
+    inbox: new InboxRepository(db, encryptionService),
+    userCrypto: new UserCryptoRepository(db)
   };
 }
 

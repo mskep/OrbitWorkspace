@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag } from 'lucide-react';
+import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag, Eye, Code } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
@@ -551,8 +553,10 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
   );
 }
 
-// Note Editor Component
+// Note Editor Component with Markdown preview
 function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
+  const [showPreview, setShowPreview] = useState(false);
+
   return (
     <div
       style={{
@@ -573,6 +577,23 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
           {isNew ? 'New Note' : 'Edit Note'}
         </h3>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="btn btn-secondary"
+            style={{
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '13px',
+              backgroundColor: showPreview ? 'var(--accent-glow)' : undefined,
+              color: showPreview ? 'var(--accent)' : undefined,
+              border: showPreview ? '1px solid var(--accent)' : undefined
+            }}
+          >
+            {showPreview ? <Code size={16} /> : <Eye size={16} />}
+            {showPreview ? 'Editor' : 'Preview'}
+          </button>
           <button
             onClick={onCancel}
             className="btn btn-secondary"
@@ -657,25 +678,62 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
         />
       </div>
 
-      {/* Content */}
-      <textarea
-        value={formData.content}
-        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-        placeholder="Write your note here..."
-        style={{
-          flex: 1,
-          padding: '16px',
-          backgroundColor: 'var(--bg-tertiary)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '14px',
-          color: 'var(--text-primary)',
-          outline: 'none',
-          fontFamily: 'inherit',
-          resize: 'none',
-          lineHeight: '1.6'
-        }}
-      />
+      {/* Content: Editor or Preview */}
+      {showPreview ? (
+        <div
+          className="markdown-body"
+          style={{
+            flex: 1,
+            padding: '20px',
+            backgroundColor: 'var(--bg-tertiary)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-default)',
+            overflowY: 'auto',
+            fontSize: '14px',
+            lineHeight: '1.7',
+            color: 'var(--text-primary)'
+          }}
+        >
+          {formData.content ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{formData.content}</ReactMarkdown>
+          ) : (
+            <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>Nothing to preview</span>
+          )}
+        </div>
+      ) : (
+        <textarea
+          value={formData.content}
+          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+          placeholder="Write in Markdown... (# headings, **bold**, *italic*, - lists, ```code```)"
+          style={{
+            flex: 1,
+            padding: '16px',
+            backgroundColor: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '14px',
+            color: 'var(--text-primary)',
+            outline: 'none',
+            fontFamily: "'SF Mono', 'Fira Code', 'Consolas', monospace",
+            resize: 'none',
+            lineHeight: '1.6',
+            tabSize: 2
+          }}
+          onKeyDown={(e) => {
+            // Tab support in textarea
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              const start = e.target.selectionStart;
+              const end = e.target.selectionEnd;
+              const newContent = formData.content.substring(0, start) + '  ' + formData.content.substring(end);
+              setFormData({ ...formData, content: newContent });
+              requestAnimationFrame(() => {
+                e.target.selectionStart = e.target.selectionEnd = start + 2;
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -778,8 +836,9 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - Rendered as Markdown */}
       <div
+        className="markdown-body"
         style={{
           flex: 1,
           padding: '20px',
@@ -788,11 +847,15 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
           fontSize: '15px',
           lineHeight: '1.8',
           color: 'var(--text-primary)',
-          whiteSpace: 'pre-wrap',
+          overflowY: 'auto',
           wordBreak: 'break-word'
         }}
       >
-        {note.content || <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>No content</span>}
+        {note.content ? (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
+        ) : (
+          <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>No content</span>
+        )}
       </div>
 
       {/* Metadata */}
