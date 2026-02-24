@@ -23,6 +23,10 @@ export const useAppStore = create((set) => ({
   activeWorkspace: null,
   setActiveWorkspace: (workspace) => set({ activeWorkspace: workspace }),
 
+  // Inbox
+  unreadInbox: 0,
+  setUnreadInbox: (count) => set({ unreadInbox: count }),
+
   // Current route/page
   currentPage: 'home',
   setCurrentPage: (page) => set({ currentPage: page })

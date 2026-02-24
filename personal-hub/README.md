@@ -1,53 +1,54 @@
-# Personal Hub
+# Orbit
 
-A Windows desktop application built with Electron and React that centralizes tools, links, and utilities in a modern admin panel interface.
+A privacy-first Windows desktop productivity hub built with Electron and React. Centralizes notes, links, tools, and notifications in a secure, multi-user environment with zero-knowledge encryption.
 
 ## Features
 
-### V0 (Current MVP)
-
-- **Authentication**: Local login/password system with bcrypt encryption
-- **Profile & Permissions**: Granular permission system with capability-based access control
-- **Tools System**: Plugin-based architecture for integrating custom tools
-- **Offline Mode**: Graceful degradation when internet is unavailable
-- **System Integration**: Tray icon, autostart, and native Windows integration
-- **Activity Logs**: SQLite-based logging and audit trail
-- **Example Tools**: YouTube Downloader and PDF Tools
+- **Multi-user Auth**: Local SQLite-based auth with Argon2id key derivation and zero-knowledge encryption
+- **Workspaces**: Isolated workspaces with notes, links, and file references
+- **Inbox & Notifications**: Real-time notification system with admin broadcasts (IPC push, no polling)
+- **Admin Panel**: User management, role system, badge assignment, broadcast notifications, system logs
+- **Notes & Links**: Rich workspace-scoped content management
+- **Profile & Badges**: User profiles with assignable badges
+- **Offline Mode**: Fully local-first, graceful degradation
+- **System Integration**: Tray icon, autostart, native Windows integration
 
 ### Architecture
 
 ```
 ┌─────────────────┐
-│  React UI       │  (Renderer Process)
-│  (Frontend)     │
+│  React UI       │  (Renderer Process — sandboxed)
+│  + Zustand      │
 └────────┬────────┘
          │
     ┌────▼────┐
-    │ Preload │  (API Bridge)
+    │ Preload │  (contextIsolation + IPC bridge)
     │ Script  │
     └────┬────┘
          │
 ┌────────▼────────┐
 │ Electron Main   │  (Main Process)
-│ - Auth Service  │
-│ - Permissions   │
-│ - Tool Runner   │
-│ - Storage       │
+│ - AuthService   │  (SQLite + Argon2id + session revalidation)
+│ - Encryption    │  (AES-256-GCM, per-user master keys)
+│ - Database      │  (better-sqlite3 with migrations)
+│ - Permissions   │  (RBAC: ADMIN, DEV, MEMBER, GUEST)
+│ - ToolRunner    │
 └─────────────────┘
 ```
 
 ### Permission System
 
-Each tool declares required permissions:
+Role-based access control (ADMIN > DEV > MEMBER > GUEST):
 - `NET_ACCESS`: Internet access
 - `FS_READ` / `FS_WRITE`: File system access
 - `FS_PICKER`: File picker dialogs
 - `RUN_TOOL`: Execute tool services
 - `SPAWN_PROCESS`: Spawn external processes
 - `CLIPBOARD`: Clipboard access
-- `NOTIFICATIONS`: Windows notifications
+- `NOTIFICATIONS`: Desktop notifications
 - `TRAY_CONTROL`: Tray menu actions
-- `PREMIUM_TOOLS`: Access to premium features
+- `PREMIUM_TOOLS`: Premium features
+- `MANAGE_USERS` / `VIEW_ALL_LOGS` / `SYSTEM_CONFIG`: Admin-only
 
 ## Getting Started
 
@@ -78,32 +79,15 @@ cd ../../..
 npm run dev
 ```
 
-Or use PowerShell script:
-```powershell
-.\scripts\dev.ps1
-```
+### First Launch
 
-### Default Credentials
-
-- Username: `admin`
-- Password: `admin`
+On first launch, create your admin account through the registration page. The first registered user automatically gets the ADMIN role.
 
 ### Building
 
-Build the application:
 ```bash
-npm run build
-```
-
-Create Windows installer:
-```bash
-npm run dist
-```
-
-Or use PowerShell scripts:
-```powershell
-.\scripts\build.ps1
-.\scripts\pack.ps1
+npm run build    # Build the app
+npm run dist     # Create Windows installer
 ```
 
 ## Project Structure
@@ -113,148 +97,57 @@ personal-hub/
 ├── apps/
 │   └── desktop/
 │       ├── electron/
-│       │   ├── main/           # Main process
-│       │   │   ├── main.js     # Entry point
-│       │   │   ├── tray.js     # System tray
-│       │   │   ├── permissions.js
-│       │   │   ├── toolRunner.js
-│       │   │   ├── storage/    # Data persistence
-│       │   │   └── security/   # Auth & crypto
-│       │   ├── preload/        # IPC bridge
-│       │   └── shared/         # Constants
-│       └── renderer/           # React UI
+│       │   ├── main/
+│       │   │   ├── main.js         # Entry point + IPC handlers
+│       │   │   ├── tray.js         # System tray
+│       │   │   ├── database/       # SQLite DB + migrations + repositories
+│       │   │   └── security/       # Auth, encryption, crypto, permissions
+│       │   ├── preload/            # IPC bridge (contextIsolation)
+│       │   └── shared/             # Constants
+│       └── renderer/               # React UI
 │           ├── src/
-│           │   ├── app/        # Layout & routing
-│           │   ├── pages/      # Main pages
-│           │   ├── components/ # Reusable components
-│           │   ├── state/      # State management
-│           │   └── api/        # API wrapper
+│           │   ├── app/            # Layout, routing, sidebar
+│           │   ├── pages/          # Home, Notes, Links, Inbox, Profile, Settings, Admin
+│           │   ├── components/     # Card, Modal, Topbar
+│           │   ├── state/          # Zustand store
+│           │   └── api/            # hubAPI wrapper
 │           └── styles/
-├── tools/                      # Plugin tools
-│   ├── youtube_downloader/
-│   │   ├── manifest.json
-│   │   ├── service/
-│   │   └── ui/
-│   └── pdf_tools/
-├── data/                       # Seed data
-└── scripts/                    # Build scripts
+├── tools/                          # Plugin tools
+└── scripts/                        # Build scripts
 ```
-
-## Creating a Tool
-
-1. Create a folder in `tools/` with your tool ID
-2. Add `manifest.json`:
-
-```json
-{
-  "id": "my_tool",
-  "name": "My Tool",
-  "version": "0.1.0",
-  "description": "Tool description",
-  "icon": "🔧",
-  "tags": ["utility"],
-  "entryRoute": "/tools/my_tool",
-  "requiresInternet": false,
-  "permissions": ["FS_READ", "FS_WRITE"],
-  "premium": false,
-  "defaultConfig": {}
-}
-```
-
-3. Create `service/index.js` with your backend logic:
-
-```javascript
-module.exports = {
-  myAction: async (payload) => {
-    // Your logic here
-    return { success: true, result: 'data' };
-  }
-};
-```
-
-4. Create `ui/ToolPage.jsx` for your UI
-5. Restart the app
 
 ## Data Storage
 
 Application data is stored in:
 ```
-%APPDATA%/personal-hub/
-├── auth.json           # Authentication
-├── profile.json        # User profile
-├── tools/              # Tool configs
-├── logs/               # Log files
-└── db.sqlite           # Action history
+%APPDATA%/orbit/
+├── .session-token    # Persisted session token
+├── .orbit-key        # Local encryption key
+└── orbit.db          # SQLite database (encrypted content)
 ```
-
-## API Bridge (window.hubAPI)
-
-The preload script exposes a secure API to the renderer:
-
-```javascript
-// Auth
-await window.hubAPI.auth.login({ username, password, rememberMe });
-await window.hubAPI.auth.logout();
-
-// Tools
-const tools = await window.hubAPI.tools.list();
-await window.hubAPI.tools.run({ toolId, action, payload });
-
-// Filesystem (permission-controlled)
-const folder = await window.hubAPI.fs.pickFolder();
-await window.hubAPI.fs.openPath(path);
-
-// System
-const status = await window.hubAPI.system.getStatus();
-await window.hubAPI.system.setAutoLaunch(true);
-
-// Logs
-const logs = await window.hubAPI.logs.tail({ limit: 50 });
-```
-
-## Roadmap
-
-### V1
-- [ ] Links management with tags
-- [ ] Internal store catalog
-- [ ] Download manager with queue
-- [ ] Tool settings UI
-- [ ] Enhanced history/audit
-
-### V2+
-- [ ] Remote store with tool downloads
-- [ ] Multi-machine sync
-- [ ] Python tool support
-- [ ] System metrics dashboard
-- [ ] Plugin marketplace
 
 ## Security
 
-- Passwords hashed with bcrypt
-- Context isolation enabled
-- Sandboxed renderer process
-- Permission-based access control
-- No direct Node.js access from UI
-- All IPC channels whitelisted
+- **Zero-knowledge encryption**: AES-256-GCM with per-user master keys derived via Argon2id
+- **Session revalidation**: Sessions revalidated against DB every 60s (expiration, status, role)
+- **Context isolation**: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`
+- **CSP**: Content Security Policy enforced via meta tag
+- **Navigation lock**: External navigation and popup windows blocked
+- **Admin guards**: Backend prevents self-demotion and last-admin removal
+- **RBAC**: All IPC handlers check session + role before execution
+- **Recovery**: Encrypted recovery key file for account recovery
 
 ## Technology Stack
 
-- **Electron**: Cross-platform desktop framework
-- **React**: UI library
-- **React Router**: Client-side routing
-- **Zustand**: State management
-- **Vite**: Build tool and dev server
-- **SQLite**: Local database (better-sqlite3)
-- **bcryptjs**: Password hashing
-
-## Contributing
-
-This is a personal project, but suggestions are welcome!
+- **Electron** — Desktop framework
+- **React** — UI library
+- **React Router** — Client-side routing
+- **Zustand** — State management
+- **Vite** — Build tool
+- **better-sqlite3** — Local database
+- **Argon2id** — Key derivation
+- **Lucide React** — Icons
 
 ## License
 
 MIT
-
-## Author
-
-Your Name

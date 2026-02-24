@@ -100,12 +100,17 @@ const IPC_CHANNELS = {
   INBOX_MARK_ALL_READ: 'inbox:markAllRead',
   INBOX_DELETE: 'inbox:delete',
   INBOX_DELETE_READ: 'inbox:deleteRead',
+  INBOX_NEW_MESSAGE: 'inbox:newMessage',
 
   // Admin
   ADMIN_GET_STATS: 'admin:getStats',
   ADMIN_GET_USERS: 'admin:getUsers',
+  ADMIN_GET_AUDIT_LOGS: 'admin:getAuditLogs',
+  ADMIN_GET_OPERATIONS_STATUS: 'admin:getOperationsStatus',
   ADMIN_UPDATE_USER_ROLE: 'admin:updateUserRole',
   ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus',
+  ADMIN_SEND_NOTIFICATION: 'admin:sendNotification',
+  ADMIN_GET_BROADCAST_HISTORY: 'admin:getBroadcastHistory',
 
   // Recovery / Crypto
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',

@@ -8,7 +8,7 @@ import Home from '../pages/Home';
 import Tools from '../pages/Tools';
 import Notes from '../pages/Notes';
 import Links from '../pages/Links';
-import Store from '../pages/Store';
+import InboxPage from '../pages/Inbox';
 import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
 import AdminPanel from '../pages/AdminPanel';
@@ -59,7 +59,7 @@ function AppRoutes() {
                     <Route path="/tools/:toolId" element={<Tools />} />
                     <Route path="/notes" element={<Notes />} />
                     <Route path="/links" element={<Links />} />
-                    <Route path="/store" element={<Store />} />
+                    <Route path="/inbox" element={<InboxPage />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />

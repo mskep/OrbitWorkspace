@@ -303,6 +303,31 @@ p {
   color: var(--accent-primary);
 }
 
+.sidebar-inbox-badge {
+  position: absolute;
+  right: 12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background-color: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.sidebar-inbox-badge.visible {
+  transform: scale(1);
+  opacity: 1;
+}
+
 .sidebar-icon {
   font-size: 18px;
   display: flex;
@@ -2398,4 +2423,236 @@ input[type="checkbox"]:disabled {
 .auth-skip-btn:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
+}
+
+/* ================================================================
+   27. INBOX PAGE
+   ================================================================ */
+
+/* Filter tabs */
+.inbox-filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.inbox-filter-tab:hover:not(.active) {
+  border-color: var(--text-muted);
+  color: var(--text-secondary);
+  background-color: var(--bg-hover);
+}
+
+.inbox-filter-tab.active {
+  border-color: var(--accent);
+  background-color: rgba(99, 102, 241, 0.08);
+  color: var(--accent);
+}
+
+.inbox-filter-count {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+}
+
+.inbox-filter-count.active {
+  background-color: var(--accent);
+  color: #fff;
+}
+
+.inbox-filter-count.has-unread:not(.active) {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Action buttons */
+.inbox-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.inbox-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: rgba(99, 102, 241, 0.06);
+}
+
+/* Skeleton loader */
+.inbox-skeleton {
+  height: 72px;
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%, var(--bg-secondary) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--radius-md);
+  animation: inboxShimmer 1.5s ease infinite;
+}
+
+@keyframes inboxShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Empty state */
+.inbox-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: var(--text-tertiary);
+}
+
+/* Message card */
+.inbox-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid transparent;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.inbox-message.unread {
+  background-color: var(--bg-secondary);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  cursor: pointer;
+}
+
+.inbox-message.unread:hover {
+  background-color: var(--bg-hover);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.inbox-message.read {
+  background-color: transparent;
+  border: 1px solid var(--border-default);
+  opacity: 0.6;
+}
+
+.inbox-message.read:hover {
+  opacity: 0.8;
+}
+
+/* Message icon */
+.inbox-message-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: transform 0.2s ease;
+}
+
+.inbox-message:hover .inbox-message-icon {
+  transform: scale(1.05);
+}
+
+/* Unread dot */
+.inbox-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+}
+
+/* Message text */
+.inbox-message-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Message metadata */
+.inbox-message-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inbox-type-pill {
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Mark read button */
+.inbox-mark-read-btn {
+  padding: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.inbox-mark-read-btn:hover {
+  color: var(--accent);
+  background-color: var(--bg-hover);
+}
+
+/* Entrance animation for new messages */
+@keyframes inboxMessageEnter {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.inbox-message-enter {
+  animation: inboxMessageEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ================================================================
+   28. MODAL ANIMATIONS
+   ================================================================ */
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }

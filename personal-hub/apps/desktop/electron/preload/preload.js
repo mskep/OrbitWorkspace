@@ -66,10 +66,15 @@ const IPC_CHANNELS = {
   INBOX_MARK_ALL_READ: 'inbox:markAllRead',
   INBOX_DELETE: 'inbox:delete',
   INBOX_DELETE_READ: 'inbox:deleteRead',
+  INBOX_NEW_MESSAGE: 'inbox:newMessage',
   ADMIN_GET_STATS: 'admin:getStats',
   ADMIN_GET_USERS: 'admin:getUsers',
+  ADMIN_GET_AUDIT_LOGS: 'admin:getAuditLogs',
+  ADMIN_GET_OPERATIONS_STATUS: 'admin:getOperationsStatus',
   ADMIN_UPDATE_USER_ROLE: 'admin:updateUserRole',
   ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus',
+  ADMIN_SEND_NOTIFICATION: 'admin:sendNotification',
+  ADMIN_GET_BROADCAST_HISTORY: 'admin:getBroadcastHistory',
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
   CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile',
   CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile',
@@ -191,15 +196,24 @@ contextBridge.exposeInMainWorld('hubAPI', {
     markRead: (data) => ipcRenderer.invoke(IPC_CHANNELS.INBOX_MARK_READ, data),
     markAllRead: () => ipcRenderer.invoke(IPC_CHANNELS.INBOX_MARK_ALL_READ),
     delete: (data) => ipcRenderer.invoke(IPC_CHANNELS.INBOX_DELETE, data),
-    deleteRead: () => ipcRenderer.invoke(IPC_CHANNELS.INBOX_DELETE_READ)
+    deleteRead: () => ipcRenderer.invoke(IPC_CHANNELS.INBOX_DELETE_READ),
+    onNewMessage: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.INBOX_NEW_MESSAGE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.INBOX_NEW_MESSAGE, handler);
+    }
   },
 
   // Admin
   admin: {
     getStats: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_STATS),
     getUsers: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_USERS),
+    getAuditLogs: (query) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_AUDIT_LOGS, query),
+    getOperationsStatus: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_OPERATIONS_STATUS),
     updateUserRole: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_UPDATE_USER_ROLE, data),
-    updateUserStatus: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_UPDATE_USER_STATUS, data)
+    updateUserStatus: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_UPDATE_USER_STATUS, data),
+    sendNotification: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SEND_NOTIFICATION, data),
+    getBroadcastHistory: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_BROADCAST_HISTORY)
   },
 
   // Recovery / Crypto

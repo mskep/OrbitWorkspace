@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   Wrench,
   FileText,
   Link,
-  ShoppingBag,
+  Inbox,
   User,
   Settings,
   WifiOff,
@@ -28,6 +28,8 @@ function Sidebar() {
   const profile = useAppStore((state) => state.profile);
   const activeWorkspace = useAppStore((state) => state.activeWorkspace);
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
+  const unreadInbox = useAppStore((state) => state.unreadInbox);
+  const setUnreadInbox = useAppStore((state) => state.setUnreadInbox);
 
   // Workspace state
   const [workspaces, setWorkspaces] = useState([]);
@@ -39,11 +41,18 @@ function Sidebar() {
   // Check if user is admin or developer
   const isAdminOrDev = profile?.role === 'ADMIN' || profile?.role === 'DEV';
 
-  useEffect(() => {
-    loadWorkspaces();
-  }, []);
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const result = await hubAPI.inbox.getUnreadCount();
+      if (result.success) {
+        setUnreadInbox(result.count);
+      }
+    } catch (err) {
+      console.error('Failed to load unread count:', err);
+    }
+  }, [setUnreadInbox]);
 
-  const loadWorkspaces = async () => {
+  const loadWorkspaces = useCallback(async () => {
     try {
       const result = await hubAPI.workspaces.getAll();
       if (result.success) {
@@ -57,7 +66,20 @@ function Sidebar() {
     } catch (err) {
       console.error('Failed to load workspaces:', err);
     }
-  };
+  }, [setActiveWorkspace]);
+
+  useEffect(() => {
+    loadWorkspaces();
+    loadUnreadCount();
+  }, [loadWorkspaces, loadUnreadCount]);
+
+  // Real-time inbox push listener
+  useEffect(() => {
+    const cleanup = hubAPI.inbox.onNewMessage(() => {
+      loadUnreadCount();
+    });
+    return cleanup;
+  }, [loadUnreadCount]);
 
   const handleSwitchWorkspace = async (workspaceId) => {
     try {
@@ -115,7 +137,7 @@ function Sidebar() {
     { id: 'tools', label: 'My Tools', icon: <Wrench size={20} />, path: '/tools' },
     { id: 'notes', label: 'Notes', icon: <FileText size={20} />, path: '/notes' },
     { id: 'links', label: 'Quick Links', icon: <Link size={20} />, path: '/links' },
-    { id: 'store', label: 'Tool Store', icon: <ShoppingBag size={20} />, path: '/store' },
+    { id: 'inbox', label: 'Inbox', icon: <Inbox size={20} />, path: '/inbox' },
     { id: 'profile', label: 'Profile', icon: <User size={20} />, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' }
   ];
@@ -423,9 +445,15 @@ function Sidebar() {
             key={item.id}
             className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
             onClick={() => navigate(item.path)}
+            style={{ position: 'relative' }}
           >
             <span className="sidebar-icon">{item.icon}</span>
             <span className="sidebar-label">{item.label}</span>
+            {item.id === 'inbox' && (
+              <span className={`sidebar-inbox-badge ${unreadInbox > 0 ? 'visible' : ''}`}>
+                {unreadInbox > 99 ? '99+' : unreadInbox}
+              </span>
+            )}
           </button>
         ))}
 

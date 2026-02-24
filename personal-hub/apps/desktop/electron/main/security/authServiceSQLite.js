@@ -18,6 +18,8 @@ class AuthServiceSQLite {
     this.currentSession = null;
     this.syncCrypto = new SyncCrypto();
     this.tokenFilePath = path.join(userDataPath, '.session-token');
+    this._lastValidation = 0;
+    this._validationIntervalMs = 60_000; // Revalidate session against DB every 60s
   }
 
   /**
@@ -276,10 +278,47 @@ class AuthServiceSQLite {
   }
 
   /**
-   * Get current session
+   * Get current session — revalidates against DB periodically
+   * Checks: token expiration, user status (active), role freshness
    */
   async getSession() {
-    return this.currentSession;
+    if (!this.currentSession) return null;
+
+    const now = Date.now();
+    if (now - this._lastValidation < this._validationIntervalMs) {
+      return this.currentSession;
+    }
+
+    // Revalidate against DB
+    try {
+      const db = this.dbService.getDB();
+      const nowUnix = Math.floor(now / 1000);
+
+      const row = db.prepare(`
+        SELECT s.expires_at, u.status, u.role, u.username, u.email
+        FROM sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.token = ?
+      `).get(this.currentSession.token);
+
+      if (!row || row.expires_at <= nowUnix || row.status !== 'active') {
+        // Session expired, user disabled, or token invalid
+        this.currentSession = null;
+        this._clearPersistedToken();
+        return null;
+      }
+
+      // Refresh role/username in case admin changed them
+      this.currentSession.role = row.role;
+      this.currentSession.username = row.username;
+      this.currentSession.email = row.email;
+      this._lastValidation = now;
+
+      return this.currentSession;
+    } catch (error) {
+      console.error('Session revalidation error:', error);
+      return this.currentSession; // Fail-open on DB error to avoid locking out user
+    }
   }
 
   /**

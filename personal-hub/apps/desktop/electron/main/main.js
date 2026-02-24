@@ -76,6 +76,19 @@ function createWindow() {
     mainWindow.show();
   });
 
+  // Prevent navigation to external URLs
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowedOrigins = ['http://localhost:5173', 'file://'];
+    if (!allowedOrigins.some((origin) => url.startsWith(origin))) {
+      event.preventDefault();
+    }
+  });
+
+  // Block new window creation (popups, target=_blank)
+  mainWindow.webContents.setWindowOpenHandler(() => {
+    return { action: 'deny' };
+  });
+
   // Minimize to tray instead of closing
   mainWindow.on('close', (event) => {
     if (!app.isQuitting) {
@@ -1092,8 +1105,9 @@ function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.BADGE_GET_USER_BADGES, async (event, { userId }) => {
+  ipcMain.handle(IPC_CHANNELS.BADGE_GET_USER_BADGES, async (event, payload = {}) => {
     try {
+      const { userId } = payload;
       const session = await authService.getSession();
       if (!session) return { success: false, error: 'Not authenticated' };
 
@@ -1111,8 +1125,9 @@ function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.BADGE_ASSIGN, async (event, { userId, badgeId }) => {
+  ipcMain.handle(IPC_CHANNELS.BADGE_ASSIGN, async (event, payload = {}) => {
     try {
+      const { userId, badgeId } = payload;
       const session = await authService.getSession();
       if (!session) return { success: false, error: 'Not authenticated' };
 
@@ -1121,15 +1136,23 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      if (!userId || !badgeId) {
+        return { success: false, error: 'Missing badge assignment parameters' };
+      }
+
       const repos = dbService.getRepositories();
-      repos.badges.assign(userId, badgeId, session.userId);
 
       // Get badge info for notification
-      const badge = repos.badges.findAll().find(b => b.id === badgeId);
-      const user = repos.users.findById(userId);
+      const badge = repos.badges.findAll().find((b) => b.id === badgeId);
+      if (!badge) {
+        return { success: false, error: 'Badge not found' };
+      }
+
+      repos.badges.assign(userId, badgeId, session.userId);
 
       // Create inbox notification
       repos.inbox.createBadgeAssignedMessage(userId, badge.display_name, session.username);
+      if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
 
       return { success: true };
     } catch (error) {
@@ -1138,8 +1161,9 @@ function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.BADGE_REVOKE, async (event, { userId, badgeId }) => {
+  ipcMain.handle(IPC_CHANNELS.BADGE_REVOKE, async (event, payload = {}) => {
     try {
+      const { userId, badgeId } = payload;
       const session = await authService.getSession();
       if (!session) return { success: false, error: 'Not authenticated' };
 
@@ -1148,15 +1172,23 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      if (!userId || !badgeId) {
+        return { success: false, error: 'Missing badge revoke parameters' };
+      }
+
       const repos = dbService.getRepositories();
 
       // Get badge info before revoking
-      const badge = repos.badges.findAll().find(b => b.id === badgeId);
+      const badge = repos.badges.findAll().find((b) => b.id === badgeId);
+      if (!badge) {
+        return { success: false, error: 'Badge not found' };
+      }
 
       repos.badges.revoke(userId, badgeId);
 
       // Create inbox notification
       repos.inbox.createBadgeRevokedMessage(userId, badge.display_name, session.username);
+      if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
 
       return { success: true };
     } catch (error) {
@@ -1329,6 +1361,230 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.ADMIN_GET_AUDIT_LOGS, async (event, query = {}) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      // Only admins and devs can view audit logs
+      if (session.role !== 'ADMIN' && session.role !== 'DEV') {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const sanitizeText = (value, maxLen = 120) => {
+        if (typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed ? trimmed.slice(0, maxLen) : null;
+      };
+
+      const rawLimit = Number(query.limit);
+      const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 20), 500) : 200;
+
+      const filters = { limit };
+
+      const search = sanitizeText(query.search, 200);
+      if (search) filters.search = search;
+
+      const type = sanitizeText(query.type, 120);
+      if (type) filters.type = type;
+
+      const status = sanitizeText(query.status, 24);
+      if (status) filters.status = status;
+
+      const category = sanitizeText(query.category, 32);
+      if (category) filters.category = category;
+
+      const severity = sanitizeText(query.severity, 16);
+      if (severity) filters.severity = severity;
+
+      const userId = sanitizeText(query.userId, 80);
+      if (userId) filters.userId = userId;
+
+      const toolId = sanitizeText(query.toolId, 80);
+      if (toolId) filters.toolId = toolId;
+
+      const startDate = Number(query.startDate);
+      if (Number.isFinite(startDate) && startDate > 0) {
+        filters.startDate = Math.floor(startDate);
+      }
+
+      const endDate = Number(query.endDate);
+      if (Number.isFinite(endDate) && endDate > 0) {
+        filters.endDate = Math.floor(endDate);
+      }
+
+      const logs = logManager.search(filters);
+      const summary = logs.reduce(
+        (acc, log) => {
+          acc.total += 1;
+          acc.byStatus[log.status] = (acc.byStatus[log.status] || 0) + 1;
+          acc.bySeverity[log.meta.severity] = (acc.bySeverity[log.meta.severity] || 0) + 1;
+          acc.byCategory[log.meta.category] = (acc.byCategory[log.meta.category] || 0) + 1;
+          return acc;
+        },
+        { total: 0, byStatus: {}, bySeverity: {}, byCategory: {} }
+      );
+
+      return { success: true, logs, summary };
+    } catch (error) {
+      console.error('Get audit logs error:', error);
+      return { success: false, error: 'Failed to get audit logs' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ADMIN_GET_OPERATIONS_STATUS, async () => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      // Only admins and devs can view operations status
+      if (session.role !== 'ADMIN' && session.role !== 'DEV') {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const db = dbService.getDB();
+      const nowSec = Math.floor(Date.now() / 1000);
+      const since24hMs = Date.now() - 24 * 60 * 60 * 1000;
+
+      const tableExists = (table) => {
+        const row = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
+        return !!row;
+      };
+
+      const safeCount = (table) => {
+        if (!tableExists(table)) return 0;
+        return db.prepare(`SELECT COUNT(*) as c FROM ${table}`).get().c;
+      };
+
+      const getFileMeta = (filePath) => {
+        if (!filePath || !fs.existsSync(filePath)) {
+          return { exists: false, sizeBytes: 0, updatedAt: null };
+        }
+
+        const stats = fs.statSync(filePath);
+        return {
+          exists: true,
+          sizeBytes: stats.size,
+          updatedAt: stats.mtimeMs
+        };
+      };
+
+      const health = await dbService.healthCheck();
+      const dbPath = health.dbPath || null;
+
+      const sessions = {
+        total: safeCount('sessions'),
+        active: db.prepare('SELECT COUNT(*) as c FROM sessions WHERE expires_at > ?').get(nowSec).c,
+        expired: db.prepare('SELECT COUNT(*) as c FROM sessions WHERE expires_at <= ?').get(nowSec).c
+      };
+
+      const activity = {
+        logsLast24h: tableExists('action_logs')
+          ? db.prepare('SELECT COUNT(*) as c FROM action_logs WHERE timestamp >= ?').get(since24hMs).c
+          : 0,
+        errorsLast24h: tableExists('action_logs')
+          ? db.prepare("SELECT COUNT(*) as c FROM action_logs WHERE timestamp >= ? AND status = 'error'").get(since24hMs).c
+          : 0,
+        failedAuthLast24h: tableExists('action_logs')
+          ? db
+              .prepare("SELECT COUNT(*) as c FROM action_logs WHERE timestamp >= ? AND action_type LIKE 'auth:%' AND status = 'error'")
+              .get(since24hMs).c
+          : 0,
+        pendingSyncOps: safeCount('sync_queue'),
+        unresolvedConflicts: tableExists('sync_conflicts')
+          ? db.prepare('SELECT COUNT(*) as c FROM sync_conflicts WHERE user_reviewed = 0').get().c
+          : 0
+      };
+
+      const runtime = {
+        online: networkMonitor.getStatus(),
+        appVersion: app.getVersion(),
+        platform: process.platform,
+        arch: process.arch,
+        nodeVersion: process.version,
+        electronVersion: process.versions.electron,
+        uptimeSeconds: Math.round(process.uptime()),
+        autoLaunchEnabled: await autoLaunch.isEnabled(),
+        memory: process.memoryUsage()
+      };
+
+      const database = {
+        health,
+        path: dbPath,
+        files: {
+          main: getFileMeta(dbPath),
+          wal: getFileMeta(dbPath ? `${dbPath}-wal` : null),
+          shm: getFileMeta(dbPath ? `${dbPath}-shm` : null)
+        },
+        tables: {
+          users: safeCount('users'),
+          workspaces: safeCount('workspaces'),
+          notes: safeCount('notes'),
+          links: safeCount('links'),
+          fileReferences: safeCount('file_references'),
+          badges: safeCount('badges'),
+          inboxMessages: safeCount('inbox_messages'),
+          actionLogs: safeCount('action_logs'),
+          syncQueue: safeCount('sync_queue'),
+          syncConflicts: safeCount('sync_conflicts')
+        },
+        sessions
+      };
+
+      const checks = [
+        {
+          id: 'db-health',
+          label: 'Database health',
+          status: health.healthy ? 'ok' : 'error',
+          value: health.healthy ? 'Healthy' : 'Unhealthy',
+          details: health.error || `Encryption ${health.encryptionWorking ? 'working' : 'failed'}`
+        },
+        {
+          id: 'session-hygiene',
+          label: 'Session hygiene',
+          status: sessions.expired > 0 ? 'warn' : 'ok',
+          value: `${sessions.active} active`,
+          details: `${sessions.expired} expired session(s) still present`
+        },
+        {
+          id: 'sync-backlog',
+          label: 'Sync backlog',
+          status: activity.pendingSyncOps > 50 ? 'warn' : 'ok',
+          value: `${activity.pendingSyncOps} queued`,
+          details: `${activity.unresolvedConflicts} unresolved conflict(s)`
+        },
+        {
+          id: 'error-rate',
+          label: 'Errors (24h)',
+          status: activity.errorsLast24h > 0 ? 'warn' : 'ok',
+          value: `${activity.errorsLast24h} errors`,
+          details: `${activity.failedAuthLast24h} failed auth event(s)`
+        },
+        {
+          id: 'db-files',
+          label: 'SQLite files',
+          status: database.files.main.exists ? 'ok' : 'error',
+          value: database.files.main.exists ? 'Detected' : 'Missing',
+          details: dbPath || 'No DB file path detected'
+        }
+      ];
+
+      return {
+        success: true,
+        operations: {
+          runtime,
+          database,
+          activity,
+          checks,
+          generatedAt: Date.now()
+        }
+      };
+    } catch (error) {
+      console.error('Get operations status error:', error);
+      return { success: false, error: 'Failed to get operations status' };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.ADMIN_UPDATE_USER_ROLE, async (event, { userId, role }) => {
     try {
       const session = await authService.getSession();
@@ -1339,17 +1595,38 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      const validRoles = new Set(['USER', 'PREMIUM', 'DEV', 'ADMIN']);
+      if (!userId || !validRoles.has(role)) {
+        return { success: false, error: 'Invalid role update payload' };
+      }
+
       const repos = dbService.getRepositories();
       const user = repos.users.findById(userId);
       if (!user) {
         return { success: false, error: 'User not found' };
       }
+
+      // Prevent self-demotion
+      if (userId === session.userId && role !== 'ADMIN') {
+        return { success: false, error: 'Cannot change your own role' };
+      }
+
+      // Prevent removing the last admin
+      if (user.role === 'ADMIN' && role !== 'ADMIN') {
+        const allUsers = repos.users.findAll();
+        const adminCount = allUsers.filter((u) => u.role === 'ADMIN' && u.status === 'active').length;
+        if (adminCount <= 1) {
+          return { success: false, error: 'Cannot demote the last admin' };
+        }
+      }
+
       const oldRole = user.role;
 
       repos.users.updateRole(userId, role);
 
       // Create inbox notification
       repos.inbox.createRoleChangedMessage(userId, oldRole, role, session.username);
+      if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
 
       return { success: true };
     } catch (error) {
@@ -1368,13 +1645,97 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      const validStatuses = new Set(['active', 'disabled']);
+      if (!userId || !validStatuses.has(status)) {
+        return { success: false, error: 'Invalid status update payload' };
+      }
+
+      // Prevent self-disable
+      if (userId === session.userId) {
+        return { success: false, error: 'Cannot change your own status' };
+      }
+
       const repos = dbService.getRepositories();
+      const user = repos.users.findById(userId);
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // Prevent disabling the last active admin
+      if (user.role === 'ADMIN' && status !== 'active') {
+        const allUsers = repos.users.findAll();
+        const activeAdminCount = allUsers.filter((u) => u.role === 'ADMIN' && u.status === 'active').length;
+        if (activeAdminCount <= 1) {
+          return { success: false, error: 'Cannot disable the last active admin' };
+        }
+      }
+
       repos.users.updateStatus(userId, status);
 
       return { success: true };
     } catch (error) {
       console.error('Update user status error:', error);
       return { success: false, error: 'Failed to update user status' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ADMIN_SEND_NOTIFICATION, async (event, { title, message, target, userId, category }) => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      if (session.role !== 'ADMIN' && session.role !== 'DEV') {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      if (!title || !message) {
+        return { success: false, error: 'Title and message are required' };
+      }
+
+      const repos = dbService.getRepositories();
+      const senderUsername = session.username;
+
+      const broadcastCategory = category || 'admin-broadcast';
+
+      if (target === 'all') {
+        const allUsers = repos.users.findAll();
+        const results = repos.inbox.broadcastToUsers(
+          allUsers.map((u) => u.id),
+          title,
+          message,
+          senderUsername,
+          broadcastCategory
+        );
+        if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
+        return { success: true, sent: results.length };
+      } else if (target === 'user' && userId) {
+        repos.inbox.createBroadcastMessage(userId, title, message, senderUsername, broadcastCategory);
+        if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
+        return { success: true, sent: 1 };
+      } else {
+        return { success: false, error: 'Invalid target' };
+      }
+    } catch (error) {
+      console.error('Send notification error:', error);
+      return { success: false, error: 'Failed to send notification' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ADMIN_GET_BROADCAST_HISTORY, async () => {
+    try {
+      const session = await authService.getSession();
+      if (!session) return { success: false, error: 'Not authenticated' };
+
+      if (session.role !== 'ADMIN' && session.role !== 'DEV') {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const repos = dbService.getRepositories();
+      const history = repos.inbox.getBroadcastHistory();
+      return { success: true, history };
+    } catch (error) {
+      console.error('Get broadcast history error:', error);
+      return { success: false, error: 'Failed to get broadcast history' };
     }
   });
 

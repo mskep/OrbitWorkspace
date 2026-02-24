@@ -1,14 +1,23 @@
 import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucide-react';
 
 /**
  * Modal Component - Custom modal dialogs that respect the app's design system
  *
  * Types:
- * - confirm: Confirmation dialog with Yes/No buttons
- * - alert: Alert dialog with OK button
- * - info: Info dialog with OK button
+ * - confirm: Destructive confirmation with Cancel/Confirm (red)
+ * - alert: Error/warning alert with OK button (red)
+ * - info: Informational with OK button (accent blue)
+ * - success: Success feedback with OK button (green)
  */
+
+const TYPE_STYLES = {
+  confirm: { icon: AlertTriangle, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+  alert: { icon: AlertCircle, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+  info: { icon: Info, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' },
+  success: { icon: CheckCircle, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' }
+};
+
 function Modal({
   isOpen,
   onClose,
@@ -26,8 +35,14 @@ function Modal({
     onClose();
   };
 
+  const style = TYPE_STYLES[type] || TYPE_STYLES.info;
+  const Icon = style.icon;
+  const hasCancel = type === 'confirm';
+  const btnColor = type === 'confirm' || type === 'alert' ? '#ef4444' : type === 'success' ? '#10b981' : 'var(--accent)';
+
   return (
     <div
+      className="modal-overlay"
       style={{
         position: 'fixed',
         top: 0,
@@ -39,7 +54,8 @@ function Modal({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        backdropFilter: 'blur(4px)'
+        backdropFilter: 'blur(4px)',
+        animation: 'modalFadeIn 0.15s ease'
       }}
       onClick={onClose}
     >
@@ -51,7 +67,8 @@ function Modal({
           padding: '24px',
           minWidth: '400px',
           maxWidth: '500px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          animation: 'modalSlideIn 0.2s ease'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -65,20 +82,18 @@ function Modal({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {type === 'confirm' && (
-              <div
-                style={{
-                  padding: '8px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <AlertTriangle size={20} color="#ef4444" />
-              </div>
-            )}
+            <div
+              style={{
+                padding: '8px',
+                backgroundColor: style.bg,
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Icon size={20} color={style.color} />
+            </div>
             <h3
               style={{
                 margin: 0,
@@ -136,7 +151,7 @@ function Modal({
             justifyContent: 'flex-end'
           }}
         >
-          {type === 'confirm' && (
+          {hasCancel && (
             <button
               onClick={onClose}
               className="btn btn-secondary"
@@ -153,7 +168,7 @@ function Modal({
             className="btn"
             style={{
               padding: '10px 20px',
-              background: type === 'confirm' ? '#ef4444' : 'var(--accent)',
+              background: btnColor,
               color: '#fff',
               fontSize: '14px',
               fontWeight: '600'

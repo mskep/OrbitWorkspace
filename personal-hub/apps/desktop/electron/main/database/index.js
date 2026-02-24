@@ -78,6 +78,10 @@ class DatabaseManager {
         name: '002_sync_infrastructure',
         sql: this._getSyncInfrastructureMigration()
       },
+      {
+        name: '003_inbox_broadcast_types',
+        sql: this._getInboxBroadcastTypesMigration()
+      },
     ];
 
     // Apply pending migrations
@@ -285,7 +289,7 @@ class DatabaseManager {
         created_at INTEGER NOT NULL,
         read_at INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        CONSTRAINT chk_inbox_type CHECK (type IN ('badge-assigned', 'badge-revoked', 'role-changed', 'system-notification'))
+        CONSTRAINT chk_inbox_type CHECK (type IN ('badge-assigned', 'badge-revoked', 'role-changed', 'system-notification', 'admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security'))
       );
 
       CREATE INDEX idx_inbox_user_id ON inbox_messages(user_id);
@@ -401,6 +405,36 @@ class DatabaseManager {
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
+    `;
+  }
+
+  /**
+   * Migration: Recreate inbox_messages with expanded type CHECK constraint
+   * Adds admin-maintenance, admin-update, admin-security types
+   */
+  _getInboxBroadcastTypesMigration() {
+    return `
+      CREATE TABLE inbox_messages_new (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message_encrypted TEXT NOT NULL,
+        metadata_json TEXT,
+        is_read INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        read_at INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_inbox_type CHECK (type IN ('badge-assigned', 'badge-revoked', 'role-changed', 'system-notification', 'admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security'))
+      );
+
+      INSERT INTO inbox_messages_new SELECT * FROM inbox_messages;
+      DROP TABLE inbox_messages;
+      ALTER TABLE inbox_messages_new RENAME TO inbox_messages;
+
+      CREATE INDEX idx_inbox_user_id ON inbox_messages(user_id);
+      CREATE INDEX idx_inbox_unread ON inbox_messages(user_id, is_read);
+      CREATE INDEX idx_inbox_created ON inbox_messages(created_at DESC);
     `;
   }
 

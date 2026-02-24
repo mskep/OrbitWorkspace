@@ -186,6 +186,64 @@ class InboxRepository {
       metadataJson: metadata
     });
   }
+
+  /**
+   * Create admin broadcast message for a single user
+   * @param {string} category - One of: 'admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security'
+   */
+  createBroadcastMessage(userId, title, message, senderUsername, category = 'admin-broadcast') {
+    const validCategories = ['admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security'];
+    const type = validCategories.includes(category) ? category : 'admin-broadcast';
+    return this.create({
+      userId,
+      type,
+      title,
+      message,
+      metadataJson: { sentBy: senderUsername }
+    });
+  }
+
+  /**
+   * Get broadcast history grouped by title + timestamp window
+   * (all messages from a single broadcast share the same title, metadata, and created_at second)
+   */
+  getBroadcastHistory(limit = 50) {
+    const stmt = this.db.prepare(`
+      SELECT title, type, MIN(id) as sample_id, metadata_json, created_at, COUNT(*) as recipient_count
+      FROM inbox_messages
+      WHERE type IN ('admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security')
+      GROUP BY title, type, metadata_json, created_at
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    const rows = stmt.all(limit);
+    return rows.map(row => {
+      const sample = this.findById(row.sample_id);
+      return {
+        title: row.title,
+        type: row.type,
+        message: sample ? sample.message : '',
+        metadata: row.metadata_json ? JSON.parse(row.metadata_json) : null,
+        created_at: row.created_at,
+        recipient_count: row.recipient_count
+      };
+    });
+  }
+
+  /**
+   * Broadcast to all given user IDs
+   */
+  broadcastToUsers(userIds, title, message, senderUsername, category = 'admin-broadcast') {
+    const results = [];
+    for (const userId of userIds) {
+      try {
+        results.push(this.createBroadcastMessage(userId, title, message, senderUsername, category));
+      } catch (err) {
+        console.error(`Failed to broadcast to user ${userId}:`, err.message);
+      }
+    }
+    return results;
+  }
 }
 
 module.exports = InboxRepository;

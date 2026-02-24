@@ -183,11 +183,11 @@ function Home() {
                 Open My Tools <ArrowUpRight size={16} />
               </button>
               <button
-                onClick={() => navigate('/store')}
+                onClick={() => navigate('/inbox')}
                 className="btn btn-secondary"
                 style={{ justifyContent: 'space-between', width: '100%' }}
               >
-                Browse Store <ArrowUpRight size={16} />
+                View Inbox <ArrowUpRight size={16} />
               </button>
             </div>
           </div>
