@@ -6,6 +6,7 @@ const IPC_CHANNELS = {
   AUTH_LOGOUT: 'auth:logout',
   AUTH_GET_SESSION: 'auth:getSession',
   AUTH_CHANGE_PASSWORD: 'auth:changePassword',
+  AUTH_UNLOCK_SESSION: 'auth:unlockSession',
 
   // Profile
   PROFILE_GET: 'profile:get',
@@ -115,7 +116,16 @@ const IPC_CHANNELS = {
   // Recovery / Crypto
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
   CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile',
-  CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile'
+  CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile',
+
+  // Cloud Sync
+  SYNC_GET_STATUS: 'sync:getStatus',
+  SYNC_CLOUD_DISCONNECT: 'sync:cloudDisconnect',
+  SYNC_FORCE_PUSH: 'sync:forcePush',
+  SYNC_FORCE_PULL: 'sync:forcePull',
+  SYNC_GET_DEVICES: 'sync:getDevices',
+  SYNC_DELETE_DEVICE: 'sync:deleteDevice',
+  SYNC_STATUS_CHANGED: 'sync:statusChanged'
 };
 
 // User Roles

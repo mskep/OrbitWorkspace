@@ -4,6 +4,7 @@ import { useAppStore } from '../state/store';
 
 // Pages
 import Auth from '../pages/Auth';
+import Unlock from '../pages/Unlock';
 import Home from '../pages/Home';
 import Tools from '../pages/Tools';
 import Notes from '../pages/Notes';
@@ -20,9 +21,14 @@ import Workspace from './layout/Workspace';
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  const needsUnlock = useAppStore((state) => state.needsUnlock);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (needsUnlock) {
+    return <Navigate to="/unlock" replace />;
   }
 
   return children;
@@ -44,6 +50,7 @@ function AppRoutes() {
     <Router>
       <Routes>
         <Route path="/login" element={<Auth />} />
+        <Route path="/unlock" element={<Unlock />} />
 
         <Route
           path="/*"

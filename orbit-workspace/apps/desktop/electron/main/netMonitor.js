@@ -1,4 +1,7 @@
 const https = require('https');
+const http = require('http');
+
+const HEALTH_URL = new URL(process.env.ORBIT_API_URL || 'https://api.orbitenv.com');
 
 class NetworkMonitor {
   constructor() {
@@ -27,12 +30,14 @@ class NetworkMonitor {
 
   async checkConnection() {
     return new Promise((resolve) => {
-      const req = https.request(
+      const transport = HEALTH_URL.protocol === 'https:' ? https : http;
+      const req = transport.request(
         {
           method: 'HEAD',
-          hostname: 'www.google.com',
-          path: '/',
-          timeout: 10000 // Increased timeout to 10s to reduce false negatives
+          hostname: HEALTH_URL.hostname,
+          port: HEALTH_URL.port || (HEALTH_URL.protocol === 'https:' ? 443 : 80),
+          path: '/health',
+          timeout: 10000
         },
         (res) => {
           const success = res.statusCode >= 200 && res.statusCode < 400;

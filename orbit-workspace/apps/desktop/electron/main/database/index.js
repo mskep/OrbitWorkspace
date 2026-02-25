@@ -82,6 +82,10 @@ class DatabaseManager {
         name: '003_inbox_broadcast_types',
         sql: this._getInboxBroadcastTypesMigration()
       },
+      {
+        name: '004_sync_queue_v2',
+        sql: this._getSyncQueueV2Migration()
+      },
     ];
 
     // Apply pending migrations
@@ -435,6 +439,43 @@ class DatabaseManager {
       CREATE INDEX idx_inbox_user_id ON inbox_messages(user_id);
       CREATE INDEX idx_inbox_unread ON inbox_messages(user_id, is_read);
       CREATE INDEX idx_inbox_created ON inbox_messages(created_at DESC);
+    `;
+  }
+
+  /**
+   * Migration: Replace old sync_queue (from 002) with cloud-sync compatible schema.
+   * Old data is transient (pending offline ops) — safe to drop.
+   * Also creates sync_cursors and sync_versions tables used by SyncQueue.
+   */
+  _getSyncQueueV2Migration() {
+    return `
+      DROP TABLE IF EXISTS sync_queue;
+
+      CREATE TABLE sync_queue (
+        id          TEXT PRIMARY KEY,
+        op_id       TEXT UNIQUE NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id   TEXT NOT NULL,
+        action      TEXT NOT NULL DEFAULT 'upsert',
+        version     INTEGER NOT NULL DEFAULT 1,
+        payload     TEXT,
+        created_at  INTEGER NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'pending'
+      );
+      CREATE INDEX idx_sync_queue_status ON sync_queue(status);
+      CREATE INDEX idx_sync_queue_entity ON sync_queue(entity_type, entity_id);
+
+      CREATE TABLE IF NOT EXISTS sync_cursors (
+        entity_type TEXT PRIMARY KEY,
+        server_clock INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS sync_versions (
+        entity_type TEXT NOT NULL,
+        entity_id   TEXT NOT NULL,
+        version     INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (entity_type, entity_id)
+      );
     `;
   }
 

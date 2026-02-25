@@ -99,6 +99,29 @@ class UserRepository {
   }
 
   /**
+   * Upsert a user from server data (cloud-first auth).
+   * Uses the server's user ID as the local ID.
+   */
+  upsertFromServer({ id, username, email, role, status }) {
+    const now = Math.floor(Date.now() / 1000);
+    const existing = this.findById(id);
+
+    if (existing) {
+      this.db.prepare(`
+        UPDATE users SET username = ?, email = ?, role = ?, status = ?, last_login_at = ?
+        WHERE id = ?
+      `).run(username.toLowerCase(), email.toLowerCase(), role, status, now, id);
+    } else {
+      this.db.prepare(`
+        INSERT INTO users (id, username, email, password_hash, role, status, created_at, last_login_at)
+        VALUES (?, ?, ?, '', ?, ?, ?, ?)
+      `).run(id, username.toLowerCase(), email.toLowerCase(), role, status || 'active', now, now);
+    }
+
+    return this.findById(id);
+  }
+
+  /**
    * Get all users (admin only)
    */
   findAll() {

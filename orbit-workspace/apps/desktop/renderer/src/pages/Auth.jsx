@@ -22,7 +22,6 @@ function Auth() {
     username: '',
     password: '',
     confirmPassword: '',
-    rememberMe: false
   });
 
   // Recovery state
@@ -49,7 +48,6 @@ function Auth() {
       const result = await hubAPI.auth.login({
         identifier: formData.identifier,
         password: formData.password,
-        rememberMe: formData.rememberMe
       });
 
       if (result.success) {
@@ -80,8 +78,20 @@ function Auth() {
     setError('');
     setLoading(true);
 
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      setLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(formData.username) || formData.username.length < 3) {
+      setError('Username must be 3+ characters (letters, numbers, _ or -)');
       setLoading(false);
       return;
     }
@@ -94,29 +104,19 @@ function Auth() {
       });
 
       if (result.success) {
-        const loginResult = await hubAPI.auth.login({
-          identifier: formData.username,
-          password: formData.password,
-          rememberMe: true
-        });
+        // Session is already established by register — just fetch it
+        const session = await hubAPI.auth.getSession();
+        setSession(session);
+        const profileResult = await hubAPI.profile.get();
+        if (profileResult) setProfile(profileResult);
 
-        if (loginResult.success) {
-          setSession(loginResult.session);
-          const profileResult = await hubAPI.profile.get();
-          if (profileResult) setProfile(profileResult);
-
-          if (result.recoveryFileContent) {
-            setRecoveryPrompt({
-              content: result.recoveryFileContent,
-              username: formData.username
-            });
-          } else {
-            navigate('/home');
-          }
+        if (result.recoveryFileContent) {
+          setRecoveryPrompt({
+            content: result.recoveryFileContent,
+            username: formData.username
+          });
         } else {
-          setMode('login');
-          setFormData((prev) => ({ ...prev, identifier: formData.username }));
-          setSuccess('Account created! Please sign in.');
+          navigate('/home');
         }
       } else {
         setError(result.error || 'Registration failed');
@@ -150,8 +150,8 @@ function Auth() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -207,7 +207,7 @@ function Auth() {
     setMode(newMode);
     setError('');
     setSuccess('');
-    setFormData({ identifier: '', email: '', username: '', password: '', confirmPassword: '', rememberMe: false });
+    setFormData({ identifier: '', email: '', username: '', password: '', confirmPassword: '' });
     setNewPassword('');
     setConfirmNewPassword('');
     setRecoveryFile(null);
@@ -321,15 +321,6 @@ function Auth() {
               </div>
 
               <div className="auth-options">
-                <label className="auth-checkbox">
-                  <input
-                    type="checkbox"
-                    name="rememberMe"
-                    checked={formData.rememberMe}
-                    onChange={handleChange}
-                  />
-                  <span>Remember me</span>
-                </label>
                 <button type="button" className="auth-link" onClick={() => switchMode('recover')}>
                   Forgot password?
                 </button>

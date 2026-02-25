@@ -15,6 +15,7 @@ const LogManager = require('./logManager');
 let TrayManager;
 let AutoLaunch;
 
+const SyncManager = require('./sync/SyncManager');
 const { IPC_CHANNELS } = require('../shared/constants');
 
 let mainWindow;
@@ -27,6 +28,7 @@ let toolRunner;
 let networkMonitor;
 let autoLaunch;
 let logManager;
+let syncManager;
 let isDev;
 
 // Suppress Chromium GPU/disk cache errors on Windows
@@ -142,10 +144,34 @@ async function initializeServices() {
   AutoLaunch = require('./autoLaunch');
   autoLaunch = new AutoLaunch();
 
+  // Initialize cloud sync manager
+  syncManager = new SyncManager(dbService, authService, networkMonitor, userDataPath);
+  syncManager.initialize();
+
+  // Wire cloud services into authService (cloud-first auth)
+  authService.setCloudServices(syncManager.apiClient, syncManager.tokenStore, syncManager);
+
+  // Forward sync status changes to renderer
+  syncManager.onStatusChange((status) => {
+    if (mainWindow?.webContents) {
+      mainWindow.webContents.send(IPC_CHANNELS.SYNC_STATUS_CHANGED, status);
+    }
+  });
+
   console.log('✅ All services initialized');
 }
 
 function setupIpcHandlers() {
+  // Helper: require authenticated + unlocked session
+  // Returns { session } on success, or { error } if blocked
+  const LOCKED_ERROR = { success: false, error: 'Session locked', code: 'CRYPTO_LOCKED' };
+  async function requireUnlocked() {
+    const session = await authService.getSession();
+    if (!session) return { error: { success: false, error: 'Not authenticated' } };
+    if (authService.getNeedsUnlock()) return { error: LOCKED_ERROR };
+    return { session };
+  }
+
   // Auth handlers - with secure logging
   ipcMain.handle(IPC_CHANNELS.AUTH_REGISTER, async (event, { email, username, password }) => {
     try {
@@ -154,7 +180,7 @@ function setupIpcHandlers() {
 
       logManager.log({
         type: 'auth:register',
-        userId: result.success ? result.userId : null,
+        userId: result.success ? result.user?.id : null,
         username: result.success ? username : null,
         status: result.success ? 'success' : 'error',
         error: result.error || null,
@@ -169,10 +195,10 @@ function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.AUTH_LOGIN, async (event, { identifier, password, rememberMe }) => {
+  ipcMain.handle(IPC_CHANNELS.AUTH_LOGIN, async (event, { identifier, password }) => {
     try {
       const startTime = Date.now();
-      const result = await authService.login(identifier, password, rememberMe);
+      const result = await authService.login(identifier, password);
 
       logManager.log({
         type: 'auth:login',
@@ -184,11 +210,6 @@ function setupIpcHandlers() {
         payload: { action: 'login' }
       });
 
-      // Strip token from response to renderer
-      if (result.success && result.session) {
-        const { token, ...safeSession } = result.session;
-        return { ...result, session: safeSession };
-      }
       return result;
     } catch (error) {
       console.error('Login error:', error);
@@ -217,9 +238,20 @@ function setupIpcHandlers() {
   ipcMain.handle(IPC_CHANNELS.AUTH_GET_SESSION, async () => {
     const session = await authService.getSession();
     if (!session) return null;
-    // Don't expose token to renderer
-    const { token, ...safeSession } = session;
-    return safeSession;
+    return {
+      ...session,
+      needsUnlock: authService.getNeedsUnlock(),
+    };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AUTH_UNLOCK_SESSION, async (event, { password }) => {
+    try {
+      const result = await authService.unlockSession(password);
+      return result;
+    } catch (error) {
+      console.error('Unlock session error:', error);
+      return { success: false, error: 'Unlock failed' };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_CHANGE_PASSWORD, async (event, { oldPassword, newPassword }) => {
@@ -246,40 +278,40 @@ function setupIpcHandlers() {
 
   // Tools handlers (auth-guarded)
   ipcMain.handle(IPC_CHANNELS.TOOLS_LIST, async () => {
-    const session = await authService.getSession();
-    if (!session) return [];
+    const { session, error: _authErr } = await requireUnlocked();
+    if (_authErr) return [];
     return toolRunner.listTools();
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_GET, async (event, toolId) => {
-    const session = await authService.getSession();
-    if (!session) return null;
+    const { session, error: _authErr } = await requireUnlocked();
+    if (_authErr) return null;
     return toolRunner.getTool(toolId);
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_RUN, async (event, { toolId, action, payload }) => {
-    const session = await authService.getSession();
-    if (!session) return { success: false, error: 'Not authenticated' };
+    const { session, error: _authErr } = await requireUnlocked();
+    if (_authErr) return _authErr;
     return toolRunner.runTool(toolId, action, payload);
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_GET_CONFIG, async (event, toolId) => {
-    const session = await authService.getSession();
-    if (!session) return {};
+    const { session, error: _authErr } = await requireUnlocked();
+    if (_authErr) return {};
     return toolRunner.getToolConfig(toolId);
   });
 
   ipcMain.handle(IPC_CHANNELS.TOOLS_SET_CONFIG, async (event, { toolId, config }) => {
-    const session = await authService.getSession();
-    if (!session) return { error: 'Not authenticated' };
+    const { session, error: _authErr } = await requireUnlocked();
+    if (_authErr) return _authErr;
     return toolRunner.setToolConfig(toolId, config);
   });
 
   // Filesystem handlers (auth-guarded)
   ipcMain.handle(IPC_CHANNELS.FS_PICK_FILE, async (event, options) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return null;
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return null;
 
       const dialogOptions = { properties: ['openFile'] };
       if (options?.filters) dialogOptions.filters = options.filters;
@@ -295,8 +327,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FS_PICK_FOLDER, async (event, options) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return null;
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return null;
 
       const dialogOptions = { properties: ['openDirectory'] };
       if (options?.title) dialogOptions.title = options.title;
@@ -311,8 +343,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FS_SAVE_FILE, async (event, { defaultPath, filters }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return null;
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return null;
 
       const result = await dialog.showSaveDialog(mainWindow, {
         defaultPath,
@@ -327,8 +359,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FS_OPEN_PATH, async (event, filePath) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const errorMessage = await shell.openPath(filePath);
       if (errorMessage) {
@@ -354,19 +386,38 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle(IPC_CHANNELS.SYSTEM_SET_AUTOLAUNCH, async (event, enabled) => {
-    const session = await authService.getSession();
-    if (!session) return { success: false, error: 'Not authenticated' };
+    const { session, error: _authErr } = await requireUnlocked();
+    if (_authErr) return _authErr;
 
-    return autoLaunch.toggle(enabled);
+    const result = autoLaunch.toggle(enabled);
+
+    // Sync settings change
+    try {
+      const repos = dbService.getRepositories();
+      repos.userSettings.updateAutoLaunch(session.userId, enabled);
+      const settings = repos.userSettings.findByUserId(session.userId);
+      if (settings) {
+        syncManager.enqueueChange('user_settings', session.userId, 'upsert', {
+          theme: settings.theme,
+          language: settings.language,
+          notifications_enabled: settings.notifications_enabled,
+          auto_launch_enabled: settings.auto_launch_enabled,
+          active_workspace_id: settings.active_workspace_id,
+          additionalSettings: settings.additionalSettings || {},
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync autolaunch setting:', err.message);
+    }
+
+    return result;
   });
 
   // Logs handlers - user-specific only
   ipcMain.handle(IPC_CHANNELS.LOGS_TAIL, async (event, { type, limit }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) {
-        return { success: false, error: 'Not authenticated' };
-      }
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Users can only see their own logs
       const logs = logManager.tail({
@@ -383,10 +434,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LOGS_SEARCH, async (event, query) => {
     try {
-      const session = await authService.getSession();
-      if (!session) {
-        return { success: false, error: 'Not authenticated' };
-      }
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Force userId filter to only show user's own logs
       const logs = logManager.search({
@@ -426,8 +475,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_GET_ALL, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const workspaces = repos.workspaces.findByUserId(session.userId);
@@ -440,8 +489,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_GET_ACTIVE, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const settings = repos.userSettings.findByUserId(session.userId);
@@ -460,11 +509,15 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_CREATE, async (event, { name }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const workspace = repos.workspaces.create(session.userId, name);
+
+      syncManager.enqueueChange('workspace', workspace.id, 'upsert', {
+        name: workspace.name, tools: [],
+      });
 
       return { success: true, workspace };
     } catch (error) {
@@ -475,8 +528,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_UPDATE, async (event, { id, name }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -486,7 +539,12 @@ function setupIpcHandlers() {
       }
 
       repos.workspaces.updateName(id, name);
-      const workspace = repos.workspaces.findById(id);
+      const workspace = repos.workspaces.findWithTools(id);
+
+      syncManager.enqueueChange('workspace', id, 'upsert', {
+        name: workspace.name,
+        tools: workspace.tools || [],
+      });
 
       return { success: true, workspace };
     } catch (error) {
@@ -497,8 +555,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_DELETE, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -508,6 +566,7 @@ function setupIpcHandlers() {
       }
 
       repos.workspaces.delete(id);
+      syncManager.enqueueChange('workspace', id, 'delete');
       return { success: true };
     } catch (error) {
       console.error('Delete workspace error:', error);
@@ -517,8 +576,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_SWITCH, async (event, { workspaceId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -530,6 +589,19 @@ function setupIpcHandlers() {
       repos.userSettings.updateActiveWorkspace(session.userId, workspaceId);
       const workspace = repos.workspaces.findById(workspaceId);
 
+      // Sync settings change
+      const settings = repos.userSettings.findByUserId(session.userId);
+      if (settings) {
+        syncManager.enqueueChange('user_settings', session.userId, 'upsert', {
+          theme: settings.theme,
+          language: settings.language,
+          notifications_enabled: settings.notifications_enabled,
+          auto_launch_enabled: settings.auto_launch_enabled,
+          active_workspace_id: settings.active_workspace_id,
+          additionalSettings: settings.additionalSettings || {},
+        });
+      }
+
       return { success: true, workspace };
     } catch (error) {
       console.error('Switch workspace error:', error);
@@ -539,8 +611,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_GET_TOOLS, async (event, { workspaceId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -559,8 +631,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_ADD_TOOL, async (event, { workspaceId, toolId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -570,6 +642,13 @@ function setupIpcHandlers() {
       }
 
       repos.workspaces.addTool(workspaceId, toolId);
+
+      const wsWithTools = repos.workspaces.findWithTools(workspaceId);
+      syncManager.enqueueChange('workspace', workspaceId, 'upsert', {
+        name: wsWithTools.name,
+        tools: wsWithTools.tools || [],
+      });
+
       return { success: true };
     } catch (error) {
       console.error('Add workspace tool error:', error);
@@ -579,8 +658,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.WORKSPACE_REMOVE_TOOL, async (event, { workspaceId, toolId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -590,6 +669,13 @@ function setupIpcHandlers() {
       }
 
       repos.workspaces.removeTool(workspaceId, toolId);
+
+      const wsWithTools = repos.workspaces.findWithTools(workspaceId);
+      syncManager.enqueueChange('workspace', workspaceId, 'upsert', {
+        name: wsWithTools.name,
+        tools: wsWithTools.tools || [],
+      });
+
       return { success: true };
     } catch (error) {
       console.error('Remove workspace tool error:', error);
@@ -603,8 +689,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_GET_ALL, async (event, { workspaceId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -623,8 +709,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_GET, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const note = repos.notes.findById(id);
@@ -642,8 +728,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_CREATE, async (event, { workspaceId, title, content, tags, isPinned }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -661,6 +747,11 @@ function setupIpcHandlers() {
         isPinned: isPinned || false
       });
 
+      syncManager.enqueueChange('note', note.id, 'upsert', {
+        title: note.title, content: note.content, tags: note.tags,
+        is_pinned: note.is_pinned, workspace_id: workspaceId,
+      });
+
       return { success: true, note };
     } catch (error) {
       console.error('Create note error:', error);
@@ -670,8 +761,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_UPDATE, async (event, { id, title, content, tags }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const note = repos.notes.findById(id);
@@ -683,6 +774,11 @@ function setupIpcHandlers() {
       repos.notes.update(id, { title, content, tags });
       const updated = repos.notes.findById(id);
 
+      syncManager.enqueueChange('note', id, 'upsert', {
+        title: updated.title, content: updated.content, tags: updated.tags,
+        is_pinned: updated.is_pinned, workspace_id: updated.workspace_id,
+      });
+
       return { success: true, note: updated };
     } catch (error) {
       console.error('Update note error:', error);
@@ -692,8 +788,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_DELETE, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const note = repos.notes.findById(id);
@@ -703,6 +799,7 @@ function setupIpcHandlers() {
       }
 
       repos.notes.delete(id);
+      syncManager.enqueueChange('note', id, 'delete');
       return { success: true };
     } catch (error) {
       console.error('Delete note error:', error);
@@ -712,8 +809,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_SEARCH, async (event, { workspaceId, query }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -732,8 +829,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.NOTE_TOGGLE_PIN, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const note = repos.notes.findById(id);
@@ -744,6 +841,11 @@ function setupIpcHandlers() {
 
       repos.notes.togglePin(id);
       const updated = repos.notes.findById(id);
+
+      syncManager.enqueueChange('note', id, 'upsert', {
+        title: updated.title, content: updated.content, tags: updated.tags,
+        is_pinned: updated.is_pinned, workspace_id: updated.workspace_id,
+      });
 
       return { success: true, note: updated };
     } catch (error) {
@@ -758,8 +860,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_GET_ALL, async (event, { workspaceId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -778,8 +880,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_GET, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const link = repos.links.findById(id);
@@ -797,8 +899,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_CREATE, async (event, { workspaceId, title, url, description, tags, isFavorite }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -817,6 +919,12 @@ function setupIpcHandlers() {
         isFavorite: isFavorite || false
       });
 
+      syncManager.enqueueChange('link', link.id, 'upsert', {
+        title: link.title, url: link.url, description: link.description,
+        tags: link.tags, is_favorite: link.is_favorite,
+        favicon_url: link.favicon_url, workspace_id: workspaceId,
+      });
+
       return { success: true, link };
     } catch (error) {
       console.error('Create link error:', error);
@@ -826,8 +934,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_UPDATE, async (event, { id, title, url, description, tags }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const link = repos.links.findById(id);
@@ -839,6 +947,12 @@ function setupIpcHandlers() {
       repos.links.update(id, { title, url, description, tags });
       const updated = repos.links.findById(id);
 
+      syncManager.enqueueChange('link', id, 'upsert', {
+        title: updated.title, url: updated.url, description: updated.description,
+        tags: updated.tags, is_favorite: updated.is_favorite,
+        favicon_url: updated.favicon_url, workspace_id: updated.workspace_id,
+      });
+
       return { success: true, link: updated };
     } catch (error) {
       console.error('Update link error:', error);
@@ -848,8 +962,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_DELETE, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const link = repos.links.findById(id);
@@ -859,6 +973,7 @@ function setupIpcHandlers() {
       }
 
       repos.links.delete(id);
+      syncManager.enqueueChange('link', id, 'delete');
       return { success: true };
     } catch (error) {
       console.error('Delete link error:', error);
@@ -868,8 +983,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_SEARCH, async (event, { workspaceId, query }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -888,8 +1003,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.LINK_TOGGLE_FAVORITE, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const link = repos.links.findById(id);
@@ -900,6 +1015,12 @@ function setupIpcHandlers() {
 
       repos.links.toggleFavorite(id);
       const updated = repos.links.findById(id);
+
+      syncManager.enqueueChange('link', id, 'upsert', {
+        title: updated.title, url: updated.url, description: updated.description,
+        tags: updated.tags, is_favorite: updated.is_favorite,
+        favicon_url: updated.favicon_url, workspace_id: updated.workspace_id,
+      });
 
       return { success: true, link: updated };
     } catch (error) {
@@ -914,8 +1035,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_GET_ALL, async (event, { workspaceId }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -934,8 +1055,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_GET, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const fileRef = repos.fileReferences.findById(id);
@@ -953,8 +1074,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_CREATE, async (event, { workspaceId, name, path, type, description, tags, isPinned }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -974,6 +1095,12 @@ function setupIpcHandlers() {
         isPinned: isPinned || false
       });
 
+      syncManager.enqueueChange('file_ref', fileRef.id, 'upsert', {
+        name: fileRef.name, path, type: fileRef.type,
+        description: fileRef.description, tags: fileRef.tags,
+        is_pinned: fileRef.is_pinned, workspace_id: workspaceId,
+      });
+
       return { success: true, file: fileRef };
     } catch (error) {
       console.error('Create file reference error:', error);
@@ -983,8 +1110,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_UPDATE, async (event, { id, name, path, description, tags }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const fileRef = repos.fileReferences.findById(id);
@@ -996,6 +1123,13 @@ function setupIpcHandlers() {
       repos.fileReferences.update(id, { name, path, description, tags });
       const updated = repos.fileReferences.findById(id);
 
+      syncManager.enqueueChange('file_ref', id, 'upsert', {
+        name: updated.name, path: updated.path,
+        type: updated.type, description: updated.description,
+        tags: updated.tags, is_pinned: updated.is_pinned,
+        workspace_id: updated.workspace_id,
+      });
+
       return { success: true, file: updated };
     } catch (error) {
       console.error('Update file reference error:', error);
@@ -1005,8 +1139,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_DELETE, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const fileRef = repos.fileReferences.findById(id);
@@ -1016,6 +1150,7 @@ function setupIpcHandlers() {
       }
 
       repos.fileReferences.delete(id);
+      syncManager.enqueueChange('file_ref', id, 'delete');
       return { success: true };
     } catch (error) {
       console.error('Delete file reference error:', error);
@@ -1025,8 +1160,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_SEARCH, async (event, { workspaceId, query }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
 
@@ -1045,8 +1180,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_OPEN, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const fileRef = repos.fileReferences.findById(id);
@@ -1070,8 +1205,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.FILE_REF_SHOW_IN_FOLDER, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const fileRef = repos.fileReferences.findById(id);
@@ -1108,8 +1243,8 @@ function setupIpcHandlers() {
   ipcMain.handle(IPC_CHANNELS.BADGE_GET_USER_BADGES, async (event, payload = {}) => {
     try {
       const { userId } = payload;
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Users can only get their own badges unless they're admin
       if (userId && userId !== session.userId && session.role !== 'ADMIN') {
@@ -1128,8 +1263,8 @@ function setupIpcHandlers() {
   ipcMain.handle(IPC_CHANNELS.BADGE_ASSIGN, async (event, payload = {}) => {
     try {
       const { userId, badgeId } = payload;
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins can assign badges
       if (session.role !== 'ADMIN') {
@@ -1148,6 +1283,18 @@ function setupIpcHandlers() {
         return { success: false, error: 'Badge not found' };
       }
 
+      // Ensure user exists locally before badge FK insert (server users may not be cached)
+      if (!repos.users.findById(userId)) {
+        // Try to cache from server user list
+        if (syncManager.tokenStore.isConnected()) {
+          try {
+            const result = await syncManager.apiClient.getUsers();
+            const serverUser = (result.users || result).find((u) => u.id === userId);
+            if (serverUser) repos.users.upsertFromServer(serverUser);
+          } catch { /* continue anyway */ }
+        }
+      }
+
       repos.badges.assign(userId, badgeId, session.userId);
 
       // Create inbox notification
@@ -1157,15 +1304,15 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error('Assign badge error:', error);
-      return { success: false, error: 'Failed to assign badge' };
+      return { success: false, error: error.message || 'Failed to assign badge' };
     }
   });
 
   ipcMain.handle(IPC_CHANNELS.BADGE_REVOKE, async (event, payload = {}) => {
     try {
       const { userId, badgeId } = payload;
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins can revoke badges
       if (session.role !== 'ADMIN') {
@@ -1193,7 +1340,7 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error('Revoke badge error:', error);
-      return { success: false, error: 'Failed to revoke badge' };
+      return { success: false, error: error.message || 'Failed to revoke badge' };
     }
   });
 
@@ -1203,8 +1350,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.INBOX_GET_ALL, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const messages = repos.inbox.findByUserId(session.userId);
@@ -1218,8 +1365,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.INBOX_GET_UNREAD_COUNT, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const count = repos.inbox.countUnread(session.userId);
@@ -1233,8 +1380,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.INBOX_MARK_READ, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const message = repos.inbox.findById(id);
@@ -1253,8 +1400,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.INBOX_MARK_ALL_READ, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       repos.inbox.markAllAsRead(session.userId);
@@ -1268,8 +1415,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.INBOX_DELETE, async (event, { id }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       const message = repos.inbox.findById(id);
@@ -1288,8 +1435,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.INBOX_DELETE_READ, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       const repos = dbService.getRepositories();
       repos.inbox.deleteAllRead(session.userId);
@@ -1307,8 +1454,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_STATS, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins and devs can view stats
       if (session.role !== 'ADMIN' && session.role !== 'DEV') {
@@ -1343,14 +1490,25 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_USERS, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins and devs can view all users
       if (session.role !== 'ADMIN' && session.role !== 'DEV') {
         return { success: false, error: 'Unauthorized' };
       }
 
+      // Route through server API when connected (server is authority for user list)
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getUsers();
+          return { success: true, users: result.users || result };
+        } catch (err) {
+          console.warn('Admin getUsers from server failed, falling back to local:', err.message);
+        }
+      }
+
+      // Fallback to local SQLite (offline mode)
       const repos = dbService.getRepositories();
       const users = repos.users.findAll();
 
@@ -1363,8 +1521,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_AUDIT_LOGS, async (event, query = {}) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins and devs can view audit logs
       if (session.role !== 'ADMIN' && session.role !== 'DEV') {
@@ -1434,8 +1592,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_OPERATIONS_STATUS, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins and devs can view operations status
       if (session.role !== 'ADMIN' && session.role !== 'DEV') {
@@ -1587,8 +1745,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_UPDATE_USER_ROLE, async (event, { userId, role }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins can update roles
       if (session.role !== 'ADMIN') {
@@ -1600,18 +1758,33 @@ function setupIpcHandlers() {
         return { success: false, error: 'Invalid role update payload' };
       }
 
-      const repos = dbService.getRepositories();
-      const user = repos.users.findById(userId);
-      if (!user) {
-        return { success: false, error: 'User not found' };
-      }
-
       // Prevent self-demotion
       if (userId === session.userId && role !== 'ADMIN') {
         return { success: false, error: 'Cannot change your own role' };
       }
 
-      // Prevent removing the last admin
+      const repos = dbService.getRepositories();
+
+      // Route through server when connected (server handles all safeguards)
+      if (syncManager.tokenStore.isConnected()) {
+        await syncManager.apiClient.updateUserRole(userId, role);
+        // Update local cache if user exists locally
+        const localUser = repos.users.findById(userId);
+        if (localUser) {
+          repos.users.updateRole(userId, role);
+          repos.inbox.createRoleChangedMessage(userId, localUser.role, role, session.username);
+          if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
+        }
+        return { success: true };
+      }
+
+      // Offline fallback: local-only
+      const user = repos.users.findById(userId);
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // Prevent removing the last admin (local check)
       if (user.role === 'ADMIN' && role !== 'ADMIN') {
         const allUsers = repos.users.findAll();
         const adminCount = allUsers.filter((u) => u.role === 'ADMIN' && u.status === 'active').length;
@@ -1621,7 +1794,6 @@ function setupIpcHandlers() {
       }
 
       const oldRole = user.role;
-
       repos.users.updateRole(userId, role);
 
       // Create inbox notification
@@ -1631,14 +1803,14 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error('Update user role error:', error);
-      return { success: false, error: 'Failed to update user role' };
+      return { success: false, error: error.message || 'Failed to update user role' };
     }
   });
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_UPDATE_USER_STATUS, async (event, { userId, status }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       // Only admins can update status
       if (session.role !== 'ADMIN') {
@@ -1656,12 +1828,23 @@ function setupIpcHandlers() {
       }
 
       const repos = dbService.getRepositories();
+
+      // Route through server when connected (server handles all safeguards)
+      if (syncManager.tokenStore.isConnected()) {
+        await syncManager.apiClient.updateUserStatus(userId, status);
+        // Update local cache if user exists locally
+        const localUser = repos.users.findById(userId);
+        if (localUser) repos.users.updateStatus(userId, status);
+        return { success: true };
+      }
+
+      // Offline fallback: local-only
       const user = repos.users.findById(userId);
       if (!user) {
         return { success: false, error: 'User not found' };
       }
 
-      // Prevent disabling the last active admin
+      // Prevent disabling the last active admin (local check)
       if (user.role === 'ADMIN' && status !== 'active') {
         const allUsers = repos.users.findAll();
         const activeAdminCount = allUsers.filter((u) => u.role === 'ADMIN' && u.status === 'active').length;
@@ -1675,14 +1858,14 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error) {
       console.error('Update user status error:', error);
-      return { success: false, error: 'Failed to update user status' };
+      return { success: false, error: error.message || 'Failed to update user status' };
     }
   });
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_SEND_NOTIFICATION, async (event, { title, message, target, userId, category }) => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       if (session.role !== 'ADMIN' && session.role !== 'DEV') {
         return { success: false, error: 'Unauthorized' };
@@ -1723,8 +1906,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.ADMIN_GET_BROADCAST_HISTORY, async () => {
     try {
-      const session = await authService.getSession();
-      if (!session) return { success: false, error: 'Not authenticated' };
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
 
       if (session.role !== 'ADMIN' && session.role !== 'DEV') {
         return { success: false, error: 'Unauthorized' };
@@ -1804,6 +1987,61 @@ function setupIpcHandlers() {
       return { success: false, error: 'Recovery failed' };
     }
   });
+
+  // ========================================
+  // CLOUD SYNC HANDLERS
+  // ========================================
+
+  ipcMain.handle(IPC_CHANNELS.SYNC_GET_STATUS, async () => {
+    return syncManager.getStatus();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYNC_CLOUD_DISCONNECT, async () => {
+    try {
+      // Disconnect = full logout (stops sync, clears tokens, locks crypto)
+      const result = await authService.logout();
+      return result;
+    } catch (error) {
+      console.error('Cloud disconnect error:', error);
+      return { success: false, error: error.message || 'Disconnect failed' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYNC_FORCE_PUSH, async () => {
+    try {
+      await syncManager._push();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYNC_FORCE_PULL, async () => {
+    try {
+      await syncManager._pull();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYNC_GET_DEVICES, async () => {
+    try {
+      const devices = await syncManager.apiClient.getDevices();
+      return { success: true, devices };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYNC_DELETE_DEVICE, async (event, { deviceId }) => {
+    try {
+      await syncManager.apiClient.deleteDevice(deviceId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 app.whenReady().then(async () => {
@@ -1837,6 +2075,9 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+  if (syncManager) {
+    syncManager.stop();
+  }
   if (networkMonitor) {
     networkMonitor.stop();
   }

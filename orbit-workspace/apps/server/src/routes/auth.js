@@ -112,6 +112,38 @@ export async function authRoutes(fastify) {
     return result || { recovery_blob: null, salt: null, kdf_params: null };
   });
 
+  // POST /api/v1/auth/recover-reset (authenticated — after client-side recovery)
+  // The user has proven recovery key possession locally; this syncs the new crypto to the server.
+  fastify.post('/recover-reset', {
+    onRequest: [authenticateStrict],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['new_password', 'new_salt', 'new_encrypted_master_key', 'new_kdf_params'],
+        properties: {
+          new_password: { type: 'string', minLength: 8, maxLength: 128 },
+          new_salt: { type: 'string', minLength: 1 },
+          new_encrypted_master_key: { type: 'string', minLength: 1 },
+          new_kdf_params: {
+            type: 'object',
+            required: ['algorithm', 'memoryCost', 'timeCost', 'parallelism', 'hashLength'],
+            properties: {
+              algorithm: { type: 'string' },
+              memoryCost: { type: 'integer' },
+              timeCost: { type: 'integer' },
+              parallelism: { type: 'integer' },
+              hashLength: { type: 'integer' },
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    await authService.recoverReset(fastify.pg, request.user.sub, request.body);
+    return reply.status(200).send({ message: 'Password reset via recovery, all sessions revoked' });
+  });
+
   // PUT /api/v1/auth/password (strict auth — DB check for immediate revocation)
   fastify.put('/password', {
     onRequest: [authenticateStrict],

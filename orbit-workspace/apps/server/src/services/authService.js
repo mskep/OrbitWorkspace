@@ -40,7 +40,8 @@ export async function register(pg, jwt, data) {
       throw new Conflict('Email or username already taken');
     }
 
-    // First user is ADMIN
+    // First user is ADMIN — use advisory lock to prevent race condition
+    await client.query('SELECT pg_advisory_xact_lock(1)');
     const { rows: countRows } = await client.query(usersQueries.count);
     const role = parseInt(countRows[0].count, 10) === 0 ? ROLES.ADMIN : ROLES.USER;
 
@@ -313,10 +314,18 @@ export async function logout(pg, userId, deviceId) {
  * The recovery_key_hex NEVER reaches the server.
  */
 export async function recover(pg, email) {
+  // Fixed-time response to prevent email enumeration via timing
+  const start = Date.now();
+
   const { rows } = await pg.query(userCryptoQueries.findRecoveryByEmail, [email]);
 
+  // Ensure minimum 200ms response time regardless of DB result
+  const elapsed = Date.now() - start;
+  if (elapsed < 200) {
+    await new Promise((r) => setTimeout(r, 200 - elapsed));
+  }
+
   if (rows.length === 0) {
-    // Generic response — don't reveal if email exists
     return null;
   }
 
@@ -325,6 +334,47 @@ export async function recover(pg, email) {
     salt: rows[0].salt,
     kdf_params: rows[0].kdf_params,
   };
+}
+
+/**
+ * Recovery-based password reset — re-wrap masterKey with new derived key.
+ * Called after client-side recovery (using the .orbit-recovery file).
+ * The user has already proven possession of the recovery key locally.
+ * Unlike changePassword, this does NOT require the old password.
+ */
+export async function recoverReset(pg, userId, data) {
+  const { new_password, new_salt, new_encrypted_master_key, new_kdf_params } = data;
+
+  // Validate KDF params bounds
+  if (new_kdf_params.memoryCost > 1048576 || new_kdf_params.timeCost > 10 || new_kdf_params.parallelism > 16) {
+    throw new BadRequest('KDF parameters exceed allowed bounds');
+  }
+
+  // Hash new password
+  const newHash = await hashPassword(new_password);
+
+  const client = await pg.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Update password hash
+    await client.query(usersQueries.updatePasswordHash, [userId, newHash]);
+
+    // Update crypto material
+    await client.query(userCryptoQueries.updatePasswordCrypto, [
+      userId, new_salt, new_encrypted_master_key, JSON.stringify(new_kdf_params),
+    ]);
+
+    // Revoke all existing sessions (force re-login everywhere)
+    await client.query(sessionsQueries.revokeByUser, [userId]);
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**

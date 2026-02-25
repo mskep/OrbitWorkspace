@@ -279,6 +279,52 @@ class SyncCrypto {
   }
 
   // ============================================================
+  // LOCAL AT-REST ENCRYPTION (for sync queue payloads)
+  // ============================================================
+
+  /**
+   * Encrypt data for local at-rest storage (sync queue).
+   * Uses AES-256-GCM with fixed AAD. No server interaction.
+   * @param {string} plaintext
+   * @returns {string} Base64-encoded JSON blob
+   */
+  encryptLocal(plaintext) {
+    if (!this.masterKey) throw new Error('Master key not loaded');
+    const iv = crypto.randomBytes(AES_CONFIG.ivLength);
+    const aadBuffer = Buffer.from('orbit_sync_queue_at_rest');
+    const cipher = crypto.createCipheriv(AES_CONFIG.algorithm, this.masterKey, iv);
+    cipher.setAAD(aadBuffer);
+    let encrypted = cipher.update(plaintext, 'utf8');
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return Buffer.from(JSON.stringify({
+      iv: iv.toString('base64'),
+      ct: encrypted.toString('base64'),
+      tg: tag.toString('base64'),
+    })).toString('base64');
+  }
+
+  /**
+   * Decrypt data from local at-rest storage (sync queue).
+   * @param {string} encoded - Base64-encoded JSON blob from encryptLocal
+   * @returns {string} Decrypted plaintext
+   */
+  decryptLocal(encoded) {
+    if (!this.masterKey) throw new Error('Master key not loaded');
+    const blob = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
+    const iv = Buffer.from(blob.iv, 'base64');
+    const ciphertext = Buffer.from(blob.ct, 'base64');
+    const tag = Buffer.from(blob.tg, 'base64');
+    const aadBuffer = Buffer.from('orbit_sync_queue_at_rest');
+    const decipher = crypto.createDecipheriv(AES_CONFIG.algorithm, this.masterKey, iv);
+    decipher.setAAD(aadBuffer);
+    decipher.setAuthTag(tag);
+    let decrypted = decipher.update(ciphertext);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString('utf8');
+  }
+
+  // ============================================================
   // RECOVERY FILE
   // ============================================================
 

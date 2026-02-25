@@ -7,6 +7,7 @@ const IPC_CHANNELS = {
   AUTH_LOGOUT: 'auth:logout',
   AUTH_GET_SESSION: 'auth:getSession',
   AUTH_CHANGE_PASSWORD: 'auth:changePassword',
+  AUTH_UNLOCK_SESSION: 'auth:unlockSession',
   PROFILE_GET: 'profile:get',
   PROFILE_UPDATE: 'profile:update',
   PERMISSIONS_CHECK: 'permissions:check',
@@ -78,6 +79,13 @@ const IPC_CHANNELS = {
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
   CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile',
   CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile',
+  SYNC_GET_STATUS: 'sync:getStatus',
+  SYNC_CLOUD_DISCONNECT: 'sync:cloudDisconnect',
+  SYNC_FORCE_PUSH: 'sync:forcePush',
+  SYNC_FORCE_PULL: 'sync:forcePull',
+  SYNC_GET_DEVICES: 'sync:getDevices',
+  SYNC_DELETE_DEVICE: 'sync:deleteDevice',
+  SYNC_STATUS_CHANGED: 'sync:statusChanged',
 };
 
 contextBridge.exposeInMainWorld('hubAPI', {
@@ -87,7 +95,8 @@ contextBridge.exposeInMainWorld('hubAPI', {
     login: (credentials) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_LOGIN, credentials),
     logout: () => ipcRenderer.invoke(IPC_CHANNELS.AUTH_LOGOUT),
     getSession: () => ipcRenderer.invoke(IPC_CHANNELS.AUTH_GET_SESSION),
-    changePassword: (data) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_CHANGE_PASSWORD, data)
+    changePassword: (data) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_CHANGE_PASSWORD, data),
+    unlockSession: (data) => ipcRenderer.invoke(IPC_CHANNELS.AUTH_UNLOCK_SESSION, data)
   },
 
   // Profile
@@ -221,6 +230,21 @@ contextBridge.exposeInMainWorld('hubAPI', {
     saveRecoveryFile: (data) => ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_SAVE_RECOVERY_FILE, data),
     recoverWithFile: (data) => ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_RECOVER_WITH_FILE, data),
     pickRecoveryFile: () => ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_PICK_RECOVERY_FILE),
+  },
+
+  // Cloud Sync
+  sync: {
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SYNC_GET_STATUS),
+    cloudDisconnect: () => ipcRenderer.invoke(IPC_CHANNELS.SYNC_CLOUD_DISCONNECT),
+    forcePush: () => ipcRenderer.invoke(IPC_CHANNELS.SYNC_FORCE_PUSH),
+    forcePull: () => ipcRenderer.invoke(IPC_CHANNELS.SYNC_FORCE_PULL),
+    getDevices: () => ipcRenderer.invoke(IPC_CHANNELS.SYNC_GET_DEVICES),
+    deleteDevice: (data) => ipcRenderer.invoke(IPC_CHANNELS.SYNC_DELETE_DEVICE, data),
+    onStatusChanged: (callback) => {
+      const handler = (_event, status) => callback(status);
+      ipcRenderer.on(IPC_CHANNELS.SYNC_STATUS_CHANGED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.SYNC_STATUS_CHANGED, handler);
+    },
   },
 
   // Window controls

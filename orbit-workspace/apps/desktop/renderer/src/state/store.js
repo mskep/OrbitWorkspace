@@ -4,8 +4,13 @@ export const useAppStore = create((set) => ({
   // Session
   session: null,
   isAuthenticated: false,
-  setSession: (session) => set({ session, isAuthenticated: !!session }),
-  clearSession: () => set({ session: null, isAuthenticated: false }),
+  needsUnlock: false,
+  setSession: (session) => set({
+    session,
+    isAuthenticated: !!session,
+    needsUnlock: !!session?.needsUnlock,
+  }),
+  clearSession: () => set({ session: null, isAuthenticated: false, needsUnlock: false }),
 
   // Profile
   profile: null,
@@ -29,5 +34,16 @@ export const useAppStore = create((set) => ({
 
   // Current route/page
   currentPage: 'home',
-  setCurrentPage: (page) => set({ currentPage: page })
+  setCurrentPage: (page) => set({ currentPage: page }),
+
+  // Cloud Sync
+  syncStatus: {
+    status: 'disconnected',
+    connected: false,
+    wsConnected: false,
+    pendingOps: 0,
+    lastError: null,
+    serverUserId: null,
+  },
+  setSyncStatus: (syncStatus) => set({ syncStatus })
 }));
