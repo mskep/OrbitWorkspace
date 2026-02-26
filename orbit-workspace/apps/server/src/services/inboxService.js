@@ -1,6 +1,6 @@
 import { inboxQueries } from '../db/queries/inbox.js';
 import { usersQueries } from '../db/queries/users.js';
-import { BadRequest, NotFound, Forbidden } from '../utils/errors.js';
+import { BadRequest, NotFound } from '../utils/errors.js';
 
 /**
  * Get all inbox messages for a user.
@@ -21,6 +21,39 @@ export async function getMessagesSince(pg, userId, since) {
   }
   const { rows } = await pg.query(inboxQueries.findByUserSince, [userId, parsed.toISOString()]);
   return { messages: rows };
+}
+
+/**
+ * Admin/DEV broadcast history (server-authoritative).
+ */
+export async function getBroadcastHistory(pg, limit = 50) {
+  const parsedLimit = Number.isFinite(Number(limit)) ? Number(limit) : 50;
+  const safeLimit = Math.min(Math.max(Math.floor(parsedLimit), 1), 200);
+
+  const { rows } = await pg.query(inboxQueries.broadcastHistory, [safeLimit]);
+  return {
+    history: rows.map((row) => {
+      let metadata = null;
+      if (row.metadata_json) {
+        try {
+          metadata = typeof row.metadata_json === 'string'
+            ? JSON.parse(row.metadata_json)
+            : row.metadata_json;
+        } catch {
+          metadata = null;
+        }
+      }
+
+      return {
+        type: normalizeBroadcastType(row.type),
+        title: row.title,
+        message: row.message,
+        metadata,
+        created_at: Number(row.created_at) || 0,
+        recipient_count: Number(row.recipient_count) || 0,
+      };
+    }),
+  };
 }
 
 /**
@@ -120,4 +153,9 @@ function _notifyUser(fastify, userId, eventType, data) {
       try { socket.send(payload); } catch { /* skip */ }
     }
   }
+}
+
+function normalizeBroadcastType(type) {
+  if (typeof type !== 'string') return 'admin-broadcast';
+  return type.replace(/_/g, '-');
 }

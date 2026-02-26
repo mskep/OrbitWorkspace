@@ -211,7 +211,10 @@ class InboxRepository {
     const stmt = this.db.prepare(`
       SELECT title, type, MIN(id) as sample_id, metadata_json, created_at, COUNT(*) as recipient_count
       FROM inbox_messages
-      WHERE type IN ('admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security')
+      WHERE type IN (
+        'admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security',
+        'admin_broadcast', 'admin_maintenance', 'admin_update', 'admin_security'
+      )
       GROUP BY title, type, metadata_json, created_at
       ORDER BY created_at DESC
       LIMIT ?
@@ -219,11 +222,20 @@ class InboxRepository {
     const rows = stmt.all(limit);
     return rows.map(row => {
       const sample = this.findById(row.sample_id);
+      let metadata = null;
+      if (row.metadata_json) {
+        try {
+          metadata = JSON.parse(row.metadata_json);
+        } catch {
+          metadata = null;
+        }
+      }
+
       return {
         title: row.title,
-        type: row.type,
+        type: typeof row.type === 'string' ? row.type.replace(/_/g, '-') : row.type,
         message: sample ? sample.message : '',
-        metadata: row.metadata_json ? JSON.parse(row.metadata_json) : null,
+        metadata,
         created_at: row.created_at,
         recipient_count: row.recipient_count
       };
@@ -247,3 +259,4 @@ class InboxRepository {
 }
 
 module.exports = InboxRepository;
+

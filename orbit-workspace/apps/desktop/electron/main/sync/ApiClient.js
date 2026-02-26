@@ -204,6 +204,12 @@ class ApiClient {
     return this._request('POST', '/inbox/broadcast', data, true);
   }
 
+  /** GET /api/v1/inbox/broadcast-history (ADMIN/DEV) */
+  async getInboxBroadcastHistory(limit = 50) {
+    const qs = Number.isFinite(Number(limit)) ? `?limit=${Math.min(Math.max(Math.floor(Number(limit)), 1), 200)}` : '';
+    return this._request('GET', `/inbox/broadcast-history${qs}`, null, true);
+  }
+
   // ============================================================
   // INTERNAL
   // ============================================================
@@ -322,3 +328,4 @@ class ApiError extends Error {
 }
 
 module.exports = { ApiClient, ApiError };
+

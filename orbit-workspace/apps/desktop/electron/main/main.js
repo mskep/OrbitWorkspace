@@ -1971,6 +1971,16 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      // Connected mode: server is authoritative and can return global broadcast history
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getInboxBroadcastHistory(100);
+          return { success: true, history: result.history || [] };
+        } catch (err) {
+          console.warn('Admin getBroadcastHistory from server failed, falling back to local:', err.message);
+        }
+      }
+
       const repos = dbService.getRepositories();
       const history = repos.inbox.getBroadcastHistory();
       return { success: true, history };
@@ -2146,3 +2156,4 @@ app.on('before-quit', () => {
     dbService.close();
   }
 });
+

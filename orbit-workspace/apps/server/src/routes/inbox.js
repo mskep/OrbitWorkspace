@@ -25,6 +25,22 @@ export async function inboxRoutes(fastify) {
     return inboxService.getMessages(fastify.pg, request.user.sub);
   });
 
+  // GET /api/v1/inbox/broadcast-history — admin/dev global history
+  fastify.get('/broadcast-history', {
+    config: { rateLimit: rateLimitConfigs.admin },
+    onRequest: authorize({ minRole: 'DEV', dbCheck: true }),
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 200, default: 50 },
+        },
+      },
+    },
+  }, async (request) => {
+    return inboxService.getBroadcastHistory(fastify.pg, request.query.limit || 50);
+  });
+
   // GET /api/v1/inbox/unread-count — get unread count
   fastify.get('/unread-count', {
     config: { rateLimit: rateLimitConfigs.standard },

@@ -54,4 +54,23 @@ export const inboxQueries = {
     FROM inbox_messages
     WHERE user_id = $1 AND is_read = FALSE
   `,
+
+  // Admin/DEV broadcast history (server-authoritative), grouped by broadcast batch
+  broadcastHistory: `
+    SELECT
+      type,
+      title,
+      message,
+      metadata_json,
+      EXTRACT(EPOCH FROM date_trunc('second', created_at))::bigint AS created_at,
+      COUNT(*)::int AS recipient_count
+    FROM inbox_messages
+    WHERE type IN (
+      'admin-broadcast', 'admin-maintenance', 'admin-update', 'admin-security',
+      'admin_broadcast', 'admin_maintenance', 'admin_update', 'admin_security'
+    )
+    GROUP BY type, title, message, metadata_json, date_trunc('second', created_at)
+    ORDER BY date_trunc('second', created_at) DESC
+    LIMIT $1
+  `,
 };
