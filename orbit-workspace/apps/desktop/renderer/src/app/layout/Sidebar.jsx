@@ -150,6 +150,13 @@ function Sidebar() {
     : [];
 
   const isActive = (path) => location.pathname.startsWith(path);
+  const getWorkspaceInitial = (name) => {
+    const value = typeof name === 'string' ? name.trim() : '';
+    return value ? value.charAt(0).toUpperCase() : '#';
+  };
+
+  const workspaceCount = workspaces.length;
+  const activeWorkspaceInitial = getWorkspaceInitial(activeWorkspace?.name);
 
   return (
     <div className="sidebar">
@@ -179,267 +186,112 @@ function Sidebar() {
         )}
       </div>
 
-      {/* Collapsible Workspace Switcher */}
-      <div style={{ padding: '8px 16px 16px 16px' }}>
-        <div
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-default)',
-            overflow: 'hidden'
-          }}
+      {/* Workspace Manager */}
+      <div className={`workspace-panel ${workspaceExpanded ? 'expanded' : ''}`}>
+        <button
+          type="button"
+          className="workspace-panel-trigger"
+          onClick={() => setWorkspaceExpanded((prev) => !prev)}
         >
-          {/* Collapsed View - Active Workspace */}
-          <div
-            onClick={() => setWorkspaceExpanded(!workspaceExpanded)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 12px',
-              cursor: 'pointer',
-              backgroundColor: 'var(--bg-secondary)',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                flex: 1,
-                overflow: 'hidden'
-              }}
-            >
-              <Check size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-              <span
-                style={{
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: 'var(--text-primary)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {activeWorkspace?.name || t('sidebar.noWorkspace')}
-              </span>
+          <div className="workspace-panel-main">
+            <span className="workspace-panel-avatar">{activeWorkspaceInitial}</span>
+            <div className="workspace-panel-text">
+              <span className="workspace-panel-title">{activeWorkspace?.name || t('sidebar.noWorkspace')}</span>
             </div>
-            {workspaceExpanded ? (
-              <ChevronDown size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-            ) : (
-              <ChevronRight size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-            )}
           </div>
 
-          {/* Expanded View */}
-          {workspaceExpanded && (
-            <div
-              style={{
-                padding: '12px',
-                borderTop: '1px solid var(--border-default)'
-              }}
-            >
-              {/* Header with New Button */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px'
-                }}
+          <div className="workspace-panel-actions">
+            <span className="workspace-panel-count">{workspaceCount}</span>
+            {workspaceExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+          </div>
+        </button>
+
+        {workspaceExpanded && (
+          <div className="workspace-panel-body">
+            <div className="workspace-panel-toolbar">
+              <span className="workspace-panel-label">{t('sidebar.allWorkspaces')}</span>
+              <button
+                type="button"
+                className={`workspace-create-toggle ${creating ? 'active' : ''}`}
+                onClick={() => setCreating((prev) => !prev)}
               >
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-tertiary)',
-                    letterSpacing: '0.5px'
-                  }}
-                >
-                  {t('sidebar.allWorkspaces')}
-                </span>
+                <Plus size={13} />
+                {creating ? t('common.cancel') : t('common.new')}
+              </button>
+            </div>
+
+            {creating && (
+              <form className="workspace-create-form" onSubmit={handleCreateWorkspace}>
+                <input
+                  className="workspace-create-input"
+                  type="text"
+                  value={newWorkspaceName}
+                  onChange={(e) => setNewWorkspaceName(e.target.value)}
+                  placeholder={t('sidebar.workspaceNamePlaceholder')}
+                  autoFocus
+                />
                 <button
-                  onClick={() => setCreating(!creating)}
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: creating ? 'var(--accent)' : 'transparent',
-                    color: creating ? '#fff' : 'var(--accent)',
-                    border: 'none',
-                    borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s'
-                  }}
+                  type="submit"
+                  className="workspace-create-submit"
+                  disabled={!newWorkspaceName.trim()}
                 >
-                  <Plus size={14} />
-                  {creating ? t('common.cancel') : t('common.new')}
+                  {t('common.create')}
                 </button>
-              </div>
+              </form>
+            )}
 
-              {/* Create Form */}
-              {creating && (
-                <form onSubmit={handleCreateWorkspace} style={{ marginBottom: '12px' }}>
-                  <input
-                    type="text"
-                    value={newWorkspaceName}
-                    onChange={(e) => setNewWorkspaceName(e.target.value)}
-                    placeholder={t('sidebar.workspaceNamePlaceholder')}
-                    autoFocus
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      backgroundColor: 'var(--bg-tertiary)',
-                      border: '1px solid var(--border-default)',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '13px',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      marginBottom: '8px'
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newWorkspaceName.trim()}
-                    style={{
-                      width: '100%',
-                      padding: '6px',
-                      backgroundColor: 'var(--accent)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 'var(--radius-sm)',
-                      cursor: newWorkspaceName.trim() ? 'pointer' : 'not-allowed',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      opacity: newWorkspaceName.trim() ? 1 : 0.5,
-                      transition: 'opacity 0.2s'
-                    }}
-                  >
-                    {t('common.create')}
-                  </button>
-                </form>
-              )}
+            <div className="workspace-list">
+              {workspaceCount === 0 ? (
+                <div className="workspace-empty">{t('sidebar.noWorkspaces')}</div>
+              ) : (
+                workspaces.map((workspace) => {
+                  const isCurrentWorkspace = workspace.id === activeWorkspace?.id;
 
-              {/* All Workspaces List */}
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}
-              >
-                {workspaces.length === 0 ? (
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      padding: '16px',
-                      color: 'var(--text-tertiary)',
-                      fontSize: '12px'
-                    }}
-                  >
-                    {t('sidebar.noWorkspaces')}
-                  </div>
-                ) : (
-                  workspaces.map((workspace) => {
-                    const isActive = workspace.id === activeWorkspace?.id;
-                    return (
-                      <div
-                        key={workspace.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '10px 12px',
-                          backgroundColor: isActive ? 'var(--accent)' : 'var(--bg-tertiary)',
-                          border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border-default)'}`,
-                          borderRadius: 'var(--radius-sm)',
-                          cursor: isActive ? 'default' : 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onClick={() => !isActive && handleSwitchWorkspace(workspace.id)}
-                        onMouseEnter={(e) => {
-                          if (!isActive) {
-                            e.currentTarget.style.borderColor = 'var(--accent)';
-                            e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) {
-                            e.currentTarget.style.borderColor = 'var(--border-default)';
-                            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                          }
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            flex: 1,
-                            overflow: 'hidden'
-                          }}
-                        >
-                          {isActive && <Check size={14} color="#fff" />}
-                          <span
-                            style={{
-                              fontSize: '13px',
-                              fontWeight: isActive ? '600' : '500',
-                              color: isActive ? '#fff' : 'var(--text-primary)',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {workspace.name}
-                          </span>
-                        </div>
-                        {workspaces.length > 1 && !isActive && (
+                  return (
+                    <div
+                      key={workspace.id}
+                      className={`workspace-item-card ${isCurrentWorkspace ? 'active' : ''}`}
+                      onClick={() => !isCurrentWorkspace && handleSwitchWorkspace(workspace.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (isCurrentWorkspace) return;
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleSwitchWorkspace(workspace.id);
+                        }
+                      }}
+                    >
+                      <div className="workspace-item-main">
+                        <span className="workspace-item-avatar">{getWorkspaceInitial(workspace.name)}</span>
+                        <span className="workspace-item-name">{workspace.name}</span>
+                      </div>
+
+                      {isCurrentWorkspace ? (
+                        <Check size={14} className="workspace-item-check" />
+                      ) : (
+                        workspaces.length > 1 && (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            type="button"
+                            className="workspace-delete-btn"
+                            onClick={(event) => {
+                              event.stopPropagation();
                               openDeleteModal(workspace.id, workspace.name);
                             }}
-                            style={{
-                              padding: '4px',
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              color: 'var(--text-tertiary)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              borderRadius: 'var(--radius-sm)',
-                              transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.color = '#ef4444';
-                              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.color = 'var(--text-tertiary)';
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
+                            aria-label={t('common.delete')}
                           >
                             <Trash2 size={14} />
                           </button>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                        )
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-
       <nav className="sidebar-nav">
         {/* Regular menu items */}
         {menuItems.map((item) => (

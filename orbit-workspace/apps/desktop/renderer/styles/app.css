@@ -265,7 +265,7 @@ p {
 
 .sidebar-nav {
   flex: 1;
-  padding: var(--space-4) var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-4);
   overflow-y: auto;
 }
 
@@ -335,6 +335,289 @@ p {
   justify-content: center;
   color: var(--text-tertiary);
   transition: color var(--transition-fast);
+}
+
+/* Workspace Panel */
+.workspace-panel {
+  margin: var(--space-2) var(--space-4) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.workspace-panel-trigger {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.workspace-panel-trigger:hover {
+  background-color: var(--bg-hover);
+}
+
+.workspace-panel-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-panel-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background-color: var(--bg-active);
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.workspace-panel-text {
+  min-width: 0;
+}
+
+.workspace-panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-panel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.workspace-panel-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-panel-body {
+  border-top: 1px solid var(--border-default);
+  padding: 8px;
+  background-color: var(--bg-secondary);
+}
+
+.workspace-panel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.workspace-panel-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.workspace-create-toggle {
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 4px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.workspace-create-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background-color: var(--bg-hover);
+}
+
+.workspace-create-toggle.active {
+  color: #fff;
+  border-color: transparent;
+  background-color: var(--accent-primary);
+}
+
+.workspace-create-form {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.workspace-create-input {
+  width: 100%;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  font-size: 12px;
+}
+
+.workspace-create-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.workspace-create-submit {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--accent-primary);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.workspace-create-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workspace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.workspace-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workspace-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.workspace-empty {
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  padding: 10px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.workspace-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-tertiary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.workspace-item-card:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.workspace-item-card.active {
+  background-color: var(--bg-active);
+  border-color: rgba(99, 102, 241, 0.45);
+  cursor: default;
+}
+
+.workspace-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-item-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.workspace-item-card.active .workspace-item-avatar {
+  color: #fff;
+  background-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.workspace-item-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-item-check {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.workspace-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.workspace-delete-btn:hover {
+  color: var(--status-error);
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 /* Workspace */
