@@ -388,15 +388,15 @@ function setupIpcHandlers() {
     }
   });
 
-  // System handlers (auth-guarded)
+  // System handlers — online status is always available (not auth-gated)
   ipcMain.handle(IPC_CHANNELS.SYSTEM_GET_STATUS, async () => {
-    const session = await authService.getSession();
-    if (!session) return null;
+    let autoLaunchEnabled = false;
+    try { autoLaunchEnabled = await autoLaunch.isEnabled(); } catch { /* ignore */ }
     return {
       online: networkMonitor.getStatus(),
       appVersion: app.getVersion(),
       platform: process.platform,
-      autoLaunchEnabled: await autoLaunch.isEnabled()
+      autoLaunchEnabled,
     };
   });
 

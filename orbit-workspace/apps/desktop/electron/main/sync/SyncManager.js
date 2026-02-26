@@ -289,6 +289,16 @@ class SyncManager {
       const session = await this.authService.getSession();
       if (!session) return;
 
+      // Sort blobs: process parent entities first (workspace, user_settings)
+      // before children (note, link, file_ref) to satisfy FK constraints.
+      const ENTITY_ORDER = { user_settings: 0, workspace: 1, note: 2, link: 2, file_ref: 2 };
+      result.blobs.sort((a, b) => {
+        const orderA = ENTITY_ORDER[a.entity_type] ?? 9;
+        const orderB = ENTITY_ORDER[b.entity_type] ?? 9;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.server_clock ?? a.version) - (b.server_clock ?? b.version);
+      });
+
       // Track the highest server_clock we've successfully processed.
       // server_clock is the global monotonic cursor the server uses for ordering.
       // blob.version is the per-entity version (used for conflict detection, NOT cursor).
