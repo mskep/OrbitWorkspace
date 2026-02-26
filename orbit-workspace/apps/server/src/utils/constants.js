@@ -55,6 +55,7 @@ export const SYNC_ENTITY_TYPES = [
   'file_ref',
   'workspace',
   'user_settings',
+  'vault_item',
 ];
 
 // Device limits

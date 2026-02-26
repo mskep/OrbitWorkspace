@@ -1,9 +1,9 @@
 {
   "id": "password_generator",
-  "name": "Password Generator",
-  "version": "1.0.0",
-  "description": "Generate secure passwords with customizable options",
-  "icon": "🔐",
+  "name": "Key Generator",
+  "version": "1.1.0",
+  "description": "Generate passwords, tokens, PIN codes, and memorable credentials",
+  "icon": "🔑",
   "tags": ["security", "utility"],
   "entryRoute": "/tools/password_generator",
   "requiresInternet": false,
@@ -15,12 +15,16 @@
   "permissions": ["CLIPBOARD"],
   "premium": false,
   "defaultConfig": {
-    "length": 16,
+    "mode": "password",
+    "passwordLength": 16,
     "uppercase": true,
     "lowercase": true,
     "numbers": true,
     "symbols": true,
     "excludeSimilar": false,
-    "noDuplicates": false
+    "noDuplicates": false,
+    "tokenLength": 48,
+    "tokenFormat": "base64url",
+    "pinLength": 6
   }
 }

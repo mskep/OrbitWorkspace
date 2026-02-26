@@ -86,6 +86,10 @@ class DatabaseManager {
         name: '004_sync_queue_v2',
         sql: this._getSyncQueueV2Migration()
       },
+      {
+        name: '005_secret_vault',
+        sql: this._getSecretVaultMigration()
+      },
     ];
 
     // Apply pending migrations
@@ -476,6 +480,43 @@ class DatabaseManager {
         version     INTEGER NOT NULL DEFAULT 1,
         PRIMARY KEY (entity_type, entity_id)
       );
+    `;
+  }
+
+  /**
+   * Migration: Add Secret Vault table for encrypted credentials/notes
+   */
+  _getSecretVaultMigration() {
+    return `
+      CREATE TABLE IF NOT EXISTS vault_items (
+        id TEXT PRIMARY KEY,
+        workspace_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        iv TEXT NOT NULL,
+        ciphertext TEXT NOT NULL,
+        tag TEXT NOT NULL,
+        tags TEXT,
+        is_archived INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        sync_version INTEGER DEFAULT 0,
+        sync_status TEXT DEFAULT 'synced',
+        lamport_clock INTEGER DEFAULT 0,
+        last_modified_device TEXT,
+        FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_vault_type CHECK (type IN ('password', 'token', 'api_key', 'secure_note'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_vault_workspace_id ON vault_items(workspace_id);
+      CREATE INDEX IF NOT EXISTS idx_vault_user_id ON vault_items(user_id);
+      CREATE INDEX IF NOT EXISTS idx_vault_type ON vault_items(type);
+      CREATE INDEX IF NOT EXISTS idx_vault_archived ON vault_items(is_archived);
+      CREATE INDEX IF NOT EXISTS idx_vault_updated ON vault_items(updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_vault_sync_status ON vault_items(sync_status);
+      CREATE INDEX IF NOT EXISTS idx_vault_clock ON vault_items(lamport_clock);
     `;
   }
 

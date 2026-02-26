@@ -292,7 +292,7 @@ class SyncManager {
       // Sort blobs: workspaces first (other entities reference them via FK),
       // then user_settings (needs workspace to exist for active_workspace_id),
       // then content entities last.
-      const ENTITY_ORDER = { workspace: 0, user_settings: 1, note: 2, link: 2, file_ref: 2 };
+      const ENTITY_ORDER = { workspace: 0, user_settings: 1, note: 2, link: 2, file_ref: 2, vault_item: 2 };
       result.blobs.sort((a, b) => {
         const orderA = ENTITY_ORDER[a.entity_type] ?? 9;
         const orderB = ENTITY_ORDER[b.entity_type] ?? 9;
@@ -445,6 +445,27 @@ class SyncManager {
         break;
       }
 
+      case 'vault_item': {
+        if (repos.vault?.upsertFromSync) {
+          const wsId = this._ensureWorkspace(data.workspace_id, repos, session);
+          repos.vault.upsertFromSync({
+            id: entityId,
+            workspaceId: wsId,
+            userId: session.userId,
+            type: data.type,
+            title: data.title,
+            secret: data.secret,
+            username: data.username,
+            website: data.website,
+            note: data.note,
+            tags: data.tags || '',
+            isArchived: !!data.is_archived,
+            isPinned: !!data.is_pinned,
+          });
+        }
+        break;
+      }
+
       case 'workspace': {
         const existing = repos.workspaces.findById(entityId);
         if (existing) {
@@ -540,6 +561,7 @@ class SyncManager {
         case 'note': repos.notes.delete(blob.entity_id); break;
         case 'link': repos.links.delete(blob.entity_id); break;
         case 'file_ref': repos.fileReferences?.delete(blob.entity_id); break;
+        case 'vault_item': repos.vault?.delete(blob.entity_id); break;
         case 'workspace': repos.workspaces.delete(blob.entity_id); break;
         // user_settings: don't delete — reset to defaults instead
       }

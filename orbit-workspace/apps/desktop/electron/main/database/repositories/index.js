@@ -5,6 +5,7 @@ const WorkspaceRepository = require('./WorkspaceRepository');
 const NotesRepository = require('./NotesRepository');
 const LinksRepository = require('./LinksRepository');
 const FileReferencesRepository = require('./FileReferencesRepository');
+const VaultRepository = require('./VaultRepository');
 const BadgesRepository = require('./BadgesRepository');
 const InboxRepository = require('./InboxRepository');
 const UserCryptoRepository = require('./UserCryptoRepository');
@@ -21,6 +22,7 @@ function createRepositories(db, encryptionService) {
     notes: new NotesRepository(db, encryptionService),
     links: new LinksRepository(db, encryptionService),
     fileReferences: new FileReferencesRepository(db, encryptionService),
+    vault: new VaultRepository(db, encryptionService),
     badges: new BadgesRepository(db),
     inbox: new InboxRepository(db, encryptionService),
     userCrypto: new UserCryptoRepository(db)

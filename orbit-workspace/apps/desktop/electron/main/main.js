@@ -802,6 +802,9 @@ function setupIpcHandlers() {
       const fileRefs = repos.fileReferences?.findByWorkspace(id) || [];
       for (const f of fileRefs) syncManager.enqueueChange('file_ref', f.id, 'delete');
 
+      const vaultItems = repos.vault?.findByWorkspace(id, { includeArchived: true }) || [];
+      for (const item of vaultItems) syncManager.enqueueChange('vault_item', item.id, 'delete');
+
       repos.workspaces.delete(id);
       syncManager.enqueueChange('workspace', id, 'delete');
       return { success: true };
@@ -1463,6 +1466,288 @@ function setupIpcHandlers() {
   });
 
   // ========================================
+  // SECRET VAULT HANDLERS
+  // ========================================
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_GET_ALL, async (event, payload = {}) => {
+    try {
+      const { workspaceId, includeArchived = false, type = 'all' } = payload;
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      if (!workspaceId) {
+        return { success: false, error: 'workspaceId is required' };
+      }
+
+      const repos = dbService.getRepositories();
+      if (!repos.workspaces.isOwner(workspaceId, session.userId)) {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const normalizedType = typeof type === 'string' && type !== 'all' ? type : null;
+      const items = repos.vault.findByWorkspace(workspaceId, {
+        includeArchived: !!includeArchived,
+        type: normalizedType,
+      });
+
+      return { success: true, items };
+    } catch (error) {
+      console.error('Get vault items error:', error);
+      return { success: false, error: 'Failed to get vault items' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_GET, async (event, { id }) => {
+    try {
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+      const item = repos.vault.findById(id);
+      if (!item || item.user_id !== session.userId) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      return { success: true, item };
+    } catch (error) {
+      console.error('Get vault item error:', error);
+      return { success: false, error: 'Failed to get vault item' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_CREATE, async (event, payload = {}) => {
+    try {
+      const {
+        workspaceId,
+        title,
+        type = 'password',
+        secret = '',
+        username = '',
+        website = '',
+        note = '',
+        tags = '',
+        isPinned = false,
+      } = payload;
+
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      if (!workspaceId || !title || !title.trim()) {
+        return { success: false, error: 'workspaceId and title are required' };
+      }
+
+      const repos = dbService.getRepositories();
+      if (!repos.workspaces.isOwner(workspaceId, session.userId)) {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const item = repos.vault.create({
+        workspaceId,
+        userId: session.userId,
+        title: title.trim(),
+        type,
+        secret,
+        username,
+        website,
+        note,
+        tags: tags || '',
+        isArchived: false,
+        isPinned: !!isPinned,
+      });
+
+      syncManager.enqueueChange('vault_item', item.id, 'upsert', {
+        workspace_id: item.workspace_id,
+        title: item.title,
+        type: item.type,
+        secret: item.secret,
+        username: item.username,
+        website: item.website,
+        note: item.note,
+        tags: item.tags,
+        is_archived: item.is_archived,
+        is_pinned: item.is_pinned,
+      });
+
+      return { success: true, item };
+    } catch (error) {
+      console.error('Create vault item error:', error);
+      return { success: false, error: 'Failed to create vault item' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_UPDATE, async (event, payload = {}) => {
+    try {
+      const {
+        id,
+        title,
+        type,
+        secret,
+        username,
+        website,
+        note,
+        tags,
+        isArchived,
+        isPinned,
+      } = payload;
+
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+      if (!repos.vault.isOwner(id, session.userId)) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      const updatePatch = {};
+      if (title !== undefined) updatePatch.title = title;
+      if (type !== undefined) updatePatch.type = type;
+      if (secret !== undefined) updatePatch.secret = secret;
+      if (username !== undefined) updatePatch.username = username;
+      if (website !== undefined) updatePatch.website = website;
+      if (note !== undefined) updatePatch.note = note;
+      if (tags !== undefined) updatePatch.tags = tags;
+      if (isArchived !== undefined) updatePatch.isArchived = !!isArchived;
+      if (isPinned !== undefined) updatePatch.isPinned = !!isPinned;
+
+      const item = repos.vault.update(id, updatePatch);
+      if (!item) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      syncManager.enqueueChange('vault_item', item.id, 'upsert', {
+        workspace_id: item.workspace_id,
+        title: item.title,
+        type: item.type,
+        secret: item.secret,
+        username: item.username,
+        website: item.website,
+        note: item.note,
+        tags: item.tags,
+        is_archived: item.is_archived,
+        is_pinned: item.is_pinned,
+      });
+
+      return { success: true, item };
+    } catch (error) {
+      console.error('Update vault item error:', error);
+      return { success: false, error: 'Failed to update vault item' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_TOGGLE_ARCHIVED, async (event, { id }) => {
+    try {
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+      if (!repos.vault.isOwner(id, session.userId)) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      const item = repos.vault.toggleArchived(id);
+      syncManager.enqueueChange('vault_item', item.id, 'upsert', {
+        workspace_id: item.workspace_id,
+        title: item.title,
+        type: item.type,
+        secret: item.secret,
+        username: item.username,
+        website: item.website,
+        note: item.note,
+        tags: item.tags,
+        is_archived: item.is_archived,
+        is_pinned: item.is_pinned,
+      });
+
+      return { success: true, item };
+    } catch (error) {
+      console.error('Toggle vault archive error:', error);
+      return { success: false, error: 'Failed to update vault archive state' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_TOGGLE_PIN, async (event, { id }) => {
+    try {
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+      if (!repos.vault.isOwner(id, session.userId)) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      const item = repos.vault.togglePinned(id);
+      if (!item) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      syncManager.enqueueChange('vault_item', item.id, 'upsert', {
+        workspace_id: item.workspace_id,
+        title: item.title,
+        type: item.type,
+        secret: item.secret,
+        username: item.username,
+        website: item.website,
+        note: item.note,
+        tags: item.tags,
+        is_archived: item.is_archived,
+        is_pinned: item.is_pinned,
+      });
+
+      return { success: true, item };
+    } catch (error) {
+      console.error('Toggle vault pin error:', error);
+      return { success: false, error: 'Failed to update vault pin state' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_DELETE, async (event, { id }) => {
+    try {
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+      if (!repos.vault.isOwner(id, session.userId)) {
+        return { success: false, error: 'Vault item not found' };
+      }
+
+      repos.vault.delete(id);
+      syncManager.enqueueChange('vault_item', id, 'delete');
+      return { success: true };
+    } catch (error) {
+      console.error('Delete vault item error:', error);
+      return { success: false, error: 'Failed to delete vault item' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.VAULT_SEARCH, async (event, payload = {}) => {
+    try {
+      const { workspaceId, query = '', includeArchived = false, type = 'all' } = payload;
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      if (!workspaceId) {
+        return { success: false, error: 'workspaceId is required' };
+      }
+
+      const repos = dbService.getRepositories();
+      if (!repos.workspaces.isOwner(workspaceId, session.userId)) {
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const normalizedType = typeof type === 'string' && type !== 'all' ? type : null;
+      const items = repos.vault.search(workspaceId, query, {
+        includeArchived: !!includeArchived,
+        type: normalizedType,
+      });
+
+      return { success: true, items };
+    } catch (error) {
+      console.error('Search vault items error:', error);
+      return { success: false, error: 'Failed to search vault items' };
+    }
+  });
+
+  // ========================================
   // BADGES HANDLERS
   // ========================================
 
@@ -1797,6 +2082,7 @@ function setupIpcHandlers() {
         totalNotes: countTable('notes'),
         totalLinks: countTable('links'),
         totalFileRefs: countTable('file_references'),
+        totalVaultItems: countTable('vault_items'),
         activeTools: countTable('workspace_tools'),
         totalBadges: countTable('badges'),
         totalInboxItems: countTable('inbox_messages')

@@ -7,6 +7,7 @@ import Auth from '../pages/Auth';
 import Unlock from '../pages/Unlock';
 import Home from '../pages/Home';
 import Tools from '../pages/Tools';
+import SecretVault from '../pages/SecretVault';
 import Notes from '../pages/Notes';
 import Links from '../pages/Links';
 import InboxPage from '../pages/Inbox';
@@ -64,6 +65,7 @@ function AppRoutes() {
                     <Route path="/home" element={<Home />} />
                     <Route path="/tools" element={<Tools />} />
                     <Route path="/tools/:toolId" element={<Tools />} />
+                    <Route path="/vault" element={<SecretVault />} />
                     <Route path="/notes" element={<Notes />} />
                     <Route path="/links" element={<Links />} />
                     <Route path="/inbox" element={<InboxPage />} />

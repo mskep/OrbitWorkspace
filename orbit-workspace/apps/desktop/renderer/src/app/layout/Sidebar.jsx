@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   Wrench,
+  LockKeyhole,
   FileText,
   Link,
   Inbox,
@@ -137,6 +138,7 @@ function Sidebar() {
   const menuItems = [
     { id: 'home', label: t('common.dashboard'), icon: <Home size={20} />, path: '/home' },
     { id: 'tools', label: t('common.myTools'), icon: <Wrench size={20} />, path: '/tools' },
+    { id: 'vault', label: t('common.secretVault'), icon: <LockKeyhole size={20} />, path: '/vault' },
     { id: 'notes', label: t('common.notes'), icon: <FileText size={20} />, path: '/notes' },
     { id: 'links', label: t('common.quickLinks'), icon: <Link size={20} />, path: '/links' },
     { id: 'inbox', label: t('common.inbox'), icon: <Inbox size={20} />, path: '/inbox' },

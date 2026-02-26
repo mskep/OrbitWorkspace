@@ -36,7 +36,7 @@ const IPC_CHANNELS = {
 
   // System
   SYSTEM_GET_STATUS: 'system:getStatus',
-    SYSTEM_TEST_NOTIFICATION: 'system:testNotification',
+  SYSTEM_TEST_NOTIFICATION: 'system:testNotification',
   SYSTEM_ONLINE_STATUS: 'system:onlineStatus',
 
   // Backup
@@ -87,6 +87,16 @@ const IPC_CHANNELS = {
   FILE_REF_SEARCH: 'fileRef:search',
   FILE_REF_OPEN: 'fileRef:open',
   FILE_REF_SHOW_IN_FOLDER: 'fileRef:showInFolder',
+
+  // Secret Vault
+  VAULT_GET_ALL: 'vault:getAll',
+  VAULT_GET: 'vault:get',
+  VAULT_CREATE: 'vault:create',
+  VAULT_UPDATE: 'vault:update',
+  VAULT_DELETE: 'vault:delete',
+  VAULT_SEARCH: 'vault:search',
+  VAULT_TOGGLE_ARCHIVED: 'vault:toggleArchived',
+  VAULT_TOGGLE_PIN: 'vault:togglePin',
 
   // Badges
   BADGE_GET_ALL: 'badge:getAll',

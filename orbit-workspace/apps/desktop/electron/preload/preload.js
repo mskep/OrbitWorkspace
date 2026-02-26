@@ -57,6 +57,14 @@ const IPC_CHANNELS = {
   FILE_REF_SEARCH: 'fileRef:search',
   FILE_REF_OPEN: 'fileRef:open',
   FILE_REF_SHOW_IN_FOLDER: 'fileRef:showInFolder',
+  VAULT_GET_ALL: 'vault:getAll',
+  VAULT_GET: 'vault:get',
+  VAULT_CREATE: 'vault:create',
+  VAULT_UPDATE: 'vault:update',
+  VAULT_DELETE: 'vault:delete',
+  VAULT_SEARCH: 'vault:search',
+  VAULT_TOGGLE_ARCHIVED: 'vault:toggleArchived',
+  VAULT_TOGGLE_PIN: 'vault:togglePin',
   BADGE_GET_ALL: 'badge:getAll',
   BADGE_GET_USER_BADGES: 'badge:getUserBadges',
   BADGE_ASSIGN: 'badge:assign',
@@ -189,6 +197,18 @@ contextBridge.exposeInMainWorld('hubAPI', {
     search: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_SEARCH, data),
     open: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_OPEN, data),
     showInFolder: (data) => ipcRenderer.invoke(IPC_CHANNELS.FILE_REF_SHOW_IN_FOLDER, data)
+  },
+
+  // Secret Vault
+  vault: {
+    getAll: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_GET_ALL, data),
+    get: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_GET, data),
+    create: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_CREATE, data),
+    update: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_UPDATE, data),
+    delete: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_DELETE, data),
+    search: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_SEARCH, data),
+    toggleArchived: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_TOGGLE_ARCHIVED, data),
+    togglePin: (data) => ipcRenderer.invoke(IPC_CHANNELS.VAULT_TOGGLE_PIN, data)
   },
 
   // Badges

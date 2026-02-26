@@ -19,6 +19,7 @@ export const workspaces = hubAPI?.workspaces;
 export const notes = hubAPI?.notes;
 export const links = hubAPI?.links;
 export const fileRefs = hubAPI?.fileRefs;
+export const vault = hubAPI?.vault;
 export const badges = hubAPI?.badges;
 export const inbox = hubAPI?.inbox;
 export const admin = hubAPI?.admin;
