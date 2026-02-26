@@ -110,6 +110,7 @@ function Settings() {
   const [autoLaunch, setAutoLaunch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toggleLoading, setToggleLoading] = useState(false);
+  const [testNotificationLoading, setTestNotificationLoading] = useState(false);
 
   // Security / password change
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -183,6 +184,34 @@ function Settings() {
     }
   }
 
+  async function handleTestNotification() {
+    setTestNotificationLoading(true);
+    try {
+      if (typeof hubAPI?.system?.testNotification !== 'function') {
+        window.alert(
+          isFr
+            ? 'Test notifications indisponible. Redémarre l’application Electron.'
+            : 'Notification test unavailable. Restart the Electron app.'
+        );
+        return;
+      }
+
+      const result = await hubAPI.system.testNotification();
+      if (!result?.success) {
+        window.alert(result?.error || (isFr ? 'Test notification impossible' : 'Notification test failed'));
+      }
+    } catch (error) {
+      console.error('Error testing notification:', error);
+      const details = error?.message || String(error || '');
+      window.alert(
+        isFr
+          ? `Test notification impossible${details ? `: ${details}` : ''}`
+          : `Notification test failed${details ? `: ${details}` : ''}`
+      );
+    } finally {
+      setTestNotificationLoading(false);
+    }
+  }
   async function handleChangePassword(e) {
     e.preventDefault();
     setPwError('');
@@ -447,13 +476,38 @@ function Settings() {
                 label={t('settings.notifications')}
                 description={t('settings.notificationsDesc')}
               >
-                <ToggleSwitch
-                  checked={!!userSettings.notifications_enabled}
-                  onChange={() =>
-                    updateSetting('notifications_enabled', userSettings.notifications_enabled ? 0 : 1)
-                  }
-                  disabled={loading}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    onClick={handleTestNotification}
+                    disabled={loading || testNotificationLoading || !userSettings.notifications_enabled}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 10px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border-default)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: loading || testNotificationLoading || !userSettings.notifications_enabled ? 'not-allowed' : 'pointer',
+                      opacity: loading || testNotificationLoading || !userSettings.notifications_enabled ? 0.55 : 1,
+                    }}
+                    title={isFr ? 'Envoie une notification locale de test' : 'Send a local test notification'}
+                  >
+                    {testNotificationLoading ? <Loader size={12} /> : <Bell size={12} />}
+                    {testNotificationLoading ? (isFr ? 'Test...' : 'Testing...') : (isFr ? 'Tester' : 'Test')}
+                  </button>
+
+                  <ToggleSwitch
+                    checked={!!userSettings.notifications_enabled}
+                    onChange={() =>
+                      updateSetting('notifications_enabled', userSettings.notifications_enabled ? 0 : 1)
+                    }
+                    disabled={loading}
+                  />
+                </div>
               </SettingRow>
 
               {/* Auto Launch */}
