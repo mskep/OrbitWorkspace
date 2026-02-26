@@ -289,9 +289,10 @@ class SyncManager {
       const session = await this.authService.getSession();
       if (!session) return;
 
-      // Sort blobs: process parent entities first (workspace, user_settings)
-      // before children (note, link, file_ref) to satisfy FK constraints.
-      const ENTITY_ORDER = { user_settings: 0, workspace: 1, note: 2, link: 2, file_ref: 2 };
+      // Sort blobs: workspaces first (other entities reference them via FK),
+      // then user_settings (needs workspace to exist for active_workspace_id),
+      // then content entities last.
+      const ENTITY_ORDER = { workspace: 0, user_settings: 1, note: 2, link: 2, file_ref: 2 };
       result.blobs.sort((a, b) => {
         const orderA = ENTITY_ORDER[a.entity_type] ?? 9;
         const orderB = ENTITY_ORDER[b.entity_type] ?? 9;
@@ -351,36 +352,23 @@ class SyncManager {
    * may reference workspaces from another device that don't exist yet.
    */
   _ensureWorkspace(workspaceId, repos, session) {
-    // If we have a workspace_id, make sure it exists locally
+    // If we have a workspace_id, check if it exists locally
     if (workspaceId) {
       try {
         const existing = repos.workspaces.findById?.(workspaceId);
         if (existing) return workspaceId;
       } catch { /* ignore */ }
-      // Create it
-      try {
-        const db = this.dbService.getDB();
-        const now = Math.floor(Date.now() / 1000);
-        db.prepare(`
-          INSERT OR IGNORE INTO workspaces (id, user_id, name, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?)
-        `).run(workspaceId, session.userId, 'Synced Workspace', now, now);
-        return workspaceId;
-      } catch { /* fall through */ }
     }
 
-    // No workspace_id in blob (old data) — use user's first local workspace
+    // Workspace doesn't exist locally yet (its blob will be processed separately).
+    // Never create placeholder workspaces — just use user's first existing workspace.
     try {
       const userWs = repos.workspaces.findByUserId?.(session.userId);
       if (userWs?.length > 0) return userWs[0].id;
     } catch { /* ignore */ }
 
-    // Last resort: create a default workspace
-    try {
-      const ws = repos.workspaces.create?.(session.userId, 'Default Workspace');
-      if (ws?.id) return ws.id;
-    } catch { /* ignore */ }
-
+    // No workspace at all — workspace blobs are processed first in the sort order,
+    // so this is a rare edge case. Never create placeholder workspaces.
     return workspaceId;
   }
 
@@ -464,6 +452,23 @@ class SyncManager {
         } else {
           const db = this.dbService.getDB();
           const now = Math.floor(Date.now() / 1000);
+
+          // Handle UNIQUE(user_id, name) conflict: if login auto-created a workspace
+          // with the same name but different ID, the server version wins.
+          const conflict = db.prepare(
+            'SELECT id FROM workspaces WHERE user_id = ? AND name = ? AND id != ?'
+          ).get(session.userId, data.name, entityId);
+
+          if (conflict) {
+            // Move any content from the conflicting workspace to the server one
+            db.prepare('UPDATE notes SET workspace_id = ? WHERE workspace_id = ?').run(entityId, conflict.id);
+            db.prepare('UPDATE links SET workspace_id = ? WHERE workspace_id = ?').run(entityId, conflict.id);
+            db.prepare('UPDATE file_references SET workspace_id = ? WHERE workspace_id = ?').run(entityId, conflict.id);
+            db.prepare('UPDATE workspace_tools SET workspace_id = ? WHERE workspace_id = ?').run(entityId, conflict.id);
+            db.prepare('UPDATE user_settings SET active_workspace_id = ? WHERE active_workspace_id = ?').run(entityId, conflict.id);
+            db.prepare('DELETE FROM workspaces WHERE id = ?').run(conflict.id);
+          }
+
           db.prepare(`
             INSERT OR IGNORE INTO workspaces (id, user_id, name, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?)

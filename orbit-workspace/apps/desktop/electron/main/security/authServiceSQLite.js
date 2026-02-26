@@ -218,16 +218,15 @@ class AuthServiceSQLite {
         });
       }
 
-      // Ensure default workspace exists
-      let workspace = (repos.workspaces.findByUserId(result.user.id) || [])[0];
-      if (!workspace) {
-        workspace = repos.workspaces.create(result.user.id, 'Default Workspace');
-      }
+      // Don't create a Default Workspace on login — sync will restore the user's
+      // workspaces from the server. Creating one here causes duplicates and
+      // resurrects workspaces the user intentionally deleted.
+      const existingWorkspaces = repos.workspaces.findByUserId(result.user.id) || [];
 
-      // Ensure user settings exist
+      // Ensure user settings exist (workspace will be set after sync pull)
       const settings = repos.userSettings.findByUserId(result.user.id);
       if (!settings) {
-        repos.userSettings.create(result.user.id, workspace.id);
+        repos.userSettings.create(result.user.id, existingWorkspaces[0]?.id || null);
       }
 
       // Set session

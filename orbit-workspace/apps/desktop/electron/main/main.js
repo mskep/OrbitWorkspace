@@ -637,6 +637,17 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      // Enqueue delete for all child entities BEFORE cascade-deleting them locally.
+      // Without this, the server keeps the child blobs alive and they come back on next pull.
+      const notes = repos.notes.findByWorkspace(id);
+      for (const n of notes) syncManager.enqueueChange('note', n.id, 'delete');
+
+      const links = repos.links.findByWorkspace(id);
+      for (const l of links) syncManager.enqueueChange('link', l.id, 'delete');
+
+      const fileRefs = repos.fileReferences?.findByWorkspace(id) || [];
+      for (const f of fileRefs) syncManager.enqueueChange('file_ref', f.id, 'delete');
+
       repos.workspaces.delete(id);
       syncManager.enqueueChange('workspace', id, 'delete');
       return { success: true };

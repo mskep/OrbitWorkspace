@@ -10,20 +10,48 @@ class NetworkMonitor {
     this.listeners = [];
     this.consecutiveFailures = 0;
     this.consecutiveSuccesses = 0;
+    this._normalInterval = 30000;
+    this._fastInterval = 5000; // Fast polling when offline to detect recovery quickly
   }
 
-  start(intervalMs = 60000) {
-    // Start with initial check
+  start(intervalMs = 30000) {
+    this._normalInterval = intervalMs;
+    // Initial check
     this.checkConnection();
-    // Check every 60 seconds (instead of 30)
-    this.checkInterval = setInterval(() => {
+    this._scheduleNext();
+
+    // Listen to Electron/OS network change events for instant detection
+    try {
+      const { app } = require('electron');
+      app.whenReady().then(() => {
+        const { net } = require('electron');
+        // Electron's net.online is a quick first signal
+        if (typeof net.isOnline === 'function' || net.online !== undefined) {
+          // Poll the Electron net.online flag alongside our health check
+          setInterval(() => {
+            const electronOnline = typeof net.isOnline === 'function' ? net.isOnline() : net.online;
+            if (!electronOnline && this.isOnline) {
+              // Electron says offline — run an immediate health check to confirm
+              this.checkConnection();
+            }
+          }, 3000);
+        }
+      });
+    } catch { /* not in Electron context */ }
+  }
+
+  _scheduleNext() {
+    if (this.checkInterval) clearTimeout(this.checkInterval);
+    const delay = this.isOnline ? this._normalInterval : this._fastInterval;
+    this.checkInterval = setTimeout(() => {
       this.checkConnection();
-    }, intervalMs);
+      this._scheduleNext();
+    }, delay);
   }
 
   stop() {
     if (this.checkInterval) {
-      clearInterval(this.checkInterval);
+      clearTimeout(this.checkInterval);
       this.checkInterval = null;
     }
   }
@@ -37,7 +65,7 @@ class NetworkMonitor {
           hostname: HEALTH_URL.hostname,
           port: HEALTH_URL.port || (HEALTH_URL.protocol === 'https:' ? 443 : 80),
           path: '/health',
-          timeout: 10000
+          timeout: 8000
         },
         (res) => {
           const success = res.statusCode >= 200 && res.statusCode < 400;
@@ -46,13 +74,10 @@ class NetworkMonitor {
             this.consecutiveSuccesses++;
             this.consecutiveFailures = 0;
 
-            // Only mark as online after 1 successful check
-            if (!this.isOnline && this.consecutiveSuccesses >= 1) {
+            if (!this.isOnline) {
               this.isOnline = true;
               this.notifyListeners(true);
-            } else if (!this.isOnline) {
-              this.isOnline = true;
-              this.notifyListeners(true);
+              this._scheduleNext(); // Switch back to normal interval
             }
           }
 
@@ -61,34 +86,30 @@ class NetworkMonitor {
       );
 
       req.on('error', () => {
-        this.consecutiveFailures++;
-        this.consecutiveSuccesses = 0;
-
-        // Only mark as offline after 2 consecutive failures to avoid false positives
-        if (this.isOnline && this.consecutiveFailures >= 2) {
-          this.isOnline = false;
-          this.notifyListeners(false);
-        }
-
+        this._handleFailure();
         resolve(false);
       });
 
       req.on('timeout', () => {
         req.destroy();
-        this.consecutiveFailures++;
-        this.consecutiveSuccesses = 0;
-
-        // Only mark as offline after 2 consecutive failures
-        if (this.isOnline && this.consecutiveFailures >= 2) {
-          this.isOnline = false;
-          this.notifyListeners(false);
-        }
-
+        this._handleFailure();
         resolve(false);
       });
 
       req.end();
     });
+  }
+
+  _handleFailure() {
+    this.consecutiveFailures++;
+    this.consecutiveSuccesses = 0;
+
+    // Mark offline after 2 consecutive failures
+    if (this.isOnline && this.consecutiveFailures >= 2) {
+      this.isOnline = false;
+      this.notifyListeners(false);
+      this._scheduleNext(); // Switch to fast interval
+    }
   }
 
   addListener(callback) {

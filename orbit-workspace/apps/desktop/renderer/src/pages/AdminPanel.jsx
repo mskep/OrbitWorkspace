@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import CustomSelect from '../components/CustomSelect';
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 
@@ -503,30 +504,30 @@ function UsersSection({ users = [], loading, onRefresh }) {
                       </td>
                       <td style={{ padding: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>{user.email}</td>
                       <td style={{ padding: '12px' }}>
-                        <select
+                        <CustomSelect
                           value={user.role}
-                          onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                          onChange={(val) => handleUpdateRole(user.id, val)}
                           disabled={updatingUser === user.id || isCurrentUser}
-                          title={isCurrentUser ? 'You cannot modify your own role' : ''}
-                          style={{ padding: '4px 8px', fontSize: '12px', fontWeight: '600', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', cursor: updatingUser === user.id || isCurrentUser ? 'not-allowed' : 'pointer' }}
-                        >
-                          <option value="USER">User</option>
-                          <option value="PREMIUM">Premium</option>
-                          <option value="DEV">Developer</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
+                          size="sm"
+                          options={[
+                            { value: 'USER', label: 'User' },
+                            { value: 'PREMIUM', label: 'Premium' },
+                            { value: 'DEV', label: 'Developer' },
+                            { value: 'ADMIN', label: 'Admin' },
+                          ]}
+                        />
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <select
+                        <CustomSelect
                           value={user.status}
-                          onChange={(e) => handleUpdateStatus(user.id, e.target.value)}
+                          onChange={(val) => handleUpdateStatus(user.id, val)}
                           disabled={updatingUser === user.id || isCurrentUser}
-                          title={isCurrentUser ? 'You cannot modify your own status' : ''}
-                          style={{ padding: '4px 8px', fontSize: '12px', fontWeight: '600', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', backgroundColor: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: isActive ? '#10b981' : '#ef4444', cursor: updatingUser === user.id || isCurrentUser ? 'not-allowed' : 'pointer' }}
-                        >
-                          <option value="active">Active</option>
-                          <option value="disabled">Disabled</option>
-                        </select>
+                          size="sm"
+                          options={[
+                            { value: 'active', label: 'Active', color: '#10b981' },
+                            { value: 'disabled', label: 'Disabled', color: '#ef4444' },
+                          ]}
+                        />
                       </td>
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-tertiary)' }}>
@@ -731,7 +732,7 @@ function SystemLogsSection() {
     downloadJson(`system-logs-${Date.now()}.json`, exportRows);
   };
 
-  const selectStyle = { padding: '8px 10px', fontSize: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' };
+  // selectStyle no longer needed — replaced by CustomSelect
 
   const SortableHeader = ({ label, sortKey }) => {
     const isActive = sortConfig.key === sortKey;
@@ -766,11 +767,16 @@ function SystemLogsSection() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={selectStyle}>
-            <option value={100}>100 logs</option>
-            <option value={200}>200 logs</option>
-            <option value={500}>500 logs</option>
-          </select>
+          <CustomSelect
+            value={limit}
+            onChange={(val) => setLimit(Number(val))}
+            size="sm"
+            options={[
+              { value: 100, label: '100 logs' },
+              { value: 200, label: '200 logs' },
+              { value: 500, label: '500 logs' },
+            ]}
+          />
           <button className="btn btn-ghost btn-sm" onClick={loadLogs} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={14} />
             Refresh
@@ -800,18 +806,33 @@ function SystemLogsSection() {
             style={{ padding: '8px 12px 8px 34px', fontSize: '13px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', width: '260px', outline: 'none' }}
           />
         </div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={selectStyle}>
-          <option value="all">All status</option>
-          {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value)} style={selectStyle}>
-          <option value="all">All severity</option>
-          {severityOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={selectStyle}>
-          <option value="all">All categories</option>
-          {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <CustomSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          size="sm"
+          options={[
+            { value: 'all', label: 'All status' },
+            ...statusOptions.map((s) => ({ value: s, label: s })),
+          ]}
+        />
+        <CustomSelect
+          value={severityFilter}
+          onChange={setSeverityFilter}
+          size="sm"
+          options={[
+            { value: 'all', label: 'All severity' },
+            ...severityOptions.map((s) => ({ value: s, label: s })),
+          ]}
+        />
+        <CustomSelect
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          size="sm"
+          options={[
+            { value: 'all', label: 'All categories' },
+            ...categoryOptions.map((c) => ({ value: c, label: c })),
+          ]}
+        />
         <button className="btn btn-ghost btn-sm" onClick={handleResetFilters}>Reset</button>
       </div>
 
@@ -1122,16 +1143,15 @@ function NotificationsSection({ users = [] }) {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Select User
               </label>
-              <select
+              <CustomSelect
                 value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
-                <option value="">Choose a user...</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.username} ({u.email})</option>
-                ))}
-              </select>
+                onChange={setSelectedUserId}
+                placeholder="Choose a user..."
+                options={users.map((u) => ({
+                  value: u.id,
+                  label: `${u.username} (${u.email})`,
+                }))}
+              />
             </div>
           )}
 

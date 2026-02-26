@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import hubAPI from '../api/hubApi';
+import CustomSelect from '../components/CustomSelect';
 import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
 import LogViewer from '../components/LogViewer';
@@ -101,34 +102,6 @@ function SettingRow({ icon, gradient, label, description, children }) {
   );
 }
 
-/* ── Styled select ────────────────────────────────────────── */
-function StyledSelect({ value, onChange, options, disabled }) {
-  return (
-    <select
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      style={{
-        padding: '8px 12px',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-default)',
-        backgroundColor: 'var(--bg-secondary)',
-        color: 'var(--text-primary)',
-        fontSize: '13px',
-        fontWeight: '500',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
-        outline: 'none',
-        minWidth: '140px',
-      }}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  );
-}
-
 /* ── Main Settings page ───────────────────────────────────── */
 function Settings() {
   const [systemStatus, setSystemStatus] = useState(null);
@@ -217,9 +190,9 @@ function Settings() {
                 label="Theme"
                 description="Choose the appearance of the application"
               >
-                <StyledSelect
+                <CustomSelect
                   value={userSettings.theme || 'dark'}
-                  onChange={(e) => updateSetting('theme', e.target.value)}
+                  onChange={(val) => updateSetting('theme', val)}
                   disabled={loading}
                   options={[
                     { value: 'dark', label: 'Dark' },
@@ -235,9 +208,9 @@ function Settings() {
                 label="Language"
                 description="Select your preferred language"
               >
-                <StyledSelect
+                <CustomSelect
                   value={userSettings.language || 'en'}
-                  onChange={(e) => updateSetting('language', e.target.value)}
+                  onChange={(val) => updateSetting('language', val)}
                   disabled={loading}
                   options={[
                     { value: 'en', label: 'English' },
