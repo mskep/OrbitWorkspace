@@ -9,7 +9,7 @@ import Badge from '../components/Badge';
 import Skeleton from '../components/Skeleton';
 import {
   Settings as SettingsIcon, Info, Rocket, Monitor,
-  Palette, Globe, Bell,
+  Palette, Globe, Bell, Lock, Eye, EyeOff, Loader, CheckCircle, AlertTriangle,
 } from 'lucide-react';
 
 /* ── Reusable toggle switch ─────────────────────────────────── */
@@ -109,6 +109,14 @@ function Settings() {
   const [loading, setLoading] = useState(true);
   const [toggleLoading, setToggleLoading] = useState(false);
 
+  // Security / password change
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [pwForm, setPwForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+
   const userSettings = useAppStore((s) => s.userSettings);
   const setUserSettings = useAppStore((s) => s.setUserSettings);
 
@@ -158,6 +166,45 @@ function Settings() {
     } catch (error) {
       console.error(`Error updating ${key}:`, error);
       setUserSettings(prev); // rollback
+    }
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    if (pwForm.newPassword.length < 8) {
+      setPwError('New password must be at least 8 characters');
+      return;
+    }
+
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('Passwords do not match');
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      const result = await hubAPI.auth.changePassword({
+        oldPassword: pwForm.oldPassword,
+        newPassword: pwForm.newPassword,
+      });
+
+      if (result.success) {
+        setPwSuccess(result.message || 'Password changed successfully');
+        setPwForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => {
+          setShowPasswordForm(false);
+          setPwSuccess('');
+        }, 1500);
+      } else {
+        setPwError(result.error || 'Password change failed');
+      }
+    } catch (error) {
+      setPwError('An error occurred. Please try again.');
+    } finally {
+      setPwLoading(false);
     }
   }
 
@@ -249,6 +296,187 @@ function Settings() {
                 />
               </SettingRow>
             </div>
+          </Card>
+
+          {/* ── Security ────────────────────────────────── */}
+          <Card style={{ marginBottom: '24px' }}>
+            <h3
+              style={{
+                margin: '0 0 20px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '20px',
+              }}
+            >
+              <Lock size={20} />
+              Security
+            </h3>
+
+            {!showPasswordForm ? (
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-default)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'linear-gradient(135deg, #ef4444, #f97316)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Lock size={20} color="#fff" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: '600', fontSize: '14px' }}>Password</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                      Update your account password without disconnecting the app
+                    </div>
+                  </div>
+                </div>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowPasswordForm(true)}>
+                  Change
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleChangePassword}>
+                {pwError && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'var(--status-error-glow)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: 'var(--radius-md)',
+                      marginBottom: '16px',
+                      fontSize: '13px',
+                      color: 'var(--status-error)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <AlertTriangle size={14} /> {pwError}
+                  </div>
+                )}
+
+                {pwSuccess && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'var(--status-success-glow)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: 'var(--radius-md)',
+                      marginBottom: '16px',
+                      fontSize: '13px',
+                      color: 'var(--status-success)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <CheckCircle size={14} /> {pwSuccess}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxWidth: '520px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Current Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPw ? 'text' : 'password'}
+                        value={pwForm.oldPassword}
+                        onChange={(e) => { setPwForm((p) => ({ ...p, oldPassword: e.target.value })); setPwError(''); }}
+                        required
+                        placeholder="Enter current password"
+                        autoComplete="current-password"
+                        style={{ paddingRight: '40px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw(!showPw)}
+                        style={{
+                          position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                          background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', padding: '4px'
+                        }}
+                      >
+                        {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      New Password
+                    </label>
+                    <input
+                      type={showPw ? 'text' : 'password'}
+                      value={pwForm.newPassword}
+                      onChange={(e) => { setPwForm((p) => ({ ...p, newPassword: e.target.value })); setPwError(''); }}
+                      required
+                      minLength={8}
+                      placeholder="Min 8 characters"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Confirm New Password
+                    </label>
+                    <input
+                      type={showPw ? 'text' : 'password'}
+                      value={pwForm.confirmPassword}
+                      onChange={(e) => { setPwForm((p) => ({ ...p, confirmPassword: e.target.value })); setPwError(''); }}
+                      required
+                      minLength={8}
+                      placeholder="Repeat new password"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setPwError('');
+                      setPwSuccess('');
+                      setPwForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                    }}
+                    disabled={pwLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    disabled={pwLoading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    {pwLoading ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Lock size={14} />}
+                    {pwLoading ? 'Changing...' : 'Change Password'}
+                  </button>
+                </div>
+              </form>
+            )}
           </Card>
 
           {/* ── Application Info ────────────────────────── */}

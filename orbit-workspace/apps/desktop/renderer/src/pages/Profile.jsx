@@ -14,10 +14,6 @@ import {
   Crown,
   Settings as SettingsIcon,
   LogOut,
-  Lock,
-  Eye,
-  EyeOff,
-  Loader
 } from 'lucide-react';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -77,14 +73,6 @@ function Profile() {
   // User badges
   const [userBadges, setUserBadges] = useState([]);
 
-  // Password change state
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [pwLoading, setPwLoading] = useState(false);
-  const [pwError, setPwError] = useState('');
-  const [pwSuccess, setPwSuccess] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [pwForm, setPwForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-
   useEffect(() => {
     loadProfile();
   }, []);
@@ -116,44 +104,6 @@ function Profile() {
     } catch (error) {
       console.error('Error logging out:', error);
       setLoggingOut(false);
-    }
-  }
-
-  async function handleChangePassword(e) {
-    e.preventDefault();
-    setPwError('');
-    setPwSuccess('');
-
-    if (pwForm.newPassword.length < 6) {
-      setPwError('New password must be at least 6 characters');
-      return;
-    }
-    if (pwForm.newPassword !== pwForm.confirmPassword) {
-      setPwError('Passwords do not match');
-      return;
-    }
-
-    setPwLoading(true);
-    try {
-      const result = await hubAPI.auth.changePassword({
-        oldPassword: pwForm.oldPassword,
-        newPassword: pwForm.newPassword
-      });
-
-      if (result.success) {
-        setPwSuccess('Password changed successfully');
-        setPwForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-        setTimeout(() => {
-          setShowPasswordForm(false);
-          setPwSuccess('');
-        }, 2000);
-      } else {
-        setPwError(result.error || 'Password change failed');
-      }
-    } catch (err) {
-      setPwError('An error occurred. Please try again.');
-    } finally {
-      setPwLoading(false);
     }
   }
 
@@ -312,7 +262,6 @@ function Profile() {
                       {(() => {
                         const ts = profile.createdAt;
                         if (!ts || ts <= 0) return '—';
-                        // Handle seconds vs milliseconds
                         const msTs = ts < 1e12 ? ts * 1000 : ts;
                         return new Date(msTs).toLocaleDateString();
                       })()}
@@ -421,184 +370,6 @@ function Profile() {
               </div>
             </Card>
           </div>
-
-          {/* Security Section */}
-          <Card style={{ marginBottom: '24px' }}>
-            <h3
-              style={{
-                margin: '0 0 20px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '20px'
-              }}
-            >
-              <Lock size={20} />
-              Security
-            </h3>
-
-            {!showPasswordForm ? (
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-default)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Lock size={20} color="#fff" />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '600', fontSize: '14px' }}>Password</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                      Change your account password
-                    </div>
-                  </div>
-                </div>
-                <Button variant="secondary" size="sm" onClick={() => setShowPasswordForm(true)}>
-                  Change
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleChangePassword}>
-                {pwError && (
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      backgroundColor: 'var(--status-error-glow)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      borderRadius: 'var(--radius-md)',
-                      marginBottom: '16px',
-                      fontSize: '13px',
-                      color: 'var(--status-error)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    {pwError}
-                  </div>
-                )}
-                {pwSuccess && (
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      backgroundColor: 'var(--status-success-glow)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: 'var(--radius-md)',
-                      marginBottom: '16px',
-                      fontSize: '13px',
-                      color: 'var(--status-success)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <CheckCircle size={14} /> {pwSuccess}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Current Password
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type={showPw ? 'text' : 'password'}
-                        value={pwForm.oldPassword}
-                        onChange={(e) => { setPwForm(p => ({ ...p, oldPassword: e.target.value })); setPwError(''); }}
-                        required
-                        placeholder="Enter current password"
-                        autoComplete="current-password"
-                        style={{ paddingRight: '40px' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPw(!showPw)}
-                        style={{
-                          position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                          background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', padding: '4px'
-                        }}
-                      >
-                        {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      New Password
-                    </label>
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      value={pwForm.newPassword}
-                      onChange={(e) => { setPwForm(p => ({ ...p, newPassword: e.target.value })); setPwError(''); }}
-                      required
-                      minLength={6}
-                      placeholder="Min 6 characters"
-                      autoComplete="new-password"
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Confirm New Password
-                    </label>
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      value={pwForm.confirmPassword}
-                      onChange={(e) => { setPwForm(p => ({ ...p, confirmPassword: e.target.value })); setPwError(''); }}
-                      required
-                      minLength={6}
-                      placeholder="Repeat new password"
-                      autoComplete="new-password"
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    onClick={() => {
-                      setShowPasswordForm(false);
-                      setPwError('');
-                      setPwSuccess('');
-                      setPwForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-                    }}
-                    disabled={pwLoading}
-                  >
-                    Cancel
-                  </Button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-sm"
-                    disabled={pwLoading}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    {pwLoading ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Lock size={14} />}
-                    {pwLoading ? 'Changing...' : 'Change Password'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </Card>
 
           {/* Permissions Section (read-only, derived from role) */}
           <Card>

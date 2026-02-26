@@ -414,6 +414,8 @@ class AuthServiceSQLite {
         return { success: false, error: 'Crypto material not found' };
       }
 
+      const sessionBefore = { ...this.currentSession };
+
       const newCrypto = await this.syncCrypto.changePassword(
         oldPassword, newPassword,
         userCrypto.salt,
@@ -422,7 +424,7 @@ class AuthServiceSQLite {
 
       const kdfParams = this.syncCrypto.getDefaultKdfParams();
 
-      // Change password on server
+      // Change password on server (revokes previous refresh sessions)
       await this.apiClient.changePassword({
         old_password: oldPassword,
         new_password: newPassword,
@@ -431,23 +433,84 @@ class AuthServiceSQLite {
         new_kdf_params: kdfParams,
       });
 
-      // Update local cache
-      repos.userCrypto.updatePasswordCrypto(this.currentSession.userId, {
+      // Update local crypto wrapper immediately
+      repos.userCrypto.updatePasswordCrypto(sessionBefore.userId, {
         salt: newCrypto.salt,
         encryptedMasterKey: newCrypto.encryptedMasterKey,
         kdfParams,
       });
 
-      // Server revoked all sessions — force re-login
-      await this.logout();
+      // Re-login with the new password so the user stays connected
+      let relogin;
+      try {
+        relogin = await this.apiClient.login({
+          identifier: sessionBefore.email || sessionBefore.username,
+          password: newPassword,
+          device_name: this._getDeviceName(),
+          device_fingerprint: this._getDeviceFingerprint(),
+        });
+      } catch (reloginError) {
+        console.warn('Password changed, but automatic re-login failed:', reloginError.message);
+        return {
+          success: true,
+          message: 'Password changed. Session refresh failed; reconnect if sync/auth errors appear.',
+          needsReconnect: true,
+        };
+      }
 
-      return { success: true, message: 'Password changed. Please log in again.' };
+      this.tokenStore.saveTokens({
+        access_token: relogin.access_token,
+        refresh_token: relogin.refresh_token,
+        server_user_id: relogin.user.id,
+        device_id: relogin.device.id,
+      });
+
+      // Align crypto state with latest server bundle
+      await this.syncCrypto.unlockWithPassword(
+        newPassword,
+        relogin.crypto.salt,
+        relogin.crypto.encrypted_master_key,
+        relogin.crypto.kdf_params,
+      );
+
+      repos.users.upsertFromServer(relogin.user);
+      if (!repos.userCrypto.exists(relogin.user.id)) {
+        repos.userCrypto.create({
+          userId: relogin.user.id,
+          salt: relogin.crypto.salt,
+          encryptedMasterKey: relogin.crypto.encrypted_master_key,
+          kdfParams: relogin.crypto.kdf_params,
+          recoveryBlob: userCrypto.recovery_blob || '',
+        });
+      } else {
+        repos.userCrypto.updatePasswordCrypto(relogin.user.id, {
+          salt: relogin.crypto.salt,
+          encryptedMasterKey: relogin.crypto.encrypted_master_key,
+          kdfParams: relogin.crypto.kdf_params,
+        });
+      }
+
+      this.currentSession = {
+        userId: relogin.user.id,
+        username: relogin.user.username,
+        email: relogin.user.email,
+        role: relogin.user.role,
+        loginTime: Date.now(),
+      };
+      this._needsUnlock = false;
+
+      repos.users.updateLastLogin(relogin.user.id);
+
+      if (this.syncManager) {
+        this.syncManager.start().catch(console.error);
+      }
+
+      return { success: true, message: 'Password changed successfully.' };
     } catch (error) {
       console.error('Change password error:', error);
       return { success: false, error: error.message || 'Password change failed' };
     }
   }
-
   // ============================================================
   // RECOVERY
   // ============================================================
@@ -594,3 +657,4 @@ class AuthServiceSQLite {
 }
 
 module.exports = AuthServiceSQLite;
+
