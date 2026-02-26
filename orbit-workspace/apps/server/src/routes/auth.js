@@ -38,7 +38,7 @@ export async function authRoutes(fastify) {
     },
   }, async (request, reply) => {
     const result = await authService.register(
-      fastify.pg, fastify.jwt, request.body,
+      fastify.pg, fastify.jwt, request.body, request,
     );
     return reply.status(201).send(result);
   });
@@ -62,7 +62,7 @@ export async function authRoutes(fastify) {
       rateLimit: rateLimitConfigs.login,
     },
   }, async (request) => {
-    return authService.login(fastify.pg, fastify.jwt, request.body);
+    return authService.login(fastify.pg, fastify.jwt, request.body, request);
   });
 
   // POST /api/v1/auth/refresh
@@ -176,3 +176,4 @@ export async function authRoutes(fastify) {
     return reply.status(200).send({ message: 'Password changed, all sessions revoked' });
   });
 }
+

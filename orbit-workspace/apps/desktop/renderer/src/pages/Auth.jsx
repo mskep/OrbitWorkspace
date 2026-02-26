@@ -4,10 +4,12 @@ import { Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Loader, Download, Shiel
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 import orbitLogo from '../assets/orbitlogo.png';
+import { useI18n } from '../i18n';
 
 function Auth() {
   const navigate = useNavigate();
-  const { setSession, setProfile } = useAppStore();
+  const { setSession, setProfile, setUserSettings } = useAppStore();
+  const { t } = useI18n();
 
   const [mode, setMode] = useState('login'); // 'login', 'register', 'recover'
   const [loading, setLoading] = useState(false);
@@ -52,8 +54,12 @@ function Auth() {
 
       if (result.success) {
         setSession(result.session);
-        const profileResult = await hubAPI.profile.get();
+        const [profileResult, settingsResult] = await Promise.all([
+          hubAPI.profile.get(),
+          hubAPI.settings.get(),
+        ]);
         if (profileResult) setProfile(profileResult);
+        if (settingsResult?.success && settingsResult.settings) setUserSettings(settingsResult.settings);
 
         if (result.cryptoMigrated && result.recoveryFileContent) {
           setRecoveryPrompt({
@@ -64,10 +70,10 @@ function Auth() {
           navigate('/home');
         }
       } else {
-        setError(result.error || 'Invalid credentials');
+        setError(result.error || t('auth.invalidCredentials'));
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError(t('auth.connectionError'));
     } finally {
       setLoading(false);
     }
@@ -79,19 +85,19 @@ function Auth() {
     setLoading(true);
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.passwordMin8'));
       setLoading(false);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsNoMatch'));
       setLoading(false);
       return;
     }
 
     if (!/^[a-zA-Z0-9_-]+$/.test(formData.username) || formData.username.length < 3) {
-      setError('Username must be 3+ characters (letters, numbers, _ or -)');
+      setError(t('auth.usernameRule'));
       setLoading(false);
       return;
     }
@@ -107,8 +113,12 @@ function Auth() {
         // Session is already established by register — just fetch it
         const session = await hubAPI.auth.getSession();
         setSession(session);
-        const profileResult = await hubAPI.profile.get();
+        const [profileResult, settingsResult] = await Promise.all([
+          hubAPI.profile.get(),
+          hubAPI.settings.get(),
+        ]);
         if (profileResult) setProfile(profileResult);
+        if (settingsResult?.success && settingsResult.settings) setUserSettings(settingsResult.settings);
 
         if (result.recoveryFileContent) {
           setRecoveryPrompt({
@@ -119,10 +129,10 @@ function Auth() {
           navigate('/home');
         }
       } else {
-        setError(result.error || 'Registration failed');
+        setError(result.error || t('auth.connectionError'));
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError(t('auth.connectionError'));
     } finally {
       setLoading(false);
     }
@@ -137,7 +147,7 @@ function Auth() {
         if (error) setError('');
       }
     } catch (err) {
-      setError('Failed to open file picker.');
+      setError(t('auth.recoveryOpenPickerFail'));
     }
   };
 
@@ -146,17 +156,17 @@ function Auth() {
     setError('');
 
     if (!recoveryFile) {
-      setError('Please select your recovery file first.');
+      setError(t('auth.recoverySelectFile'));
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.passwordMin8'));
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsNoMatch'));
       return;
     }
 
@@ -170,15 +180,15 @@ function Auth() {
 
       if (result.success) {
         setMode('login');
-        setSuccess('Password reset successful! Please sign in with your new password.');
+        setSuccess(t('auth.recoveryResetSuccess'));
         setNewPassword('');
         setConfirmNewPassword('');
         setRecoveryFile(null);
       } else {
-        setError(result.error || 'Recovery failed. Check your file and try again.');
+        setError(result.error || t('auth.recoveryFail'));
       }
     } catch (err) {
-      setError('Recovery failed. Please try again.');
+      setError(t('auth.recoveryFail'));
     } finally {
       setLoading(false);
     }
@@ -228,19 +238,19 @@ function Auth() {
         <div className="auth-brand">
           <img src={orbitLogo} alt="Orbit" className="auth-logo" />
           <h1 className="auth-brand-title">Orbit</h1>
-          <p className="auth-brand-subtitle">Your secure productivity hub</p>
+          <p className="auth-brand-subtitle">{t('auth.brandSubtitle')}</p>
           <div className="auth-brand-features">
             <div className="auth-feature">
               <ShieldCheck size={16} />
-              <span>Zero-knowledge encryption</span>
+              <span>{t('auth.featureEncryption')}</span>
             </div>
             <div className="auth-feature">
               <Lock size={16} />
-              <span>Local-first, private by design</span>
+              <span>{t('auth.featureLocalFirst')}</span>
             </div>
             <div className="auth-feature">
               <FileKey size={16} />
-              <span>Recovery file backup</span>
+              <span>{t('auth.featureRecovery')}</span>
             </div>
           </div>
         </div>
@@ -255,7 +265,7 @@ function Auth() {
               disabled={loading}
             >
               <LogIn size={16} />
-              Sign In
+              {t('auth.signIn')}
             </button>
             <button
               className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
@@ -263,7 +273,7 @@ function Auth() {
               disabled={loading}
             >
               <UserPlus size={16} />
-              Register
+              {t('auth.register')}
             </button>
           </div>
 
@@ -285,13 +295,13 @@ function Auth() {
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="auth-form">
               <div className="auth-input-group">
-                <label>Email or Username</label>
+                <label>{t('auth.emailOrUsername')}</label>
                 <div className="auth-input-wrapper">
                   <User size={18} className="auth-input-icon" />
                   <input
                     type="text"
                     name="identifier"
-                    placeholder="Enter your email or username"
+                    placeholder={t('auth.enterEmailOrUsername')}
                     value={formData.identifier}
                     onChange={handleChange}
                     required
@@ -302,13 +312,13 @@ function Auth() {
               </div>
 
               <div className="auth-input-group">
-                <label>Password</label>
+                <label>{t('auth.password')}</label>
                 <div className="auth-input-wrapper">
                   <Lock size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
-                    placeholder="Enter your password"
+                    placeholder={t('auth.enterPassword')}
                     value={formData.password}
                     onChange={handleChange}
                     required
@@ -322,15 +332,15 @@ function Auth() {
 
               <div className="auth-options">
                 <button type="button" className="auth-link" onClick={() => switchMode('recover')}>
-                  Forgot password?
+                  {t('auth.forgotPassword')}
                 </button>
               </div>
 
               <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
                 {loading ? (
-                  <><Loader size={18} className="auth-spinner" /> Signing in...</>
+                  <><Loader size={18} className="auth-spinner" /> {t('auth.signingIn')}</>
                 ) : (
-                  <><LogIn size={18} /> Sign In</>
+                  <><LogIn size={18} /> {t('auth.signIn')}</>
                 )}
               </button>
             </form>
@@ -340,7 +350,7 @@ function Auth() {
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="auth-form">
               <div className="auth-input-group">
-                <label>Email</label>
+                <label>{t('auth.email')}</label>
                 <div className="auth-input-wrapper">
                   <Mail size={18} className="auth-input-icon" />
                   <input
@@ -357,36 +367,36 @@ function Auth() {
               </div>
 
               <div className="auth-input-group">
-                <label>Username</label>
+                <label>{t('auth.username')}</label>
                 <div className="auth-input-wrapper">
                   <User size={18} className="auth-input-icon" />
                   <input
                     type="text"
                     name="username"
-                    placeholder="3-20 characters, letters & numbers"
+                    placeholder={t('auth.usernamePlaceholder')}
                     value={formData.username}
                     onChange={handleChange}
                     required
                     autoComplete="username"
-                    pattern="[a-zA-Z0-9_]{3,20}"
-                    title="3-20 characters, letters, numbers, and underscores only"
+                    pattern="[a-zA-Z0-9_-]{3,32}"
+                    title={t('auth.usernameTitle')}
                   />
                 </div>
               </div>
 
               <div className="auth-input-group">
-                <label>Password</label>
+                <label>{t('auth.password')}</label>
                 <div className="auth-input-wrapper">
                   <Lock size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
-                    placeholder="Min 6 characters"
+                    placeholder={t('auth.min8')}
                     value={formData.password}
                     onChange={handleChange}
                     required
                     autoComplete="new-password"
-                    minLength={6}
+                    minLength={8}
                   />
                   <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -395,27 +405,27 @@ function Auth() {
               </div>
 
               <div className="auth-input-group">
-                <label>Confirm Password</label>
+                <label>{t('auth.confirmPassword')}</label>
                 <div className="auth-input-wrapper">
                   <Lock size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="confirmPassword"
-                    placeholder="Repeat your password"
+                    placeholder={t('auth.repeatPassword')}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
                     autoComplete="new-password"
-                    minLength={6}
+                    minLength={8}
                   />
                 </div>
               </div>
 
               <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
                 {loading ? (
-                  <><Loader size={18} className="auth-spinner" /> Creating account...</>
+                  <><Loader size={18} className="auth-spinner" /> {t('auth.creatingAccount')}</>
                 ) : (
-                  <><UserPlus size={18} /> Create Account</>
+                  <><UserPlus size={18} /> {t('auth.createAccount')}</>
                 )}
               </button>
             </form>
@@ -427,35 +437,34 @@ function Auth() {
               <div className="auth-recover-info">
                 <FileKey size={24} />
                 <p>
-                  Orbit uses zero-knowledge encryption. To reset your password,
-                  you need the recovery file generated when you created your account.
+                  {t('auth.recoveryInfo')}
                 </p>
               </div>
 
               <div className="auth-input-group">
-                <label>Recovery File</label>
+                <label>{t('auth.recoveryFile')}</label>
                 <button
                   type="button"
                   className={`auth-file-picker ${recoveryFile ? 'has-file' : ''}`}
                   onClick={handlePickRecoveryFile}
                 >
                   <FileKey size={18} />
-                  <span>{recoveryFile ? recoveryFile.fileName : 'Select recovery file...'}</span>
+                  <span>{recoveryFile ? recoveryFile.fileName : t('auth.selectRecoveryFile')}</span>
                   {recoveryFile && <ShieldCheck size={16} className="auth-file-check" />}
                 </button>
               </div>
 
               <div className="auth-input-group">
-                <label>New Password</label>
+                <label>{t('auth.newPassword')}</label>
                 <div className="auth-input-wrapper">
                   <Lock size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Min 6 characters"
+                    placeholder={t('auth.min8')}
                     value={newPassword}
                     onChange={(e) => { setNewPassword(e.target.value); if (error) setError(''); }}
                     required
-                    minLength={6}
+                    minLength={8}
                     autoComplete="new-password"
                     autoFocus
                   />
@@ -466,16 +475,16 @@ function Auth() {
               </div>
 
               <div className="auth-input-group">
-                <label>Confirm New Password</label>
+                <label>{t('auth.confirmNewPassword')}</label>
                 <div className="auth-input-wrapper">
                   <Lock size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Repeat new password"
+                    placeholder={t('auth.repeatNewPassword')}
                     value={confirmNewPassword}
                     onChange={(e) => { setConfirmNewPassword(e.target.value); if (error) setError(''); }}
                     required
-                    minLength={6}
+                    minLength={8}
                     autoComplete="new-password"
                   />
                 </div>
@@ -483,14 +492,14 @@ function Auth() {
 
               <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
                 {loading ? (
-                  <><Loader size={18} className="auth-spinner" /> Recovering...</>
+                  <><Loader size={18} className="auth-spinner" /> {t('auth.recovering')}</>
                 ) : (
-                  <><ShieldCheck size={18} /> Reset Password</>
+                  <><ShieldCheck size={18} /> {t('auth.resetPassword')}</>
                 )}
               </button>
 
               <button type="button" className="auth-back-link" onClick={() => switchMode('login')}>
-                Back to Sign In
+                {t('auth.backToSignIn')}
               </button>
             </form>
           )}
@@ -509,18 +518,16 @@ function Auth() {
             <div className="auth-modal-icon">
               <ShieldCheck size={32} />
             </div>
-            <h2>Save Your Recovery Key</h2>
+            <h2>{t('auth.saveRecoveryTitle')}</h2>
             <p>
-              This is your <strong>only way</strong> to recover your data if you forget your password.
-              Orbit uses zero-knowledge encryption — we cannot reset your password for you.
-              <br />Save this file somewhere safe.
+              {t('auth.saveRecoveryText')}
             </p>
             <button className="btn btn-primary btn-lg btn-full" onClick={handleSaveRecoveryFile}>
               <Download size={18} />
-              Download Recovery File
+              {t('auth.downloadRecoveryFile')}
             </button>
             <button className="auth-skip-btn" onClick={handleSkipRecovery}>
-              Skip for now (not recommended)
+              {t('auth.skipForNow')}
             </button>
           </div>
         </div>

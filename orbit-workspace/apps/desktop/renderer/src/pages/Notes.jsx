@@ -7,11 +7,14 @@ import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
+import { useI18n } from '../i18n';
 
 /**
  * Notes Page - Full CRUD for notes with markdown editor
  */
 function Notes() {
+  const { t, language } = useI18n();
+  const isFr = language === 'fr';
   const activeWorkspace = useAppStore((state) => state.activeWorkspace);
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
   const [notes, setNotes] = useState([]);
@@ -207,9 +210,9 @@ function Notes() {
   if (loading) {
     return (
       <div className="page">
-        <Topbar title="Notes" />
+        <Topbar title={t('common.notes')} />
         <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading notes...</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement des notes...' : 'Loading notes...'}</div>
         </div>
       </div>
     );
@@ -218,12 +221,12 @@ function Notes() {
   if (!activeWorkspace) {
     return (
       <div className="page">
-        <Topbar title="Notes" />
+        <Topbar title={t('common.notes')} />
         <div className="page-content">
           <EmptyState
             icon={FileText}
-            title="No Active Workspace"
-            description="Please create or select a workspace to start taking notes."
+            title={isFr ? 'Aucun espace actif' : 'No Active Workspace'}
+            description={isFr ? 'Creez ou selectionnez un espace pour commencer a prendre des notes.' : 'Please create or select a workspace to start taking notes.'}
           />
         </div>
       </div>
@@ -232,7 +235,7 @@ function Notes() {
 
   return (
     <div className="page">
-      <Topbar title="Notes" />
+      <Topbar title={t('common.notes')} />
 
       <div className="page-content" style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 100px)' }}>
         {/* Notes List Sidebar */}
@@ -263,7 +266,7 @@ function Notes() {
             }}
           >
             <Plus size={18} />
-            New Note
+            {isFr ? 'Nouvelle note' : 'New Note'}
           </button>
 
           {/* Search */}
@@ -273,7 +276,7 @@ function Notes() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search notes..."
+              placeholder={isFr ? 'Rechercher des notes...' : 'Search notes...'}
               style={{
                 width: '100%',
                 padding: '10px 40px 10px 12px',
@@ -339,7 +342,7 @@ function Notes() {
                   fontSize: '13px'
                 }}
               >
-                {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
+                {searchQuery ? (isFr ? 'Aucune note trouvee' : 'No notes found') : (isFr ? 'Aucune note pour le moment. Cree ta premiere note.' : 'No notes yet. Create your first note!')}
               </div>
             ) : (
               notes.map((note) => (
@@ -391,8 +394,8 @@ function Notes() {
           {!selectedNote && !isEditing ? (
             <EmptyState
               icon={FileText}
-              title="No note selected"
-              description="Select a note from the list or create a new one"
+              title={isFr ? 'Aucune note sélectionnée' : 'No note selected'}
+              description={isFr ? 'Sélectionnez une note dans la liste ou créez-en une nouvelle' : 'Select a note from the list or create a new one'}
             />
           ) : isEditing ? (
             <NoteEditor
@@ -558,6 +561,8 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
 // Note Editor Component with Markdown preview
 function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
   const [showPreview, setShowPreview] = useState(false);
+  const { language } = useI18n();
+  const isFr = language === 'fr';
 
   return (
     <div
@@ -576,7 +581,7 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
-          {isNew ? 'New Note' : 'Edit Note'}
+          {isNew ? (isFr ? 'Nouvelle note' : 'New Note') : (isFr ? 'Modifier la note' : 'Edit Note')}
         </h3>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button

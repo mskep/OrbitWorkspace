@@ -630,6 +630,7 @@ class SyncManager {
       pendingOps: this.syncQueue?.pendingCount() || 0,
       lastError: this._lastError,
       serverUserId: this.tokenStore.getTokens()?.server_user_id || null,
+      deviceId: this.tokenStore.getTokens()?.device_id || null,
     };
   }
 

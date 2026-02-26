@@ -5,6 +5,7 @@ import Topbar from '../app/layout/Topbar';
 import ToolCard from '../components/ToolCard';
 import SearchBar from '../components/SearchBar';
 import TagFilter from '../components/TagFilter';
+import { useI18n } from '../i18n';
 
 function Tools() {
   const { toolId } = useParams();
@@ -13,6 +14,7 @@ function Tools() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [allTags, setAllTags] = useState([]);
+  const { t } = useI18n();
 
   useEffect(() => {
     loadTools();
@@ -70,7 +72,7 @@ function Tools() {
     // Show specific tool page
     return (
       <div className="page">
-        <Topbar title="Tool Details" />
+        <Topbar title={t('common.myTools')} />
         <div className="page-content">
           <p>Tool page for: {toolId}</p>
           <p>Tool UI will be loaded here</p>
@@ -81,11 +83,11 @@ function Tools() {
 
   return (
     <div className="page">
-      <Topbar title="Outils" />
+      <Topbar title={t('common.myTools')} />
 
       <div className="page-content">
         <div className="tools-header">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search tools..." />
+          <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder={t('tools.searchPlaceholder')} />
           <TagFilter tags={allTags} selectedTags={selectedTags} onTagToggle={handleTagToggle} />
         </div>
 
@@ -97,7 +99,7 @@ function Tools() {
 
         {filteredTools.length === 0 && (
           <div className="empty-state">
-            <p>No tools found</p>
+            <p>{t('tools.noToolsFound')}</p>
           </div>
         )}
       </div>

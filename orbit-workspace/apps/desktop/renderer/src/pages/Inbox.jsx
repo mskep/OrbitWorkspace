@@ -3,6 +3,7 @@ import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import { useAppStore } from '../state/store';
 import { Inbox, MailOpen, Award, Shield, Bell, Megaphone, CheckCheck, RefreshCw, Wrench, Download, ShieldAlert } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 const TYPE_CONFIG = {
   'badge-assigned': { icon: Award, color: '#f59e0b', label: 'Badge Awarded' },
@@ -42,6 +43,8 @@ function formatTimeAgo(timestamp) {
 
 function InboxPage() {
   const setUnreadInbox = useAppStore((state) => state.setUnreadInbox);
+  const { language } = useI18n();
+  const isFr = language === 'fr';
 
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -130,24 +133,24 @@ function InboxPage() {
   const readCount = messages.filter((m) => m.is_read).length;
 
   const filters = [
-    { key: 'all', label: 'All', count: messages.length },
-    { key: 'unread', label: 'Unread', count: unreadCount },
-    { key: 'read', label: 'Read', count: readCount }
+    { key: 'all', label: isFr ? 'Tous' : 'All', count: messages.length },
+    { key: 'unread', label: isFr ? 'Non lus' : 'Unread', count: unreadCount },
+    { key: 'read', label: isFr ? 'Lus' : 'Read', count: readCount }
   ];
 
   return (
     <div className="page">
       <Topbar
-        title="Inbox"
+        title={isFr ? 'Boîte de réception' : 'Inbox'}
         actions={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button onClick={loadMessages} title="Refresh" className="inbox-action-btn">
+            <button onClick={loadMessages} title={isFr ? 'Rafraîchir' : 'Refresh'} className="inbox-action-btn">
               <RefreshCw size={14} />
             </button>
             {unreadCount > 0 && (
               <button onClick={handleMarkAllRead} className="inbox-action-btn">
                 <CheckCheck size={14} />
-                <span>Mark all read</span>
+                <span>{isFr ? 'Tout marquer comme lu' : 'Mark all read'}</span>
               </button>
             )}
           </div>
@@ -187,15 +190,15 @@ function InboxPage() {
             {filter === 'unread' ? (
               <>
                 <CheckCheck size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                <span style={{ fontSize: '15px', fontWeight: '600' }}>All caught up</span>
-                <span style={{ fontSize: '13px', marginTop: '4px', opacity: 0.6 }}>No unread messages</span>
+                <span style={{ fontSize: '15px', fontWeight: '600' }}>{isFr ? 'Tout est à jour' : 'All caught up'}</span>
+                <span style={{ fontSize: '13px', marginTop: '4px', opacity: 0.6 }}>{isFr ? 'Aucun message non lu' : 'No unread messages'}</span>
               </>
             ) : (
               <>
                 <Inbox size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                <span style={{ fontSize: '15px', fontWeight: '600' }}>No messages</span>
+                <span style={{ fontSize: '15px', fontWeight: '600' }}>{isFr ? 'Aucun message' : 'No messages'}</span>
                 <span style={{ fontSize: '13px', marginTop: '4px', opacity: 0.6 }}>
-                  {filter === 'read' ? 'No read messages' : 'Your inbox is empty'}
+                  {filter === 'read' ? (isFr ? 'Aucun message lu' : 'No read messages') : (isFr ? 'Votre boîte de réception est vide' : 'Your inbox is empty')}
                 </span>
               </>
             )}

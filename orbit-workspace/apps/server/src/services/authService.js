@@ -6,6 +6,7 @@ import { userCryptoQueries } from '../db/queries/userCrypto.js';
 import { sessionsQueries } from '../db/queries/sessions.js';
 import { devicesQueries } from '../db/queries/devices.js';
 import { ROLES, ROLE_LEVELS, MAX_DEVICES_PER_USER } from '../utils/constants.js';
+import { buildDeviceTelemetry } from '../utils/deviceTelemetry.js';
 
 // Refresh token lifetime in milliseconds (30 days)
 const REFRESH_TOKEN_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
@@ -15,7 +16,7 @@ const REFRESH_TOKEN_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
  * First user automatically gets ADMIN role.
  * Entire operation runs in a transaction for atomicity.
  */
-export async function register(pg, jwt, data) {
+export async function register(pg, jwt, data, request) {
   const {
     email, username, password,
     salt, encrypted_master_key, recovery_blob, kdf_params,
@@ -26,6 +27,8 @@ export async function register(pg, jwt, data) {
   if (kdf_params.memoryCost > 1048576 || kdf_params.timeCost > 10 || kdf_params.parallelism > 16) {
     throw new BadRequest('KDF parameters exceed allowed bounds');
   }
+
+  const telemetry = buildDeviceTelemetry(request);
 
   const client = await pg.connect();
   try {
@@ -68,6 +71,8 @@ export async function register(pg, jwt, data) {
     // Register device
     const { rows: [device] } = await client.query(devicesQueries.create, [
       user.id, device_name, device_fingerprint,
+      telemetry.ip, telemetry.ipMasked, telemetry.userAgent,
+      telemetry.country, telemetry.region, telemetry.city,
     ]);
 
     // Generate tokens inside transaction — if this fails, everything rolls back
@@ -92,8 +97,9 @@ export async function register(pg, jwt, data) {
  * Login with email/username + password.
  * Device creation is atomic with limit check (transaction).
  */
-export async function login(pg, jwt, data) {
+export async function login(pg, jwt, data, request) {
   const { identifier, password, device_name, device_fingerprint } = data;
+  const telemetry = buildDeviceTelemetry(request);
 
   // Find user
   const { rows } = await pg.query(usersQueries.findByIdentifier, [identifier]);
@@ -127,7 +133,12 @@ export async function login(pg, jwt, data) {
     if (device.user_id !== user.id) {
       throw new Unauthorized('Device registered to another account');
     }
-    await pg.query(devicesQueries.updateLastSeen, [device.id]);
+    const { rows: [updatedDevice] } = await pg.query(devicesQueries.updateLastSeen, [
+      device.id,
+      telemetry.ip, telemetry.ipMasked, telemetry.userAgent,
+      telemetry.country, telemetry.region, telemetry.city,
+    ]);
+    if (updatedDevice) device = updatedDevice;
   } else {
     // Atomic: lock user row, check count, create device + session in one transaction
     const client = await pg.connect();
@@ -147,6 +158,8 @@ export async function login(pg, jwt, data) {
 
       const { rows: [newDevice] } = await client.query(devicesQueries.create, [
         user.id, device_name, device_fingerprint,
+        telemetry.ip, telemetry.ipMasked, telemetry.userAgent,
+        telemetry.country, telemetry.region, telemetry.city,
       ]);
       device = newDevice;
 
@@ -210,6 +223,7 @@ export async function login(pg, jwt, data) {
  */
 export async function refresh(pg, jwt, refreshToken) {
   const tokenHash = hashToken(refreshToken);
+
 
   const client = await pg.connect();
   try {
@@ -353,6 +367,7 @@ export async function recoverReset(pg, userId, data) {
   // Hash new password
   const newHash = await hashPassword(new_password);
 
+
   const client = await pg.connect();
   try {
     await client.query('BEGIN');
@@ -408,6 +423,7 @@ export async function changePassword(pg, userId, data) {
   const newHash = await hashPassword(new_password);
 
   // Wrap everything in a transaction
+
   const client = await pg.connect();
   try {
     await client.query('BEGIN');
@@ -477,10 +493,23 @@ function sanitizeUser(user) {
 }
 
 function sanitizeDevice(device) {
+  const location = [device.last_city, device.last_region, device.last_country]
+    .filter(Boolean)
+    .join(', ');
+
   return {
     id: device.id,
     device_name: device.device_name,
     device_fingerprint: device.device_fingerprint,
     last_seen_at: device.last_seen_at,
+    last_ip: device.last_ip || null,
+    last_ip_masked: device.last_ip_masked || null,
+    last_user_agent: device.last_user_agent || null,
+    last_country: device.last_country || null,
+    last_region: device.last_region || null,
+    last_city: device.last_city || null,
+    location: location || null,
+    is_new_device: Boolean(device.is_new_device),
   };
 }
+

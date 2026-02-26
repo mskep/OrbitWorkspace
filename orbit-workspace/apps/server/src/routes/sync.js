@@ -1,17 +1,28 @@
 import { authenticateStrict } from '../hooks/authenticate.js';
 import * as syncService from '../services/syncService.js';
 import { rateLimitConfigs } from '../hooks/rateLimits.js';
+import { devicesQueries } from '../db/queries/devices.js';
+import { buildDeviceTelemetry } from '../utils/deviceTelemetry.js';
 
 export async function syncRoutes(fastify) {
   // All sync routes require strict auth (DB check for immediate revocation)
   fastify.addHook('onRequest', authenticateStrict);
 
-  // Update device last_seen on every sync request
+  // Update device last_seen + security metadata on every sync request
   fastify.addHook('onRequest', async (request) => {
     if (request.user?.did) {
+      const telemetry = buildDeviceTelemetry(request);
       await fastify.pg.query(
-        'UPDATE devices SET last_seen_at = NOW() WHERE id = $1',
-        [request.user.did],
+        devicesQueries.updateLastSeen,
+        [
+          request.user.did,
+          telemetry.ip,
+          telemetry.ipMasked,
+          telemetry.userAgent,
+          telemetry.country,
+          telemetry.region,
+          telemetry.city,
+        ],
       ).catch(() => {}); // Non-blocking
     }
   });

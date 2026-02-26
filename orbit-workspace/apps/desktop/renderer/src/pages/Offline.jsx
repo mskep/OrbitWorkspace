@@ -1,10 +1,12 @@
 import React from 'react';
 import Topbar from '../app/layout/Topbar';
+import { useI18n } from '../i18n';
 
 function Offline() {
+  const { t } = useI18n();
   return (
     <div className="page">
-      <Topbar title="Offline Mode" />
+      <Topbar title={t('common.offline')} />
       <div className="page-content">
         <div className="offline-message">
           <h2>You are currently offline</h2>

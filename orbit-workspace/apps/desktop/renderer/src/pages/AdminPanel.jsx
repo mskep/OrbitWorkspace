@@ -26,12 +26,15 @@ import Modal from '../components/Modal';
 import CustomSelect from '../components/CustomSelect';
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
+import { useI18n } from '../i18n';
 
 function AdminPanel() {
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t, language } = useI18n();
+  const isFr = language === 'fr';
 
   const loadAdminData = useCallback(async () => {
     try {
@@ -57,11 +60,11 @@ function AdminPanel() {
   }, [loadAdminData]);
 
   const sections = [
-    { id: 'overview', label: 'Overview', icon: Shield, accent: '#0ea5e9', surface: 'rgba(14, 165, 233, 0.16)' },
-    { id: 'users', label: 'User Management', icon: Users, accent: '#10b981', surface: 'rgba(16, 185, 129, 0.16)' },
-    { id: 'notifications', label: 'Notifications', icon: Megaphone, accent: '#f59e0b', surface: 'rgba(245, 158, 11, 0.16)' },
-    { id: 'logs', label: 'System Logs', icon: Activity, accent: '#ef4444', surface: 'rgba(239, 68, 68, 0.16)' },
-    { id: 'roles', label: 'Roles & Permissions', icon: Key, accent: '#14b8a6', surface: 'rgba(20, 184, 166, 0.16)' }
+    { id: 'overview', label: t('admin.overview'), icon: Shield, accent: '#0ea5e9', surface: 'rgba(14, 165, 233, 0.16)' },
+    { id: 'users', label: t('admin.users'), icon: Users, accent: '#10b981', surface: 'rgba(16, 185, 129, 0.16)' },
+    { id: 'notifications', label: t('admin.notifications'), icon: Megaphone, accent: '#f59e0b', surface: 'rgba(245, 158, 11, 0.16)' },
+    { id: 'logs', label: t('admin.logs'), icon: Activity, accent: '#ef4444', surface: 'rgba(239, 68, 68, 0.16)' },
+    { id: 'roles', label: t('admin.roles'), icon: Key, accent: '#14b8a6', surface: 'rgba(20, 184, 166, 0.16)' }
   ];
 
   return (
@@ -106,7 +109,7 @@ function AdminPanel() {
                 WebkitTextFillColor: 'transparent'
               }}
             >
-              Admin Panel
+              {t('admin.title')}
             </h1>
             <p
               style={{
@@ -115,7 +118,7 @@ function AdminPanel() {
                 margin: 0
               }}
             >
-              System administration and management
+              {t('admin.subtitle')}
             </p>
           </div>
         </div>
@@ -136,9 +139,9 @@ function AdminPanel() {
       >
         <AlertTriangle size={20} color="#f59e0b" />
         <div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#f59e0b' }}>Administrator Access</div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: '#f59e0b' }}>{isFr ? 'Accès administrateur' : 'Administrator Access'}</div>
           <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-            You have full system access. Be careful with changes made here.
+            {isFr ? 'Vous avez un accès complet au système. Faites attention aux changements.' : 'You have full system access. Be careful with changes made here.'}
           </div>
         </div>
       </div>
@@ -238,36 +241,38 @@ function AdminPanel() {
 
 // ── Overview ──────────────────────────────────────────────
 function OverviewSection({ stats, loading }) {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>Loading stats...</div>;
+    return <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement des statistiques...' : 'Loading stats...'}</div>;
   }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
       <Card>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>Quick Stats</h3>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>{isFr ? 'Statistiques rapides' : 'Quick Stats'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StatItem label="Total Users" value={stats?.totalUsers || 0} color="#667eea" />
-          <StatItem label="Total Workspaces" value={stats?.totalWorkspaces || 0} color="#10b981" />
-          <StatItem label="Total Notes" value={stats?.totalNotes || 0} color="#f59e0b" />
+          <StatItem label={isFr ? 'Utilisateurs totaux' : 'Total Users'} value={stats?.totalUsers || 0} color="#667eea" />
+          <StatItem label={isFr ? 'Espaces totaux' : 'Total Workspaces'} value={stats?.totalWorkspaces || 0} color="#10b981" />
+          <StatItem label={isFr ? 'Notes totales' : 'Total Notes'} value={stats?.totalNotes || 0} color="#f59e0b" />
         </div>
       </Card>
 
       <Card>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>Content Stats</h3>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>{isFr ? 'Stats de contenu' : 'Content Stats'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StatItem label="Total Links" value={stats?.totalLinks || 0} color="#ec4899" />
-          <StatItem label="File References" value={stats?.totalFileRefs || 0} color="#8b5cf6" />
-          <StatItem label="Active Tools" value={stats?.activeTools || 0} color="#3b82f6" />
+          <StatItem label={isFr ? 'Liens totaux' : 'Total Links'} value={stats?.totalLinks || 0} color="#ec4899" />
+          <StatItem label={isFr ? 'Références fichiers' : 'File References'} value={stats?.totalFileRefs || 0} color="#8b5cf6" />
+          <StatItem label={isFr ? 'Outils actifs' : 'Active Tools'} value={stats?.activeTools || 0} color="#3b82f6" />
         </div>
       </Card>
 
       <Card>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>System Health</h3>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>{isFr ? 'Santé système' : 'System Health'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StatItem label="Database Status" value="Healthy" color="#10b981" />
-          <StatItem label="Total Badges" value={stats?.totalBadges || 0} color="#f59e0b" />
-          <StatItem label="Total Inbox Items" value={stats?.totalInboxItems || 0} color="#6366f1" />
+          <StatItem label={isFr ? 'État base de données' : 'Database Status'} value={isFr ? 'Sain' : 'Healthy'} color="#10b981" />
+          <StatItem label={isFr ? 'Badges totaux' : 'Total Badges'} value={stats?.totalBadges || 0} color="#f59e0b" />
+          <StatItem label={isFr ? 'Éléments boîte total' : 'Total Inbox Items'} value={stats?.totalInboxItems || 0} color="#6366f1" />
         </div>
       </Card>
     </div>
@@ -328,6 +333,8 @@ function Pill({ type, value }) {
 
 // ── Users Section ────────────────────────────────────────
 function UsersSection({ users = [], loading, onRefresh }) {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
   const profile = useAppStore((state) => state.profile);
   const [updatingUser, setUpdatingUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -479,7 +486,7 @@ function UsersSection({ users = [], loading, onRefresh }) {
   if (loading) {
     return (
       <Card>
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>Loading users...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement des utilisateurs...' : 'Loading users...'}</div>
       </Card>
     );
   }
@@ -488,9 +495,9 @@ function UsersSection({ users = [], loading, onRefresh }) {
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>User Management</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>{isFr ? 'Gestion des utilisateurs' : 'User Management'}</h3>
           <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: '4px 0 0 0' }}>
-            Manage user accounts, roles, and badges
+            {isFr ? 'Gérer les comptes, rôles et badges utilisateurs' : 'Manage user accounts, roles, and badges'}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -498,7 +505,7 @@ function UsersSection({ users = [], loading, onRefresh }) {
             <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder={isFr ? 'Rechercher par nom ou email...' : 'Search by name or email...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ padding: '8px 12px 8px 34px', fontSize: '13px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', width: '220px', outline: 'none' }}
@@ -511,7 +518,7 @@ function UsersSection({ users = [], loading, onRefresh }) {
         <div style={{ padding: '40px', textAlign: 'center', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
           <Users size={48} color="var(--text-tertiary)" style={{ marginBottom: '16px' }} />
           <p style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>
-            {searchQuery ? 'No users found matching your search' : 'No users found'}
+            {searchQuery ? (isFr ? 'Aucun utilisateur ne correspond à la recherche' : 'No users found matching your search') : (isFr ? 'Aucun utilisateur trouvé' : 'No users found')}
           </p>
         </div>
       ) : (
@@ -519,11 +526,11 @@ function UsersSection({ users = [], loading, onRefresh }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-                <SortableHeader label="User" sortKey="username" />
-                <SortableHeader label="Email" sortKey="email" />
-                <SortableHeader label="Role" sortKey="role" />
-                <SortableHeader label="Status" sortKey="status" />
-                <SortableHeader label="Created" sortKey="created_at" />
+                <SortableHeader label={isFr ? 'Utilisateur' : 'User'} sortKey="username" />
+                <SortableHeader label={isFr ? 'Email' : 'Email'} sortKey="email" />
+                <SortableHeader label={isFr ? 'Role' : 'Role'} sortKey="role" />
+                <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" />
+                <SortableHeader label={isFr ? 'Créé' : 'Created'} sortKey="created_at" />
                 <th style={{ padding: '12px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>
                   Badges
                 </th>
@@ -545,7 +552,7 @@ function UsersSection({ users = [], loading, onRefresh }) {
                           <div>
                             <span style={{ fontSize: '14px', fontWeight: '500' }}>{user.username}</span>
                             {isCurrentUser && (
-                              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>(You)</span>
+                              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>({isFr ? 'Vous' : 'You'})</span>
                             )}
                           </div>
                         </div>
@@ -558,10 +565,10 @@ function UsersSection({ users = [], loading, onRefresh }) {
                           disabled={updatingUser === user.id || isCurrentUser}
                           size="sm"
                           options={[
-                            { value: 'USER', label: 'User' },
-                            { value: 'PREMIUM', label: 'Premium' },
-                            { value: 'DEV', label: 'Developer' },
-                            { value: 'ADMIN', label: 'Admin' },
+                            { value: 'USER', label: isFr ? 'Utilisateur' : 'User' },
+                            { value: 'PREMIUM', label: isFr ? 'Premium' : 'Premium' },
+                            { value: 'DEV', label: isFr ? 'Développeur' : 'Developer' },
+                            { value: 'ADMIN', label: isFr ? 'Admin' : 'Admin' },
                           ]}
                         />
                       </td>
@@ -572,8 +579,8 @@ function UsersSection({ users = [], loading, onRefresh }) {
                           disabled={updatingUser === user.id || isCurrentUser}
                           size="sm"
                           options={[
-                            { value: 'active', label: 'Active', color: '#10b981' },
-                            { value: 'disabled', label: 'Disabled', color: '#ef4444' },
+                            { value: 'active', label: isFr ? 'Actif' : 'Active', color: '#10b981' },
+                            { value: 'disabled', label: isFr ? 'Désactivé' : 'Disabled', color: '#ef4444' },
                           ]}
                         />
                       </td>
@@ -672,6 +679,8 @@ function UsersSection({ users = [], loading, onRefresh }) {
 
 // ── System Logs Section ──────────────────────────────────
 function SystemLogsSection() {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -800,7 +809,7 @@ function SystemLogsSection() {
   if (loading) {
     return (
       <Card>
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>Loading system logs...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement des journaux systeme...' : 'Loading system logs...'}</div>
       </Card>
     );
   }
@@ -809,9 +818,9 @@ function SystemLogsSection() {
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
         <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>System Logs</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>{isFr ? 'Journaux système' : 'System Logs'}</h3>
           <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: '4px 0 0 0' }}>
-            Review security and system events ({summary?.total ?? logs.length} fetched)
+            {isFr ? `Revoir les événements sécurité/système (${summary?.total ?? logs.length} récupérés)` : `Review security and system events (${summary?.total ?? logs.length} fetched)`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -820,9 +829,9 @@ function SystemLogsSection() {
             onChange={(val) => setLimit(Number(val))}
             size="sm"
             options={[
-              { value: 100, label: '100 logs' },
-              { value: 200, label: '200 logs' },
-              { value: 500, label: '500 logs' },
+              { value: 100, label: isFr ? '100 journaux' : '100 logs' },
+              { value: 200, label: isFr ? '200 journaux' : '200 logs' },
+              { value: 500, label: isFr ? '500 journaux' : '500 logs' },
             ]}
           />
           <button className="btn btn-ghost btn-sm" onClick={loadLogs} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -837,10 +846,10 @@ function SystemLogsSection() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-        <StatItem label="Visible Logs" value={quickStats.total} color="var(--text-primary)" />
-        <StatItem label="Errors" value={quickStats.errors} color="#ef4444" />
-        <StatItem label="Warnings" value={quickStats.warnings} color="#f59e0b" />
-        <StatItem label="Auth Events" value={quickStats.authEvents} color="#3b82f6" />
+        <StatItem label={isFr ? 'Journaux visibles' : 'Visible Logs'} value={quickStats.total} color="var(--text-primary)" />
+        <StatItem label={isFr ? 'Erreurs' : 'Errors'} value={quickStats.errors} color="#ef4444" />
+        <StatItem label={isFr ? 'Avertissements' : 'Warnings'} value={quickStats.warnings} color="#f59e0b" />
+        <StatItem label={isFr ? 'Événements auth' : 'Auth Events'} value={quickStats.authEvents} color="#3b82f6" />
       </div>
 
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -848,7 +857,7 @@ function SystemLogsSection() {
           <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
           <input
             type="text"
-            placeholder="Search user, action, error..."
+            placeholder={isFr ? 'Rechercher utilisateur, action, erreur...' : 'Search user, action, error...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ padding: '8px 12px 8px 34px', fontSize: '13px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', width: '260px', outline: 'none' }}
@@ -859,7 +868,7 @@ function SystemLogsSection() {
           onChange={setStatusFilter}
           size="sm"
           options={[
-            { value: 'all', label: 'All status' },
+            { value: 'all', label: isFr ? 'Tous statuts' : 'All status' },
             ...statusOptions.map((s) => ({ value: s, label: s })),
           ]}
         />
@@ -868,7 +877,7 @@ function SystemLogsSection() {
           onChange={setSeverityFilter}
           size="sm"
           options={[
-            { value: 'all', label: 'All severity' },
+            { value: 'all', label: isFr ? 'Toutes severites' : 'All severity' },
             ...severityOptions.map((s) => ({ value: s, label: s })),
           ]}
         />
@@ -877,31 +886,31 @@ function SystemLogsSection() {
           onChange={setCategoryFilter}
           size="sm"
           options={[
-            { value: 'all', label: 'All categories' },
+            { value: 'all', label: isFr ? 'Toutes categories' : 'All categories' },
             ...categoryOptions.map((c) => ({ value: c, label: c })),
           ]}
         />
-        <button className="btn btn-ghost btn-sm" onClick={handleResetFilters}>Reset</button>
+        <button className="btn btn-ghost btn-sm" onClick={handleResetFilters}>{isFr ? 'Réinitialiser' : 'Reset'}</button>
       </div>
 
       {filteredLogs.length === 0 ? (
         <div style={{ padding: '40px', textAlign: 'center', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
           <Activity size={48} color="var(--text-tertiary)" style={{ marginBottom: '16px' }} />
-          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>No logs match the current filters</p>
+          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>{isFr ? 'Aucun journal ne correspond aux filtres actuels' : 'No logs match the current filters'}</p>
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
-                <SortableHeader label="Time" sortKey="timestamp" />
-                <SortableHeader label="User" sortKey="user" />
-                <SortableHeader label="Action" sortKey="action" />
-                <SortableHeader label="Status" sortKey="status" />
-                <SortableHeader label="Severity" sortKey="severity" />
-                <SortableHeader label="Category" sortKey="category" />
-                <SortableHeader label="Duration" sortKey="duration" />
-                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>Details</th>
+                <SortableHeader label={isFr ? 'Heure' : 'Time'} sortKey="timestamp" />
+                <SortableHeader label={isFr ? 'Utilisateur' : 'User'} sortKey="user" />
+                <SortableHeader label={isFr ? 'Action' : 'Action'} sortKey="action" />
+                <SortableHeader label={isFr ? 'Statut' : 'Status'} sortKey="status" />
+                <SortableHeader label={isFr ? 'Sévérité' : 'Severity'} sortKey="severity" />
+                <SortableHeader label={isFr ? 'Catégorie' : 'Category'} sortKey="category" />
+                <SortableHeader label={isFr ? 'Durée' : 'Duration'} sortKey="duration" />
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)' }}>{isFr ? 'Details' : 'Details'}</th>
               </tr>
             </thead>
             <tbody>
@@ -940,6 +949,8 @@ const BROADCAST_TEMPLATES = [
 ];
 
 function NotificationsSection({ users = [] }) {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [category, setCategory] = useState('admin-broadcast');
@@ -1023,17 +1034,17 @@ function NotificationsSection({ users = [] }) {
       {/* Send Notification Card */}
       <Card>
         <div style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>Send Notification</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>{isFr ? 'Envoyer une notification' : 'Send Notification'}</h3>
           <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: '4px 0 0 0' }}>
-            Broadcast a message to all users or send to a specific user
+            {isFr ? 'Diffuser un message à tous les utilisateurs ou à un utilisateur spécifique' : 'Broadcast a message to all users or send to a specific user'}
           </p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '600px' }}>
-          {/* Category selector */}
+          {/* {isFr ? 'Catégorie' : 'Category'} selector */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              Category
+              {isFr ? 'Catégorie' : 'Category'}
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {BROADCAST_CATEGORIES.map((cat) => {
@@ -1081,11 +1092,11 @@ function NotificationsSection({ users = [] }) {
             </div>
           </div>
 
-          {/* Quick Templates */}
+          {/* {isFr ? 'Modèles rapides' : 'Quick Templates'} */}
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               <FileText size={14} />
-              Quick Templates
+              {isFr ? 'Modèles rapides' : 'Quick Templates'}
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {BROADCAST_TEMPLATES.map((tpl) => {
@@ -1133,7 +1144,7 @@ function NotificationsSection({ users = [] }) {
           {/* Target */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Recipient
+              {isFr ? 'Destinataire' : 'Recipient'}
             </label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -1157,7 +1168,7 @@ function NotificationsSection({ users = [] }) {
                 }}
               >
                 <Users size={16} />
-                All Users
+                {isFr ? 'Tous les utilisateurs' : 'All Users'}
               </button>
               <button
                 onClick={() => setTarget('user')}
@@ -1180,7 +1191,7 @@ function NotificationsSection({ users = [] }) {
                 }}
               >
                 <User size={16} />
-                Specific User
+                {isFr ? 'Utilisateur spécifique' : 'Specific User'}
               </button>
             </div>
           </div>
@@ -1189,12 +1200,12 @@ function NotificationsSection({ users = [] }) {
           {target === 'user' && (
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Select User
+                {isFr ? 'Sélectionner un utilisateur' : 'Select User'}
               </label>
               <CustomSelect
                 value={selectedUserId}
                 onChange={setSelectedUserId}
-                placeholder="Choose a user..."
+                placeholder={isFr ? 'Choisir un utilisateur...' : 'Choose a user...'}
                 options={users.map((u) => ({
                   value: u.id,
                   label: `${u.username} (${u.email})`,
@@ -1212,7 +1223,7 @@ function NotificationsSection({ users = [] }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Notification title..."
+              placeholder={isFr ? 'Titre de la notification...' : 'Notification title...'}
               maxLength={100}
               style={inputStyle}
               onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; }}
@@ -1228,7 +1239,7 @@ function NotificationsSection({ users = [] }) {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Write your message... (line breaks are supported)"
+              placeholder={isFr ? 'Écrivez votre message... (retours à la ligne supportés)' : 'Write your message... (line breaks are supported)'}
               maxLength={500}
               rows={4}
               style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }}
@@ -1254,12 +1265,12 @@ function NotificationsSection({ users = [] }) {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <PreviewIcon size={14} color={pc} />
-                <span style={{ fontSize: '12px', fontWeight: '600', color: pc }}>Preview — {previewCat.label}</span>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: pc }}>{isFr ? 'Aperçu' : 'Preview'} — {previewCat.label}</span>
               </div>
               <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '2px' }}>{title}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{message}</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                To: {targetLabel}
+                {isFr ? 'A:' : 'To:'} {targetLabel}
               </div>
             </div>
             );
@@ -1284,7 +1295,7 @@ function NotificationsSection({ users = [] }) {
             }}
           >
             <Send size={16} />
-            {sending ? 'Sending...' : 'Send Notification'}
+            {sending ? (isFr ? 'Envoi...' : 'Sending...') : (isFr ? 'Envoyer la notification' : 'Send Notification')}
           </button>
         </div>
 
@@ -1293,21 +1304,21 @@ function NotificationsSection({ users = [] }) {
           isOpen={confirmModal}
           onClose={() => setConfirmModal(false)}
           onConfirm={handleSend}
-          title="Confirm Send"
+          title={isFr ? 'Confirmer l’envoi' : 'Confirm Send'}
           message={`Are you sure you want to send "${title}" to ${targetLabel}? This action cannot be undone.`}
           type="confirm"
-          confirmText="Send"
-          cancelText="Cancel"
+          confirmText={isFr ? 'Envoyer' : 'Send'}
+          cancelText={isFr ? 'Annuler' : 'Cancel'}
         />
 
         {/* Result modal */}
         <Modal
           isOpen={resultModal.isOpen}
           onClose={() => setResultModal({ isOpen: false, success: false, text: '' })}
-          title={resultModal.success ? 'Notification Sent' : 'Error'}
+          title={resultModal.success ? (isFr ? 'Notification envoyée' : 'Notification Sent') : (isFr ? 'Erreur' : 'Error')}
           message={resultModal.text}
           type={resultModal.success ? 'info' : 'alert'}
-          confirmText="OK"
+          confirmText={isFr ? 'OK' : 'OK'}
         />
       </Card>
 
@@ -1323,9 +1334,9 @@ function NotificationsSection({ users = [] }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <History size={18} color="var(--text-secondary)" />
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>Broadcast History</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>{isFr ? 'Historique des diffusions' : 'Broadcast History'}</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', margin: '2px 0 0 0' }}>
-                View past broadcast notifications
+                {isFr ? 'Voir les anciennes notifications diffusées' : 'View past broadcast notifications'}
               </p>
             </div>
           </div>
@@ -1336,11 +1347,11 @@ function NotificationsSection({ users = [] }) {
           <div style={{ marginTop: '16px' }}>
             {historyLoading ? (
               <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
-                Loading history...
+                {isFr ? 'Chargement de l’historique...' : 'Loading history...'}
               </div>
             ) : history.length === 0 ? (
               <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
-                No broadcasts sent yet
+                {isFr ? 'Aucune diffusion envoyée pour le moment' : 'No broadcasts sent yet'}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1464,13 +1475,59 @@ const PERM_LABELS = {
   INSTALL_TOOLS: 'Install Tools'
 };
 
+const ROLE_LABELS_FR = {
+  ADMIN: 'Administrateur',
+  DEV: 'Développeur',
+  PREMIUM: 'Premium',
+  USER: 'Utilisateur'
+};
+
+const ROLE_DESCRIPTIONS_FR = {
+  ADMIN: 'Accès complet au système, gestion des utilisateurs et permissions globales',
+  DEV: 'Accès étendu, visibilité des journaux et installation d’outils',
+  PREMIUM: 'Accès standard avec outils premium',
+  USER: 'Accès de base avec permissions standard'
+};
+
+const PERM_LABELS_FR = {
+  NET_ACCESS: 'Accès réseau',
+  FS_READ: 'Lecture de fichiers',
+  FS_WRITE: 'Écriture de fichiers',
+  FS_PICKER: 'Sélecteur de fichiers',
+  RUN_TOOL: 'Exécuter les outils',
+  SPAWN_PROCESS: 'Lancer des processus',
+  CLIPBOARD: 'Presse-papiers',
+  NOTIFICATIONS: 'Notifications',
+  TRAY_CONTROL: 'Contrôle de la zone de notification',
+  PREMIUM_TOOLS: 'Outils premium',
+  MANAGE_USERS: 'Gérer les utilisateurs',
+  VIEW_ALL_LOGS: 'Voir tous les journaux',
+  SYSTEM_CONFIG: 'Configuration système',
+  INSTALL_TOOLS: 'Installer des outils'
+};
+
 function RolesSection() {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
+  const roleData = isFr
+    ? ROLE_DATA.map((role) => ({
+        ...role,
+        label: ROLE_LABELS_FR[role.role] || role.label,
+        description: ROLE_DESCRIPTIONS_FR[role.role] || role.description,
+      }))
+    : ROLE_DATA;
+  const permLabels = isFr ? PERM_LABELS_FR : PERM_LABELS;
+
   return (
     <Card>
       <div style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>Roles & Permissions</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>
+          {isFr ? 'Rôles et permissions' : 'Roles & Permissions'}
+        </h3>
         <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', margin: '4px 0 0 0' }}>
-          Permissions are role-driven. Assign roles in User Management to change what users can do.
+          {isFr
+            ? 'Les permissions dépendent des rôles. Assignez les rôles dans la gestion des utilisateurs pour modifier ce que chacun peut faire.'
+            : 'Permissions are role-driven. Assign roles in User Management to change what users can do.'}
         </p>
       </div>
 
@@ -1479,9 +1536,9 @@ function RolesSection() {
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-default)' }}>
               <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: 'var(--text-tertiary)', position: 'sticky', left: 0, backgroundColor: 'var(--bg-secondary)', minWidth: '120px' }}>
-                Permission
+                {isFr ? 'Permission' : 'Permission'}
               </th>
-              {ROLE_DATA.map((r) => (
+              {roleData.map((r) => (
                 <th key={r.role} style={{ padding: '10px 12px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: r.color, minWidth: '100px' }}>
                   {r.label}
                 </th>
@@ -1492,9 +1549,9 @@ function RolesSection() {
             {ALL_PERMISSIONS.map((perm) => (
               <tr key={perm} style={{ borderBottom: '1px solid var(--border-default)' }}>
                 <td style={{ padding: '8px 12px', fontSize: '13px', color: 'var(--text-secondary)', position: 'sticky', left: 0, backgroundColor: 'var(--bg-secondary)' }}>
-                  {PERM_LABELS[perm] || perm}
+                  {permLabels[perm] || perm}
                 </td>
-                {ROLE_DATA.map((r) => {
+                {roleData.map((r) => {
                   const has = r.permissions.includes(perm);
                   return (
                     <td key={r.role} style={{ padding: '8px 12px', textAlign: 'center' }}>
@@ -1513,7 +1570,7 @@ function RolesSection() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', marginTop: '20px' }}>
-        {ROLE_DATA.map((r) => (
+        {roleData.map((r) => (
           <div
             key={r.role}
             style={{
@@ -1536,4 +1593,3 @@ function RolesSection() {
 }
 
 export default AdminPanel;
-

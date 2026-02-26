@@ -20,6 +20,7 @@ import { useAppStore } from '../../state/store';
 import hubAPI from '../../api/hubApi';
 import Modal from '../../components/Modal';
 import orbitLogo from '../../assets/orbitlogo.png';
+import { useI18n } from '../../i18n';
 
 function Sidebar() {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ function Sidebar() {
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
   const unreadInbox = useAppStore((state) => state.unreadInbox);
   const setUnreadInbox = useAppStore((state) => state.setUnreadInbox);
+  const { t } = useI18n();
 
   // Workspace state
   const [workspaces, setWorkspaces] = useState([]);
@@ -133,18 +135,18 @@ function Sidebar() {
   };
 
   const menuItems = [
-    { id: 'home', label: 'Dashboard', icon: <Home size={20} />, path: '/home' },
-    { id: 'tools', label: 'My Tools', icon: <Wrench size={20} />, path: '/tools' },
-    { id: 'notes', label: 'Notes', icon: <FileText size={20} />, path: '/notes' },
-    { id: 'links', label: 'Quick Links', icon: <Link size={20} />, path: '/links' },
-    { id: 'inbox', label: 'Inbox', icon: <Inbox size={20} />, path: '/inbox' },
-    { id: 'profile', label: 'Profile', icon: <User size={20} />, path: '/profile' },
-    { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' }
+    { id: 'home', label: t('common.dashboard'), icon: <Home size={20} />, path: '/home' },
+    { id: 'tools', label: t('common.myTools'), icon: <Wrench size={20} />, path: '/tools' },
+    { id: 'notes', label: t('common.notes'), icon: <FileText size={20} />, path: '/notes' },
+    { id: 'links', label: t('common.quickLinks'), icon: <Link size={20} />, path: '/links' },
+    { id: 'inbox', label: t('common.inbox'), icon: <Inbox size={20} />, path: '/inbox' },
+    { id: 'profile', label: t('common.profile'), icon: <User size={20} />, path: '/profile' },
+    { id: 'settings', label: t('common.settings'), icon: <Settings size={20} />, path: '/settings' }
   ];
 
   // Admin section - only for ADMIN and DEV roles
   const adminItems = isAdminOrDev
-    ? [{ id: 'admin', label: 'Admin Panel', icon: <Shield size={20} />, path: '/admin', isAdmin: true }]
+    ? [{ id: 'admin', label: t('common.adminPanel'), icon: <Shield size={20} />, path: '/admin', isAdmin: true }]
     : [];
 
   const isActive = (path) => location.pathname.startsWith(path);
@@ -172,7 +174,7 @@ function Sidebar() {
         {!isOnline && (
           <div className="offline-indicator">
             <WifiOff size={12} style={{ marginRight: '4px' }} />
-            Offline
+            {t('common.offline')}
           </div>
         )}
       </div>
@@ -226,7 +228,7 @@ function Sidebar() {
                   whiteSpace: 'nowrap'
                 }}
               >
-                {activeWorkspace?.name || 'No workspace'}
+                {activeWorkspace?.name || t('sidebar.noWorkspace')}
               </span>
             </div>
             {workspaceExpanded ? (
@@ -262,7 +264,7 @@ function Sidebar() {
                     letterSpacing: '0.5px'
                   }}
                 >
-                  All Workspaces
+                  {t('sidebar.allWorkspaces')}
                 </span>
                 <button
                   onClick={() => setCreating(!creating)}
@@ -282,7 +284,7 @@ function Sidebar() {
                   }}
                 >
                   <Plus size={14} />
-                  {creating ? 'Cancel' : 'New'}
+                  {creating ? t('common.cancel') : t('common.new')}
                 </button>
               </div>
 
@@ -293,7 +295,7 @@ function Sidebar() {
                     type="text"
                     value={newWorkspaceName}
                     onChange={(e) => setNewWorkspaceName(e.target.value)}
-                    placeholder="Workspace name..."
+                    placeholder={t('sidebar.workspaceNamePlaceholder')}
                     autoFocus
                     style={{
                       width: '100%',
@@ -325,7 +327,7 @@ function Sidebar() {
                       transition: 'opacity 0.2s'
                     }}
                   >
-                    Create
+                    {t('common.create')}
                   </button>
                 </form>
               )}
@@ -343,7 +345,7 @@ function Sidebar() {
                       fontSize: '12px'
                     }}
                   >
-                    No workspaces
+                    {t('sidebar.noWorkspaces')}
                   </div>
                 ) : (
                   workspaces.map((workspace) => {
@@ -492,11 +494,11 @@ function Sidebar() {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, workspaceId: null, workspaceName: '' })}
         onConfirm={handleDeleteWorkspace}
-        title="Delete Workspace"
-        message={`Are you sure you want to delete "${deleteModal.workspaceName}"? This will permanently delete all notes, links, and files in this workspace. This action cannot be undone.`}
+        title={t('sidebar.deleteWorkspaceTitle')}
+        message={t('sidebar.deleteWorkspaceMessage', { workspaceName: deleteModal.workspaceName })}
         type="confirm"
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
       />
     </div>
   );

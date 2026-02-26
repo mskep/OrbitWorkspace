@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import { useAppStore } from '../state/store';
+import { useI18n } from '../i18n';
 import {
   User,
   Shield,
@@ -67,6 +68,7 @@ const ROLE_CONFIG = {
 function Profile() {
   const navigate = useNavigate();
   const { profile, setProfile, setSession } = useAppStore();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -119,7 +121,7 @@ function Profile() {
   if (loading) {
     return (
       <div className="page">
-        <Topbar title="Profile" />
+        <Topbar title={t('profile.title')} />
         <div className="page-content">
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <Skeleton variant="rect" style={{ height: '200px', marginBottom: '24px' }} />
@@ -137,9 +139,9 @@ function Profile() {
   if (!profile) {
     return (
       <div className="page">
-        <Topbar title="Profile" />
+        <Topbar title={t('profile.title')} />
         <div className="page-content">
-          <p>No profile data available</p>
+          <p>{t('profile.noProfileData')}</p>
         </div>
       </div>
     );
@@ -150,7 +152,7 @@ function Profile() {
 
   return (
     <div className="page">
-      <Topbar title="Profile" />
+      <Topbar title={t('profile.title')} />
 
       <div className="page-content">
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -235,7 +237,7 @@ function Profile() {
                   <div style={{ marginLeft: 'auto' }}>
                     <Button variant="danger" size="sm" onClick={handleLogout} disabled={loggingOut}>
                       <LogOut size={14} />
-                      {loggingOut ? 'Logging out...' : 'Logout'}
+                      {loggingOut ? t('profile.loggingOut') : t('profile.logout')}
                     </Button>
                   </div>
                 </div>
@@ -258,7 +260,7 @@ function Profile() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={14} />
-                      Joined{' '}
+                      {t('profile.joined')}{' '}
                       {(() => {
                         const ts = profile.createdAt;
                         if (!ts || ts <= 0) return '—';
@@ -269,7 +271,7 @@ function Profile() {
                     {profile.status && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Activity size={14} />
-                        Status:{' '}
+                        {t('profile.status')}{' '}
                         <span
                           style={{
                             color: profile.status === 'active' ? '#10b981' : '#ef4444',
@@ -316,7 +318,7 @@ function Profile() {
                     {profile.stats?.totalActions || 0}
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                    Total Actions
+                    {t('profile.totalActions')}
                   </div>
                 </div>
               </div>
@@ -341,7 +343,7 @@ function Profile() {
                   <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
                     {profile.stats?.toolsUsed || 0}
                   </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>Tools Used</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>{t('profile.toolsUsed')}</div>
                 </div>
               </div>
             </Card>
@@ -365,7 +367,7 @@ function Profile() {
                   <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
                     {profile.stats?.loginCount || 1}
                   </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>Login Count</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>{t('profile.loginCount')}</div>
                 </div>
               </div>
             </Card>
@@ -383,10 +385,10 @@ function Profile() {
               }}
             >
               <Shield size={20} />
-              Permissions & Access
+              {t('profile.permissionsAccess')}
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>
-              Permissions are granted by your role ({roleConfig.label}). Contact an admin to change your role.
+              {t('profile.permissionsDesc', { role: roleConfig.label })}
             </p>
 
             <div
@@ -446,7 +448,7 @@ function Profile() {
                           marginTop: '2px'
                         }}
                       >
-                        {isEnabled ? 'Granted' : 'Not available'}
+                        {isEnabled ? t('profile.granted') : t('profile.notAvailable')}
                       </div>
                     </div>
                   </div>

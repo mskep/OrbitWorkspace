@@ -2095,7 +2095,8 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.SYNC_GET_DEVICES, async () => {
     try {
-      const devices = await syncManager.apiClient.getDevices();
+      const response = await syncManager.apiClient.getDevices();
+      const devices = Array.isArray(response?.devices) ? response.devices : [];
       return { success: true, devices };
     } catch (error) {
       return { success: false, error: error.message };

@@ -4,6 +4,7 @@ import hubAPI from '../api/hubApi';
 import Topbar from '../app/layout/Topbar';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../state/store';
+import { useI18n } from '../i18n';
 
 function Home() {
   const [recentActions, setRecentActions] = useState([]);
@@ -11,6 +12,7 @@ function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const profile = useAppStore((state) => state.profile);
+  const { t } = useI18n();
 
   useEffect(() => {
     loadData();
@@ -36,7 +38,7 @@ function Home() {
 
   return (
     <div className="page">
-      <Topbar title="Dashboard" />
+      <Topbar title={t('common.dashboard')} />
 
       <div className="page-content">
         <section className="hero">
@@ -57,12 +59,11 @@ function Home() {
               }}
             >
               <Sparkles size={14} />
-              SYSTEM READY
+              {t('home.systemReady')}
             </div>
-            <h1 className="hero-title">Welcome back, {profile?.username || 'User'}</h1>
+            <h1 className="hero-title">{profile?.username ? t('home.welcomeBack', { username: profile.username }) : t('home.welcomeBackGeneric')}</h1>
             <p className="hero-subtitle" style={{ maxWidth: '600px', wordWrap: 'break-word' }}>
-              Your personal productivity hub is optimized and running smoothly. Manage your tools and workflows from one
-              central dashboard.
+              {t('home.subtitle')}
             </p>
           </div>
         </section>
@@ -80,7 +81,7 @@ function Home() {
               >
                 <Cpu size={24} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>System Status</h3>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>{t('home.systemStatus')}</h3>
             </div>
 
             {isLoading ? (
@@ -88,24 +89,24 @@ function Home() {
             ) : systemStatus ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Connection</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}>{t('home.connection')}</span>
                   <span
                     style={{
                       color: systemStatus.online ? 'var(--status-success)' : 'var(--status-error)',
                       fontWeight: 600
                     }}
                   >
-                    {systemStatus.online ? 'Online' : 'Offline'}
+                    {systemStatus.online ? t('common.online') : t('common.offlineState')}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Platform</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}>{t('common.platform')}</span>
                   <span style={{ fontWeight: 600 }}>{systemStatus.platform}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Security</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}>{t('home.security')}</span>
                   <span style={{ color: 'var(--status-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <ShieldCheck size={14} /> Active
+                    <ShieldCheck size={14} /> {t('common.active')}
                   </span>
                 </div>
               </div>
@@ -124,7 +125,7 @@ function Home() {
               >
                 <Activity size={24} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>Recent Activity</h3>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>{t('home.recentActivity')}</h3>
             </div>
 
             {isLoading ? (
@@ -142,7 +143,7 @@ function Home() {
                         color: action.status === 'error' ? 'var(--status-error)' : 'var(--text-primary)'
                       }}
                     >
-                      {action.type || action.action?.type || 'Activity'}
+                      {action.type || action.action?.type || t('home.recentActivity')}
                     </span>
                     <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>
                       {action.timestamp
@@ -155,7 +156,7 @@ function Home() {
                 ))}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>No recent activity</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>{t('home.noRecentActivity')}</p>
             )}
           </div>
 
@@ -171,7 +172,7 @@ function Home() {
               >
                 <Zap size={24} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>Quick Actions</h3>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>{t('home.quickActions')}</h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -180,14 +181,14 @@ function Home() {
                 className="btn btn-secondary"
                 style={{ justifyContent: 'space-between', width: '100%' }}
               >
-                Open My Tools <ArrowUpRight size={16} />
+                {t('home.openMyTools')} <ArrowUpRight size={16} />
               </button>
               <button
                 onClick={() => navigate('/inbox')}
                 className="btn btn-secondary"
                 style={{ justifyContent: 'space-between', width: '100%' }}
               >
-                View Inbox <ArrowUpRight size={16} />
+                {t('home.viewInbox')} <ArrowUpRight size={16} />
               </button>
             </div>
           </div>

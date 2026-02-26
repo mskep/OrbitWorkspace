@@ -4,10 +4,12 @@ import { Lock, Eye, EyeOff, Loader, LogOut, ShieldCheck, AlertCircle } from 'luc
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 import orbitLogo from '../assets/orbitlogo.png';
+import { useI18n } from '../i18n';
 
 function Unlock() {
   const navigate = useNavigate();
-  const { session, setSession, clearSession, setProfile } = useAppStore();
+  const { session, setSession, clearSession, setProfile, setUserSettings } = useAppStore();
+  const { t } = useI18n();
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,15 +27,19 @@ function Unlock() {
         const updatedSession = await hubAPI.auth.getSession();
         setSession(updatedSession);
 
-        const profile = await hubAPI.profile.get();
+        const [profile, settingsResult] = await Promise.all([
+          hubAPI.profile.get(),
+          hubAPI.settings.get(),
+        ]);
         if (profile) setProfile(profile);
+        if (settingsResult?.success && settingsResult.settings) setUserSettings(settingsResult.settings);
 
         navigate('/home');
       } else {
-        setError(result.error || 'Incorrect password');
+        setError(result.error || t('unlock.incorrectPassword'));
       }
     } catch (err) {
-      setError('Failed to unlock. Please try again.');
+      setError(t('unlock.unlockFailed'));
     } finally {
       setLoading(false);
     }
@@ -65,10 +71,9 @@ function Unlock() {
 
         {/* Logo & greeting */}
         <img src={orbitLogo} alt="Orbit" className="unlock-logo" />
-        <h1 className="unlock-title">Session Locked</h1>
+        <h1 className="unlock-title">{t('unlock.sessionLocked')}</h1>
         <p className="unlock-subtitle">
-          Welcome back{session?.username ? <>, <span className="unlock-username">{session.username}</span></> : ''}.
-          Enter your password to continue.
+          {session?.username ? t('unlock.welcomeBack', { username: session.username }) : t('unlock.welcomeBackGeneric')}
         </p>
 
         {/* Error */}
@@ -82,14 +87,14 @@ function Unlock() {
         {/* Form */}
         <form onSubmit={handleUnlock} className="unlock-form">
           <div className="auth-input-group">
-            <label>Password</label>
+            <label>{t('auth.password')}</label>
             <div className="auth-input-wrapper">
               <Lock size={18} className="auth-input-icon" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); if (error) setError(''); }}
-                placeholder="Enter your password"
+                placeholder={t('auth.enterPassword')}
                 required
                 autoFocus
               />
@@ -109,9 +114,9 @@ function Unlock() {
             disabled={loading || !password}
           >
             {loading ? (
-              <><Loader size={18} className="auth-spinner" /> Unlocking...</>
+              <><Loader size={18} className="auth-spinner" /> {t('unlock.unlocking')}</>
             ) : (
-              <><ShieldCheck size={18} /> Unlock</>
+              <><ShieldCheck size={18} /> {t('unlock.unlock')}</>
             )}
           </button>
         </form>
@@ -120,7 +125,7 @@ function Unlock() {
         <div className="unlock-footer">
           <button className="unlock-signout" onClick={handleLogout}>
             <LogOut size={14} />
-            Sign out instead
+            {t('unlock.signOutInstead')}
           </button>
         </div>
       </div>

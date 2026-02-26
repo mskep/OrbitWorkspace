@@ -24,11 +24,14 @@ import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
+import { useI18n } from '../i18n';
 
 /**
  * Links Page - Quick Links and File References management
  */
 function Links() {
+  const { t, language } = useI18n();
+  const isFr = language === 'fr';
   const activeWorkspace = useAppStore((state) => state.activeWorkspace);
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
   const [activeTab, setActiveTab] = useState('links'); // 'links' or 'files'
@@ -362,9 +365,9 @@ function Links() {
   if (loading) {
     return (
       <div className="page">
-        <Topbar title="Links & Files" />
+        <Topbar title={t('common.quickLinks')} />
         <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading...</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement...' : 'Loading...'}</div>
         </div>
       </div>
     );
@@ -373,9 +376,9 @@ function Links() {
   if (!activeWorkspace) {
     return (
       <div className="page">
-        <Topbar title="Links & Files" />
+        <Topbar title={t('common.quickLinks')} />
         <div className="page-content">
-          <EmptyState icon={LinkIcon} title="No Active Workspace" description="Please create or select a workspace." />
+          <EmptyState icon={LinkIcon} title={isFr ? 'Aucun espace actif' : 'No Active Workspace'} description={isFr ? 'Creez ou selectionnez un espace.' : 'Please create or select a workspace.'} />
         </div>
       </div>
     );
@@ -385,7 +388,7 @@ function Links() {
 
   return (
     <div className="page">
-      <Topbar title="Links & Files" />
+      <Topbar title={t('common.quickLinks')} />
 
       <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Tabs */}
@@ -419,7 +422,7 @@ function Links() {
             }}
           >
             <LinkIcon size={16} />
-            Quick Links ({links.length})
+            {isFr ? 'Liens rapides' : 'Quick Links'} ({links.length})
           </button>
           <button
             onClick={() => {
@@ -443,7 +446,7 @@ function Links() {
             }}
           >
             <File size={16} />
-            File References ({fileRefs.length})
+            {isFr ? 'Fichiers' : 'File References'} ({fileRefs.length})
           </button>
         </div>
 
@@ -476,7 +479,7 @@ function Links() {
               }}
             >
               <Plus size={18} />
-              {activeTab === 'links' ? 'New Link' : 'New File Reference'}
+              {activeTab === 'links' ? (isFr ? 'Nouveau lien' : 'New Link') : (isFr ? 'Nouveau fichier' : 'New File Reference')}
             </button>
 
             {/* Search */}
@@ -486,7 +489,7 @@ function Links() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder={`Search ${activeTab}...`}
+                placeholder={activeTab === 'links' ? (isFr ? 'Rechercher des liens...' : 'Search links...') : (isFr ? 'Rechercher des fichiers...' : 'Search files...')}
                 style={{
                   width: '100%',
                   padding: '10px 40px 10px 12px',
@@ -539,7 +542,7 @@ function Links() {
                     fontSize: '13px'
                   }}
                 >
-                  {searchQuery ? `No ${activeTab} found` : `No ${activeTab} yet`}
+                  {searchQuery ? (activeTab === 'links' ? (isFr ? 'Aucun lien trouvé' : 'No links found') : (isFr ? 'Aucun fichier trouvé' : 'No files found')) : (activeTab === 'links' ? (isFr ? 'Aucun lien pour le moment' : 'No links yet') : (isFr ? 'Aucun fichier pour le moment' : 'No files yet'))}
                 </div>
               ) : activeTab === 'links' ? (
                 links.map((link) => (
@@ -602,8 +605,8 @@ function Links() {
             {!isEditing ? (
               <EmptyState
                 icon={activeTab === 'links' ? LinkIcon : File}
-                title={`No ${activeTab === 'links' ? 'link' : 'file'} selected`}
-                description={`Create or select a ${activeTab === 'links' ? 'link' : 'file reference'} to get started`}
+                title={activeTab === 'links' ? (isFr ? 'Aucun lien sélectionné' : 'No link selected') : (isFr ? 'Aucun fichier sélectionné' : 'No file selected')}
+                description={activeTab === 'links' ? (isFr ? 'Créez ou sélectionnez un lien pour commencer' : 'Create or select a link to get started') : (isFr ? 'Créez ou sélectionnez un fichier pour commencer' : 'Create or select a file reference to get started')}
               />
             ) : activeTab === 'links' ? (
               <LinkEditor
@@ -993,6 +996,8 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
 
 // Link Editor Component
 function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
   return (
     <div
       style={{
@@ -1005,7 +1010,7 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
-          {isNew ? 'New Link' : 'Edit Link'}
+          {isNew ? (isFr ? 'Nouveau lien' : 'New Link') : (isFr ? 'Modifier le lien' : 'Edit Link')}
         </h3>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
@@ -1154,6 +1159,8 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
 
 // File Reference Editor Component
 function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickFile, onPickFolder }) {
+  const { language } = useI18n();
+  const isFr = language === 'fr';
   return (
     <div
       style={{
@@ -1166,7 +1173,7 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
-          {isNew ? 'New File Reference' : 'Edit File Reference'}
+          {isNew ? (isFr ? 'Nouveau fichier' : 'New File Reference') : (isFr ? 'Modifier le fichier' : 'Edit File Reference')}
         </h3>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button

@@ -1,17 +1,35 @@
+const DEVICE_COLUMNS = `
+  id,
+  user_id,
+  device_name,
+  device_fingerprint,
+  last_seen_at,
+  created_at,
+  last_ip,
+  last_ip_masked,
+  last_user_agent,
+  last_country,
+  last_region,
+  last_city
+`;
+
 export const devicesQueries = {
   findById: `
-    SELECT id, user_id, device_name, device_fingerprint, last_seen_at, created_at
+    SELECT ${DEVICE_COLUMNS}
     FROM devices WHERE id = $1
   `,
 
   findByFingerprint: `
-    SELECT id, user_id, device_name, device_fingerprint, last_seen_at, created_at
+    SELECT ${DEVICE_COLUMNS}
     FROM devices WHERE device_fingerprint = $1
   `,
 
   findByUser: `
-    SELECT id, user_id, device_name, device_fingerprint, last_seen_at, created_at
-    FROM devices WHERE user_id = $1 ORDER BY last_seen_at DESC
+    SELECT ${DEVICE_COLUMNS},
+           (created_at >= NOW() - INTERVAL '24 hours') AS is_new_device
+    FROM devices
+    WHERE user_id = $1
+    ORDER BY last_seen_at DESC
   `,
 
   countByUser: `
@@ -19,13 +37,33 @@ export const devicesQueries = {
   `,
 
   create: `
-    INSERT INTO devices (user_id, device_name, device_fingerprint)
-    VALUES ($1, $2, $3)
-    RETURNING id, user_id, device_name, device_fingerprint, last_seen_at, created_at
+    INSERT INTO devices (
+      user_id,
+      device_name,
+      device_fingerprint,
+      last_ip,
+      last_ip_masked,
+      last_user_agent,
+      last_country,
+      last_region,
+      last_city
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    RETURNING ${DEVICE_COLUMNS}
   `,
 
   updateLastSeen: `
-    UPDATE devices SET last_seen_at = NOW() WHERE id = $1
+    UPDATE devices
+    SET
+      last_seen_at = NOW(),
+      last_ip = COALESCE($2, last_ip),
+      last_ip_masked = COALESCE($3, last_ip_masked),
+      last_user_agent = COALESCE($4, last_user_agent),
+      last_country = COALESCE($5, last_country),
+      last_region = COALESCE($6, last_region),
+      last_city = COALESCE($7, last_city)
+    WHERE id = $1
+    RETURNING ${DEVICE_COLUMNS}
   `,
 
   updateName: `

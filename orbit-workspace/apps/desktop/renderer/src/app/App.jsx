@@ -6,7 +6,7 @@ import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 
 function App() {
-  const { setSession, setProfile, setOnline } = useAppStore();
+  const { setSession, setProfile, setOnline, setUserSettings, userSettings } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -17,8 +17,11 @@ function App() {
         setSession(session);
 
         if (session) {
-          const profile = await hubAPI.profile.get();
-          setProfile(profile);
+          const [profile, settingsRes] = await Promise.all([hubAPI.profile.get(), hubAPI.settings?.get?.()]);
+          if (profile) setProfile(profile);
+          if (settingsRes?.success && settingsRes.settings) {
+            setUserSettings(settingsRes.settings);
+          }
         }
 
         // Get initial online status
@@ -27,8 +30,8 @@ function App() {
 
         // Listen to online status
         if (hubAPI.system) {
-          hubAPI.system.onOnlineStatus((status) => {
-            setOnline(status);
+          hubAPI.system.onOnlineStatus((onlineStatus) => {
+            setOnline(onlineStatus);
           });
         }
       } catch (error) {
@@ -40,7 +43,12 @@ function App() {
     }
 
     initialize();
-  }, [setSession, setProfile, setOnline]);
+  }, [setSession, setProfile, setOnline, setUserSettings]);
+
+  useEffect(() => {
+    const lang = userSettings?.language || 'en';
+    document.documentElement.setAttribute('lang', lang);
+  }, [userSettings?.language]);
 
   if (isLoading) {
     return <LoadingSpinner fullscreen />;

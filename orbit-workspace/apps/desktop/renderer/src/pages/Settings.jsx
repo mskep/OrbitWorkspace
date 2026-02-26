@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useI18n } from '../i18n';
+import { useCallback, useEffect, useState } from 'react';
 import hubAPI from '../api/hubApi';
 import CustomSelect from '../components/CustomSelect';
 import { useAppStore } from '../state/store';
@@ -10,6 +11,7 @@ import Skeleton from '../components/Skeleton';
 import {
   Settings as SettingsIcon, Info, Rocket, Monitor,
   Palette, Globe, Bell, Lock, Eye, EyeOff, Loader, CheckCircle, AlertTriangle,
+  RefreshCw, Smartphone, Trash2,
 } from 'lucide-react';
 
 /* ── Reusable toggle switch ─────────────────────────────────── */
@@ -117,8 +119,20 @@ function Settings() {
   const [showPw, setShowPw] = useState(false);
   const [pwForm, setPwForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
+  const [syncStatus, setSyncStatusLocal] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [syncLoading, setSyncLoading] = useState(true);
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [syncError, setSyncError] = useState('');
+  const [revokingDeviceId, setRevokingDeviceId] = useState('');
+  const [revealedIps, setRevealedIps] = useState({});
+  const session = useAppStore((s) => s.session);
+  const needsUnlock = useAppStore((s) => s.needsUnlock);
   const userSettings = useAppStore((s) => s.userSettings);
   const setUserSettings = useAppStore((s) => s.setUserSettings);
+  const setSyncStatus = useAppStore((s) => s.setSyncStatus);
+  const { t, language } = useI18n();
+  const isFr = language === 'fr';
 
   useEffect(() => {
     loadSettings();
@@ -175,12 +189,12 @@ function Settings() {
     setPwSuccess('');
 
     if (pwForm.newPassword.length < 8) {
-      setPwError('New password must be at least 8 characters');
+      setPwError(t('auth.passwordMin8'));
       return;
     }
 
     if (pwForm.newPassword !== pwForm.confirmPassword) {
-      setPwError('Passwords do not match');
+      setPwError(t('auth.passwordsNoMatch'));
       return;
     }
 
@@ -202,15 +216,175 @@ function Settings() {
         setPwError(result.error || 'Password change failed');
       }
     } catch (error) {
-      setPwError('An error occurred. Please try again.');
+      setPwError(t('auth.connectionError'));
     } finally {
       setPwLoading(false);
     }
   }
 
+
+  const formatDateTime = (value) => {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString();
+  };
+
+  const maskIp = (ip) => {
+    if (!ip || typeof ip !== 'string') return null;
+    const value = ip.trim();
+    if (!value) return null;
+
+    if (value.includes('.')) {
+      const parts = value.split('.');
+      if (parts.length === 4) {
+        return `${parts[0]}.${parts[1]}.***.***`;
+      }
+    }
+
+    if (value.includes(':')) {
+      const parts = value.split(':').filter(Boolean);
+      const head = parts.slice(0, 2).join(':') || '****';
+      return `${head}:****:****:****`;
+    }
+
+    return null;
+  };
+
+  const formatUserAgent = (ua) => {
+    if (!ua) return '—';
+    return ua.length > 84 ? `${ua.slice(0, 84)}...` : ua;
+  };
+
+  const toggleIpVisibility = (deviceId) => {
+    setRevealedIps((prev) => ({
+      ...prev,
+      [deviceId]: !prev[deviceId],
+    }));
+  };
+
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      const status = await hubAPI.sync.getStatus();
+      setSyncStatusLocal(status || null);
+      if (status) setSyncStatus(status);
+      return status;
+    } catch (error) {
+      console.error('Error loading sync status:', error);
+      setSyncError(isFr ? 'Impossible de charger le statut de synchronisation' : 'Failed to load sync status');
+      return null;
+    } finally {
+      setSyncLoading(false);
+    }
+  }, [isFr, setSyncStatus]);
+
+  const loadDevices = useCallback(async (connected = syncStatus?.connected) => {
+    if (!connected) {
+      setDevices([]);
+      setRevealedIps({});
+      return;
+    }
+
+    setDevicesLoading(true);
+    try {
+      const result = await hubAPI.sync.getDevices();
+      if (result?.success) {
+        setDevices(Array.isArray(result.devices) ? result.devices : []);
+        setRevealedIps({});
+        setSyncError('');
+      } else {
+        setDevices([]);
+        setRevealedIps({});
+        setSyncError(result?.error || (isFr ? 'Impossible de charger les appareils' : 'Failed to load devices'));
+      }
+    } catch (error) {
+      console.error('Error loading devices:', error);
+      setDevices([]);
+      setRevealedIps({});
+      setSyncError(isFr ? 'Impossible de charger les appareils' : 'Failed to load devices');
+    } finally {
+      setDevicesLoading(false);
+    }
+  }, [isFr, syncStatus?.connected]);
+
+  useEffect(() => {
+    let mounted = true;
+    let unsubscribe = () => {};
+
+    (async () => {
+      const status = await loadSyncStatus();
+      if (!mounted) return;
+      await loadDevices(status?.connected);
+    })();
+
+    if (hubAPI.sync?.onStatusChanged) {
+      unsubscribe = hubAPI.sync.onStatusChanged((status) => {
+        if (!mounted) return;
+        setSyncStatusLocal(status || null);
+        if (status) setSyncStatus(status);
+        loadDevices(status?.connected);
+      });
+    }
+
+    return () => {
+      mounted = false;
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [loadDevices, loadSyncStatus, setSyncStatus]);
+
+  useEffect(() => {
+    if (!syncStatus?.connected) return undefined;
+
+    const timer = setInterval(() => {
+      loadDevices(true).catch(() => {});
+    }, 20000);
+
+    return () => clearInterval(timer);
+  }, [syncStatus?.connected, loadDevices]);
+
+  async function handleRefreshDevices() {
+    const status = await loadSyncStatus();
+    await loadDevices(status?.connected);
+  }
+
+  async function handleRevokeDevice(deviceId) {
+    const confirmed = window.confirm(
+      isFr
+        ? 'Révoquer cet appareil ? Cette session sera immédiatement déconnectée.'
+        : 'Revoke this device? Its active session will be terminated immediately.'
+    );
+    if (!confirmed) return;
+
+    setRevokingDeviceId(deviceId);
+    try {
+      const result = await hubAPI.sync.deleteDevice({ deviceId });
+      if (!result?.success) {
+        setSyncError(result?.error || (isFr ? 'Échec de révocation de l\'appareil' : 'Failed to revoke device'));
+      } else {
+        await loadDevices(true);
+      }
+    } catch (error) {
+      console.error('Error revoking device:', error);
+      setSyncError(isFr ? 'Échec de révocation de l\'appareil' : 'Failed to revoke device');
+    } finally {
+      setRevokingDeviceId('');
+    }
+  }
+
+  const visibleDevices = devices.length > 0
+    ? devices
+    : (syncStatus?.deviceId
+      ? [{
+        id: syncStatus.deviceId,
+        device_name: isFr ? 'Appareil actuel (local)' : 'Current device (local)',
+        last_seen_at: new Date().toISOString(),
+        created_at: null,
+      }]
+      : []);
+
   return (
     <div className="page">
-      <Topbar title="Settings" />
+      <Topbar title={t('settings.title')} />
 
       <div className="page-content">
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -226,7 +400,7 @@ function Settings() {
               }}
             >
               <SettingsIcon size={20} />
-              Preferences
+              {t('settings.preferences')}
             </h3>
 
             <div style={{ display: 'grid', gap: '12px' }}>
@@ -234,16 +408,16 @@ function Settings() {
               <SettingRow
                 icon={<Palette size={20} color="#fff" />}
                 gradient="linear-gradient(135deg, #667eea, #764ba2)"
-                label="Theme"
-                description="Choose the appearance of the application"
+                label={t('settings.theme')}
+                description={t('settings.themeDesc')}
               >
                 <CustomSelect
                   value={userSettings.theme || 'dark'}
                   onChange={(val) => updateSetting('theme', val)}
                   disabled={loading}
                   options={[
-                    { value: 'dark', label: 'Dark' },
-                    { value: 'light', label: 'Light' },
+                    { value: 'dark', label: t('settings.themeDark') },
+                    { value: 'light', label: t('settings.themeLight') },
                   ]}
                 />
               </SettingRow>
@@ -252,16 +426,16 @@ function Settings() {
               <SettingRow
                 icon={<Globe size={20} color="#fff" />}
                 gradient="linear-gradient(135deg, #43e97b, #38f9d7)"
-                label="Language"
-                description="Select your preferred language"
+                label={t('settings.language')}
+                description={t('settings.languageDesc')}
               >
                 <CustomSelect
                   value={userSettings.language || 'en'}
                   onChange={(val) => updateSetting('language', val)}
                   disabled={loading}
                   options={[
-                    { value: 'en', label: 'English' },
-                    { value: 'fr', label: 'Francais' },
+                    { value: 'en', label: t('settings.languageEnglish') },
+                    { value: 'fr', label: t('settings.languageFrench') },
                   ]}
                 />
               </SettingRow>
@@ -270,8 +444,8 @@ function Settings() {
               <SettingRow
                 icon={<Bell size={20} color="#fff" />}
                 gradient="linear-gradient(135deg, #f6d365, #fda085)"
-                label="Notifications"
-                description="Enable desktop notifications"
+                label={t('settings.notifications')}
+                description={t('settings.notificationsDesc')}
               >
                 <ToggleSwitch
                   checked={!!userSettings.notifications_enabled}
@@ -286,8 +460,8 @@ function Settings() {
               <SettingRow
                 icon={<Rocket size={20} color="#fff" />}
                 gradient="linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))"
-                label="Launch on Startup"
-                description="Automatically start Orbit when you log in"
+                label={t('settings.startup')}
+                description={t('settings.startupDesc')}
               >
                 <ToggleSwitch
                   checked={autoLaunch}
@@ -310,7 +484,7 @@ function Settings() {
               }}
             >
               <Lock size={20} />
-              Security
+              {t('settings.security')}
             </h3>
 
             {!showPasswordForm ? (
@@ -341,14 +515,14 @@ function Settings() {
                     <Lock size={20} color="#fff" />
                   </div>
                   <div>
-                    <div style={{ fontWeight: '600', fontSize: '14px' }}>Password</div>
+                    <div style={{ fontWeight: '600', fontSize: '14px' }}>{t('settings.password')}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                      Update your account password without disconnecting the app
+                      {t('settings.passwordDesc')}
                     </div>
                   </div>
                 </div>
                 <button className="btn btn-secondary btn-sm" onClick={() => setShowPasswordForm(true)}>
-                  Change
+                  {t('settings.change')}
                 </button>
               </div>
             ) : (
@@ -394,7 +568,7 @@ function Settings() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxWidth: '520px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Current Password
+                      {t('settings.currentPassword')}
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input
@@ -402,7 +576,7 @@ function Settings() {
                         value={pwForm.oldPassword}
                         onChange={(e) => { setPwForm((p) => ({ ...p, oldPassword: e.target.value })); setPwError(''); }}
                         required
-                        placeholder="Enter current password"
+                        placeholder={t('settings.currentPasswordPlaceholder')}
                         autoComplete="current-password"
                         style={{ paddingRight: '40px' }}
                       />
@@ -422,7 +596,7 @@ function Settings() {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      New Password
+                      {t('settings.newPassword')}
                     </label>
                     <input
                       type={showPw ? 'text' : 'password'}
@@ -430,14 +604,14 @@ function Settings() {
                       onChange={(e) => { setPwForm((p) => ({ ...p, newPassword: e.target.value })); setPwError(''); }}
                       required
                       minLength={8}
-                      placeholder="Min 8 characters"
+                      placeholder={t('settings.newPasswordPlaceholder')}
                       autoComplete="new-password"
                     />
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Confirm New Password
+                      {t('settings.confirmNewPassword')}
                     </label>
                     <input
                       type={showPw ? 'text' : 'password'}
@@ -445,7 +619,7 @@ function Settings() {
                       onChange={(e) => { setPwForm((p) => ({ ...p, confirmPassword: e.target.value })); setPwError(''); }}
                       required
                       minLength={8}
-                      placeholder="Repeat new password"
+                      placeholder={t('settings.confirmNewPasswordPlaceholder')}
                       autoComplete="new-password"
                     />
                   </div>
@@ -463,7 +637,7 @@ function Settings() {
                     }}
                     disabled={pwLoading}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -472,13 +646,175 @@ function Settings() {
                     style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
                     {pwLoading ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Lock size={14} />}
-                    {pwLoading ? 'Changing...' : 'Change Password'}
+                    {pwLoading ? t('settings.changingPassword') : t('settings.changePassword')}
                   </button>
                 </div>
               </form>
             )}
           </Card>
 
+          {/* ── Sessions & Devices ─────────────────────── */}
+          <Card style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <h3
+                style={{
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '20px',
+                }}
+              >
+                <Smartphone size={20} />
+                {isFr ? 'Sessions & appareils' : 'Sessions & Devices'}
+              </h3>
+
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={handleRefreshDevices}
+                disabled={devicesLoading || syncLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RefreshCw size={14} style={devicesLoading ? { animation: 'spin 1s linear infinite' } : undefined} />
+                {isFr ? 'Rafraîchir' : 'Refresh'}
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: '12px', marginBottom: '16px' }}>
+              <SettingRow
+                icon={<Lock size={20} color="#fff" />}
+                gradient="linear-gradient(135deg, #f59e0b, #d97706)"
+                label={isFr ? 'Session actuelle' : 'Current Session'}
+                description={session ? `${session.username}${session.email ? ` • ${session.email}` : ''}` : (isFr ? 'Session non disponible' : 'Session unavailable')}
+              >
+                <Badge variant={needsUnlock ? 'warning' : 'success'}>
+                  {needsUnlock ? (isFr ? 'Verrouillée' : 'Locked') : (isFr ? 'Active' : 'Active')}
+                </Badge>
+              </SettingRow>
+            </div>
+
+            {syncError && (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  backgroundColor: 'var(--status-error-glow)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '16px',
+                  fontSize: '13px',
+                  color: 'var(--status-error)',
+                }}
+              >
+                {syncError}
+              </div>
+            )}
+
+            {!syncStatus?.connected ? (
+              <div
+                style={{
+                  padding: '14px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px dashed var(--border-default)',
+                  color: 'var(--text-tertiary)',
+                  fontSize: '13px',
+                }}
+              >
+                {isFr
+                  ? 'Cloud non connecté. La session locale sur cet appareil reste active.'
+                  : 'Cloud sync is disconnected. The local session on this device remains active.'}
+              </div>
+            ) : devicesLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Skeleton variant="rect" style={{ height: '64px' }} />
+                <Skeleton variant="rect" style={{ height: '64px' }} />
+              </div>
+            ) : visibleDevices.length === 0 ? (
+              <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                {isFr ? 'Aucun appareil cloud enregistré.' : 'No registered cloud devices.'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {visibleDevices.map((device) => {
+                  const isCurrentDevice = !!syncStatus?.deviceId && device.id === syncStatus.deviceId;
+                  const isRevokeLoading = revokingDeviceId === device.id;
+                  const isIpVisible = Boolean(revealedIps[device.id]);
+                  const maskedIp = device.last_ip_masked || maskIp(device.last_ip);
+                  const displayedIp = isIpVisible
+                    ? (device.last_ip || maskedIp || '—')
+                    : (maskedIp || '—');
+                  const locationLabel = [device.last_city, device.last_region, device.last_country]
+                    .filter(Boolean)
+                    .join(', ') || (isFr ? 'Localisation inconnue' : 'Unknown location');
+
+                  return (
+                    <div
+                      key={device.id}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-default)',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                            {device.device_name || (isFr ? 'Appareil sans nom' : 'Unnamed device')}
+                          </span>
+                          {isCurrentDevice && <Badge variant="success" size="sm">{isFr ? 'Appareil actuel' : 'Current device'}</Badge>}
+                          {device.is_new_device && !isCurrentDevice && <Badge variant="warning" size="sm">{isFr ? 'Nouvel appareil' : 'New device'}</Badge>}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span>{isFr ? 'ID' : 'ID'}: {device.id}</span>
+                          <span>{isFr ? 'Dernière activité' : 'Last seen'}: {formatDateTime(device.last_seen_at)}</span>
+                          <span>{isFr ? 'Ajouté le' : 'Added'}: {formatDateTime(device.created_at)}</span>
+                          <span>
+                            {isFr ? 'IP' : 'IP'}: {displayedIp}
+                            {device.last_ip && (
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => toggleIpVisibility(device.id)}
+                                style={{ marginLeft: '8px', padding: '2px 8px', fontSize: '11px', lineHeight: 1.4 }}
+                              >
+                                {isIpVisible
+                                  ? (isFr ? 'Masquer' : 'Hide')
+                                  : (isFr ? 'Afficher' : 'Reveal')}
+                              </button>
+                            )}
+                          </span>
+                          <span>{isFr ? 'Localisation' : 'Location'}: {locationLabel}</span>
+                          <span title={device.last_user_agent || ''}>{isFr ? 'Agent' : 'User agent'}: {formatUserAgent(device.last_user_agent)}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleRevokeDevice(device.id)}
+                        disabled={isCurrentDevice || isRevokeLoading}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          borderColor: isCurrentDevice ? 'var(--border-default)' : 'rgba(239,68,68,0.45)',
+                          color: isCurrentDevice ? 'var(--text-tertiary)' : '#ef4444',
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        {isCurrentDevice
+                          ? (isFr ? 'En cours' : 'Current')
+                          : (isRevokeLoading ? (isFr ? 'Révocation...' : 'Revoking...') : (isFr ? 'Révoquer' : 'Revoke'))}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
           {/* ── Application Info ────────────────────────── */}
           <Card style={{ marginBottom: '24px' }}>
             <h3
@@ -491,7 +827,7 @@ function Settings() {
               }}
             >
               <Info size={20} />
-              Application Information
+              {t('settings.appInfo')}
             </h3>
 
             {loading ? (
@@ -506,36 +842,47 @@ function Settings() {
                     <span style={{ fontSize: '18px', fontWeight: '700', color: '#fff' }}>v</span>
                   }
                   gradient="linear-gradient(135deg, #667eea, #764ba2)"
-                  label="Version"
+                  label={t('common.version')}
                   description={systemStatus.appVersion}
                 >
-                  <Badge variant="success">Latest</Badge>
+                  <Badge variant="success">{t('common.latest')}</Badge>
                 </SettingRow>
 
                 <SettingRow
                   icon={<Monitor size={20} color="#fff" />}
                   gradient="linear-gradient(135deg, #f093fb, #f5576c)"
-                  label="Platform"
+                  label={t('common.platform')}
                   description={
                     systemStatus.platform === 'win32'
-                      ? 'Windows'
+                      ? t('settings.platformWindows')
                       : systemStatus.platform === 'darwin'
-                        ? 'macOS'
+                        ? t('settings.platformMac')
                         : systemStatus.platform === 'linux'
-                          ? 'Linux'
+                          ? t('settings.platformLinux')
                           : systemStatus.platform
                   }
                 />
               </div>
             ) : (
               <div style={{ color: 'var(--text-secondary)' }}>
-                Unable to load system information
+                {t('settings.unableToLoadSystemInfo')}
               </div>
             )}
           </Card>
 
           {/* ── Activity Logs ──────────────────────────── */}
           <Card>
+            <h3
+              style={{
+                margin: '0 0 20px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '20px',
+              }}
+            >
+              {t('settings.activityLogs')}
+            </h3>
             <LogViewer />
           </Card>
         </div>
@@ -545,3 +892,4 @@ function Settings() {
 }
 
 export default Settings;
+
