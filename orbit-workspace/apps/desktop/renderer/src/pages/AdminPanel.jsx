@@ -57,11 +57,11 @@ function AdminPanel() {
   }, [loadAdminData]);
 
   const sections = [
-    { id: 'overview', label: 'Overview', icon: Shield },
-    { id: 'users', label: 'User Management', icon: Users },
-    { id: 'notifications', label: 'Notifications', icon: Megaphone },
-    { id: 'logs', label: 'System Logs', icon: Activity },
-    { id: 'roles', label: 'Roles & Permissions', icon: Key }
+    { id: 'overview', label: 'Overview', icon: Shield, accent: '#0ea5e9', surface: 'rgba(14, 165, 233, 0.16)' },
+    { id: 'users', label: 'User Management', icon: Users, accent: '#10b981', surface: 'rgba(16, 185, 129, 0.16)' },
+    { id: 'notifications', label: 'Notifications', icon: Megaphone, accent: '#f59e0b', surface: 'rgba(245, 158, 11, 0.16)' },
+    { id: 'logs', label: 'System Logs', icon: Activity, accent: '#ef4444', surface: 'rgba(239, 68, 68, 0.16)' },
+    { id: 'roles', label: 'Roles & Permissions', icon: Key, accent: '#14b8a6', surface: 'rgba(20, 184, 166, 0.16)' }
   ];
 
   return (
@@ -146,11 +146,10 @@ function AdminPanel() {
       {/* Navigation Tabs */}
       <div
         style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '24px',
-          overflowX: 'auto',
-          paddingBottom: '8px'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+          gap: '10px',
+          marginBottom: '24px'
         }}
       >
         {sections.map((section) => {
@@ -161,16 +160,65 @@ function AdminPanel() {
             <button
               key={section.id}
               onClick={() => setActiveTab(section.id)}
-              className={`btn ${isActive ? 'btn-primary' : 'btn-ghost'} btn-sm`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap'
+                gap: '10px',
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                border: `1px solid ${isActive ? section.accent : 'var(--border-default)'}`,
+                background: isActive
+                  ? `linear-gradient(135deg, ${section.surface} 0%, rgba(15, 23, 42, 0.45) 100%)`
+                  : 'var(--bg-secondary)',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                boxShadow: isActive ? `0 8px 20px ${section.surface}` : 'none',
+                fontFamily: 'inherit'
+              }}
+              onMouseEnter={(e) => {
+                if (isActive) return;
+                e.currentTarget.style.borderColor = section.accent;
+                e.currentTarget.style.background = 'var(--bg-tertiary)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                if (isActive) return;
+                e.currentTarget.style.borderColor = 'var(--border-default)';
+                e.currentTarget.style.background = 'var(--bg-secondary)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
               }}
             >
-              <Icon size={16} />
-              {section.label}
+              <span
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: isActive ? section.surface : 'var(--bg-tertiary)',
+                  border: `1px solid ${isActive ? `${section.accent}66` : 'var(--border-default)'}`,
+                  flexShrink: 0
+                }}
+              >
+                <Icon size={16} color={isActive ? section.accent : 'var(--text-tertiary)'} />
+              </span>
+              <span style={{ fontSize: '13px', fontWeight: isActive ? '700' : '600' }}>{section.label}</span>
+              {isActive && (
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '999px',
+                    backgroundColor: section.accent,
+                    boxShadow: `0 0 12px ${section.accent}`
+                  }}
+                />
+              )}
             </button>
           );
         })}
@@ -1488,3 +1536,4 @@ function RolesSection() {
 }
 
 export default AdminPanel;
+
