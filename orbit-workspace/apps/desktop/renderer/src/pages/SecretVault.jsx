@@ -641,7 +641,21 @@ function SecretVault() {
                 ) : null}
 
                 <div className={`vault-note-box ${selectedItem.type === 'secure_note' ? 'secure-note-primary' : ''}`}>
-                  <label>{selectedItem.type === 'secure_note' ? t('vault.typeSecureNote') : t('vault.fieldSecureDescription')}</label>
+                  <div className="vault-note-head">
+                    <label>{selectedItem.type === 'secure_note' ? t('vault.typeSecureNote') : t('vault.fieldSecureDescription')}</label>
+                    {selectedItem.type === 'secure_note' && selectedItem.note ? (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm vault-note-copy-btn"
+                        onClick={() => handleCopy({ ...selectedItem, type: 'secure_note' })}
+                      >
+                        <Copy size={14} />
+                        {copyState.id === selectedItem.id
+                          ? (copyState.status === 'copied' ? t('vault.copied') : t('vault.copyFailed'))
+                          : t('vault.copy')}
+                      </button>
+                    ) : null}
+                  </div>
                   {selectedItem.note ? (
                     <div className="vault-note-markdown markdown-body">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedItem.note}</ReactMarkdown>

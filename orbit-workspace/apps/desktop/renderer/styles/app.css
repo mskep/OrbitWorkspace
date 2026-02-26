@@ -3989,6 +3989,15 @@ input[type="checkbox"]:disabled {
   padding-right: 2px;
 }
 
+.vault-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vault-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+
 .vault-empty-list {
   border: 1px dashed var(--border-default);
   border-radius: var(--radius-md);
@@ -4031,6 +4040,7 @@ input[type="checkbox"]:disabled {
 .vault-item.active {
   border-color: rgba(99, 102, 241, 0.6);
   background: rgba(99, 102, 241, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.24);
 }
 
 .vault-item-header {
@@ -4137,6 +4147,10 @@ input[type="checkbox"]:disabled {
   gap: 8px;
 }
 
+.vault-view-actions .btn {
+  min-height: 30px;
+}
+
 .vault-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4172,6 +4186,17 @@ input[type="checkbox"]:disabled {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
+}
+
+.vault-note-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vault-note-copy-btn {
+  padding: 5px 9px;
 }
 
 .vault-secret-value {
@@ -4269,26 +4294,35 @@ input[type="checkbox"]:disabled {
   line-height: 1.1;
   display: inline-flex;
   align-items: center;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 
 .vault-view.vault-view-secure-note {
   align-content: start;
-  gap: 10px;
+  gap: 8px;
+}
+
+.vault-view.vault-view-secure-note .vault-view-header p {
+  margin-top: 3px;
 }
 
 .vault-note-box.secure-note-primary {
-  gap: 6px;
-  padding-top: 10px;
+  gap: 4px;
+  padding: 10px 12px 12px;
 }
 
 .vault-note-box.secure-note-primary .vault-note-markdown {
-  padding: 8px 10px;
+  padding: 7px 10px;
 }
 
 .vault-note-box.secure-note-primary .vault-note-markdown.markdown-body p {
-  margin: 0.35em 0;
+  margin: 0.28em 0;
+  line-height: 1.45;
 }
+
 .vault-timestamps {
   display: flex;
   flex-wrap: wrap;
@@ -4326,5 +4360,9 @@ input[type="checkbox"]:disabled {
   .vault-secret-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .vault-note-head {
+    flex-wrap: wrap;
   }
 }
