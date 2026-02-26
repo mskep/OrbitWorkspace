@@ -556,7 +556,7 @@ function SecretVault() {
                 </div>
               </div>
             ) : selectedItem ? (
-              <div className="vault-view card card-padding-lg">
+              <div className={`vault-view card card-padding-lg ${selectedItem.type === 'secure_note' ? 'vault-view-secure-note' : ''}`}>
                 <div className="vault-view-header">
                   <div>
                     <h3>{selectedItem.title}</h3>
@@ -640,7 +640,7 @@ function SecretVault() {
                   </>
                 ) : null}
 
-                <div className="vault-note-box">
+                <div className={`vault-note-box ${selectedItem.type === 'secure_note' ? 'secure-note-primary' : ''}`}>
                   <label>{selectedItem.type === 'secure_note' ? t('vault.typeSecureNote') : t('vault.fieldSecureDescription')}</label>
                   {selectedItem.note ? (
                     <div className="vault-note-markdown markdown-body">
