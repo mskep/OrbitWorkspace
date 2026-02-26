@@ -9,6 +9,7 @@
  *   sync/push:    100 req / 1 min   / per userId
  *   sync/pull:     60 req / 1 min   / per userId
  *   admin/*:       30 req / 1 min   / per userId
+ *   standard:     60 req / 1 min   / per userId (badges, inbox)
  *   global:       200 req / 1 min   / per IP (fallback)
  *
  * Rate limit key generators:
@@ -23,5 +24,6 @@ export const rateLimitConfigs = {
   syncPush: { max: 100, timeWindow: '1 minute', keyGenerator: (req) => req.user?.sub },
   syncPull: { max: 60, timeWindow: '1 minute', keyGenerator: (req) => req.user?.sub },
   admin: { max: 30, timeWindow: '1 minute', keyGenerator: (req) => req.user?.sub },
+  standard: { max: 60, timeWindow: '1 minute', keyGenerator: (req) => req.user?.sub },
   global: { max: 200, timeWindow: '1 minute' },
 };

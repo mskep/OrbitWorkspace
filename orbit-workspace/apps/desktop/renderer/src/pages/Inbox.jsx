@@ -16,15 +16,27 @@ const TYPE_CONFIG = {
 };
 
 function formatTimeAgo(timestamp) {
+  // Handle both Unix seconds, milliseconds, and ISO date strings
+  let tsSeconds;
+  if (typeof timestamp === 'string') {
+    tsSeconds = Math.floor(new Date(timestamp).getTime() / 1000);
+  } else if (timestamp > 1e12) {
+    tsSeconds = Math.floor(timestamp / 1000);
+  } else {
+    tsSeconds = timestamp;
+  }
+
+  if (!tsSeconds || isNaN(tsSeconds)) return '—';
+
   const now = Math.floor(Date.now() / 1000);
-  const diff = now - timestamp;
+  const diff = now - tsSeconds;
 
   if (diff < 60) return 'Just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
 
-  const date = new Date(timestamp * 1000);
+  const date = new Date(tsSeconds * 1000);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -57,18 +69,22 @@ function InboxPage() {
         }
 
         setMessages(result.messages);
-        setUnreadInbox(result.messages.filter((m) => !m.is_read).length);
       }
     } catch (err) {
       console.error('Failed to load inbox:', err);
     } finally {
       setLoading(false);
     }
-  }, [setUnreadInbox]);
+  }, []);
 
   useEffect(() => {
     loadMessages();
   }, [loadMessages]);
+
+  // Sync unread count to global store whenever messages change
+  useEffect(() => {
+    setUnreadInbox(messages.filter((m) => !m.is_read).length);
+  }, [messages, setUnreadInbox]);
 
   // Real-time inbox push listener
   useEffect(() => {
@@ -82,13 +98,9 @@ function InboxPage() {
     try {
       const result = await hubAPI.inbox.markRead({ id });
       if (result.success) {
-        setMessages((prev) => {
-          const updated = prev.map((m) =>
-            m.id === id ? { ...m, is_read: 1, read_at: Math.floor(Date.now() / 1000) } : m
-          );
-          setUnreadInbox(updated.filter((m) => !m.is_read).length);
-          return updated;
-        });
+        setMessages((prev) => prev.map((m) =>
+          m.id === id ? { ...m, is_read: true, read_at: Math.floor(Date.now() / 1000) } : m
+        ));
       }
     } catch (err) {
       console.error('Failed to mark read:', err);
@@ -100,9 +112,8 @@ function InboxPage() {
       const result = await hubAPI.inbox.markAllRead();
       if (result.success) {
         setMessages((prev) =>
-          prev.map((m) => (m.is_read ? m : { ...m, is_read: 1, read_at: Math.floor(Date.now() / 1000) }))
+          prev.map((m) => (m.is_read ? m : { ...m, is_read: true, read_at: Math.floor(Date.now() / 1000) }))
         );
-        setUnreadInbox(0);
       }
     } catch (err) {
       console.error('Failed to mark all read:', err);

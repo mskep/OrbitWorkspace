@@ -8,7 +8,15 @@ class LogManager {
   constructor(db, websocketServer = null) {
     this.db = db;
     this.wsServer = websocketServer;
+    this._syncCallback = null; // Set by SyncManager to receive audit log entries
     this.initDatabase();
+  }
+
+  /**
+   * Register a callback to forward audit log entries for server sync.
+   */
+  onLogCreated(callback) {
+    this._syncCallback = callback;
   }
 
   /**
@@ -182,6 +190,11 @@ class LogManager {
           id: this.db.prepare('SELECT last_insert_rowid()').pluck().get(),
           ...logEntry
         }));
+      }
+
+      // Forward to SyncManager for server push
+      if (this._syncCallback) {
+        try { this._syncCallback(logEntry); } catch { /* ignore */ }
       }
 
       return logEntry.uuid;

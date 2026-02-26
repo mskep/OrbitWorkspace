@@ -7,6 +7,9 @@ import { authRoutes } from './routes/auth.js';
 import { syncRoutes } from './routes/sync.js';
 import { deviceRoutes } from './routes/devices.js';
 import { adminRoutes } from './routes/admin.js';
+import { badgeRoutes } from './routes/badges.js';
+import { inboxRoutes } from './routes/inbox.js';
+import { auditLogRoutes } from './routes/auditLogs.js';
 
 const buildApp = async () => {
   const app = Fastify({
@@ -90,6 +93,9 @@ const buildApp = async () => {
       await api.register(syncRoutes, { prefix: '/sync' });
       await api.register(deviceRoutes, { prefix: '/devices' });
       await api.register(adminRoutes, { prefix: '/admin' });
+      await api.register(badgeRoutes, { prefix: '/badges' });
+      await api.register(inboxRoutes, { prefix: '/inbox' });
+      await api.register(auditLogRoutes, { prefix: '/audit-logs' });
     },
     { prefix: '/api/v1' },
   );

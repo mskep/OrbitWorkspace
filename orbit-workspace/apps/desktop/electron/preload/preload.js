@@ -71,11 +71,12 @@ const IPC_CHANNELS = {
   ADMIN_GET_STATS: 'admin:getStats',
   ADMIN_GET_USERS: 'admin:getUsers',
   ADMIN_GET_AUDIT_LOGS: 'admin:getAuditLogs',
-  ADMIN_GET_OPERATIONS_STATUS: 'admin:getOperationsStatus',
   ADMIN_UPDATE_USER_ROLE: 'admin:updateUserRole',
   ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus',
   ADMIN_SEND_NOTIFICATION: 'admin:sendNotification',
   ADMIN_GET_BROADCAST_HISTORY: 'admin:getBroadcastHistory',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_UPDATE: 'settings:update',
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',
   CRYPTO_RECOVER_WITH_FILE: 'crypto:recoverWithFile',
   CRYPTO_PICK_RECOVERY_FILE: 'crypto:pickRecoveryFile',
@@ -218,11 +219,16 @@ contextBridge.exposeInMainWorld('hubAPI', {
     getStats: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_STATS),
     getUsers: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_USERS),
     getAuditLogs: (query) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_AUDIT_LOGS, query),
-    getOperationsStatus: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_OPERATIONS_STATUS),
     updateUserRole: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_UPDATE_USER_ROLE, data),
     updateUserStatus: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_UPDATE_USER_STATUS, data),
     sendNotification: (data) => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_SEND_NOTIFICATION, data),
     getBroadcastHistory: () => ipcRenderer.invoke(IPC_CHANNELS.ADMIN_GET_BROADCAST_HISTORY)
+  },
+
+  // User Settings
+  settings: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET),
+    update: (updates) => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_UPDATE, updates),
   },
 
   // Recovery / Crypto

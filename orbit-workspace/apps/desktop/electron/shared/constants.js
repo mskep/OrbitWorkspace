@@ -107,11 +107,14 @@ const IPC_CHANNELS = {
   ADMIN_GET_STATS: 'admin:getStats',
   ADMIN_GET_USERS: 'admin:getUsers',
   ADMIN_GET_AUDIT_LOGS: 'admin:getAuditLogs',
-  ADMIN_GET_OPERATIONS_STATUS: 'admin:getOperationsStatus',
   ADMIN_UPDATE_USER_ROLE: 'admin:updateUserRole',
   ADMIN_UPDATE_USER_STATUS: 'admin:updateUserStatus',
   ADMIN_SEND_NOTIFICATION: 'admin:sendNotification',
   ADMIN_GET_BROADCAST_HISTORY: 'admin:getBroadcastHistory',
+
+  // User Settings
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_UPDATE: 'settings:update',
 
   // Recovery / Crypto
   CRYPTO_SAVE_RECOVERY_FILE: 'crypto:saveRecoveryFile',

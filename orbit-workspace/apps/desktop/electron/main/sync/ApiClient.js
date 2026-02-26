@@ -111,6 +111,99 @@ class ApiClient {
     return this._request('POST', '/admin/broadcast', data, true);
   }
 
+  /** GET /api/v1/admin/stats */
+  async getAdminStats() {
+    return this._request('GET', '/admin/stats', null, true);
+  }
+
+  /** GET /api/v1/admin/audit-logs */
+  async getAdminAuditLogs(filters = {}) {
+    const params = new URLSearchParams();
+    for (const [key, val] of Object.entries(filters)) {
+      if (val !== undefined && val !== null && val !== '') params.set(key, val);
+    }
+    const qs = params.toString();
+    return this._request('GET', `/admin/audit-logs${qs ? '?' + qs : ''}`, null, true);
+  }
+
+  // ============================================================
+  // AUDIT LOGS (client push)
+  // ============================================================
+
+  /** POST /api/v1/audit-logs — push client logs to server */
+  async pushAuditLogs(logs, deviceId) {
+    return this._request('POST', '/audit-logs', { logs, device_id: deviceId }, true);
+  }
+
+  // ============================================================
+  // BADGES (server-authoritative)
+  // ============================================================
+
+  /** GET /api/v1/badges */
+  async getBadges() {
+    return this._request('GET', '/badges', null, true);
+  }
+
+  /** GET /api/v1/badges/mine */
+  async getMyBadges() {
+    return this._request('GET', '/badges/mine', null, true);
+  }
+
+  /** GET /api/v1/badges/user/:userId */
+  async getUserBadges(userId) {
+    return this._request('GET', `/badges/user/${userId}`, null, true);
+  }
+
+  /** POST /api/v1/badges/assign (ADMIN) */
+  async assignBadge(userId, badgeId) {
+    return this._request('POST', '/badges/assign', { userId, badgeId }, true);
+  }
+
+  /** POST /api/v1/badges/revoke (ADMIN) */
+  async revokeBadge(userId, badgeId) {
+    return this._request('POST', '/badges/revoke', { userId, badgeId }, true);
+  }
+
+  // ============================================================
+  // INBOX (server-authoritative)
+  // ============================================================
+
+  /** GET /api/v1/inbox (optional ?since= for incremental) */
+  async getInboxMessages(since = null) {
+    const qs = since ? `?since=${encodeURIComponent(since)}` : '';
+    return this._request('GET', `/inbox${qs}`, null, true);
+  }
+
+  /** GET /api/v1/inbox/unread-count */
+  async getInboxUnreadCount() {
+    return this._request('GET', '/inbox/unread-count', null, true);
+  }
+
+  /** PUT /api/v1/inbox/:id/read */
+  async markInboxRead(messageId) {
+    return this._request('PUT', `/inbox/${messageId}/read`, null, true);
+  }
+
+  /** PUT /api/v1/inbox/read-all */
+  async markInboxAllRead() {
+    return this._request('PUT', '/inbox/read-all', null, true);
+  }
+
+  /** DELETE /api/v1/inbox/:id */
+  async deleteInboxMessage(messageId) {
+    return this._request('DELETE', `/inbox/${messageId}`, null, true);
+  }
+
+  /** DELETE /api/v1/inbox/read */
+  async deleteInboxReadMessages() {
+    return this._request('DELETE', '/inbox/read', null, true);
+  }
+
+  /** POST /api/v1/inbox/broadcast (ADMIN/DEV) */
+  async sendInboxBroadcast(data) {
+    return this._request('POST', '/inbox/broadcast', data, true);
+  }
+
   // ============================================================
   // INTERNAL
   // ============================================================

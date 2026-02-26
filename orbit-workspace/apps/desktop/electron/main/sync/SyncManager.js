@@ -34,13 +34,19 @@ class SyncManager {
     this._pushTimer = null;
     this._pullTimer = null;
     this._cleanupTimer = null;
+    this._auditPushTimer = null;
     this._running = false;
     this._syncing = false;
+
+    // Audit log push buffer
+    this._auditLogBuffer = [];
+    this._auditLogMaxBuffer = 200;
 
     // Status for UI
     this._status = 'disconnected'; // disconnected | connecting | synced | syncing | error
     this._lastError = null;
     this._statusListeners = [];
+    this._serverEventListeners = [];
   }
 
   // ============================================================
@@ -64,6 +70,11 @@ class SyncManager {
     this.wsClient.on('error', (err) => {
       console.error('SyncManager WS error:', err.message);
     });
+
+    // Server-authoritative WS events (inbox, badges, admin broadcast)
+    this.wsClient.on('inbox_message', (msg) => this._onServerEvent('inbox_message', msg.data));
+    this.wsClient.on('badge_update', (msg) => this._onServerEvent('badge_update', msg.data));
+    this.wsClient.on('admin_broadcast', (msg) => this._onServerEvent('admin_broadcast', msg.data));
 
     // Note: tokenStore.load() is called by authService.restoreSession()
     // start() is called by authService after successful login/unlock
@@ -92,6 +103,7 @@ class SyncManager {
     this._pushTimer = setInterval(() => this._push().catch(console.error), PUSH_INTERVAL_MS);
     this._pullTimer = setInterval(() => this._pull().catch(console.error), PULL_INTERVAL_MS);
     this._cleanupTimer = setInterval(() => this.syncQueue.cleanup(), CLEANUP_INTERVAL_MS);
+    this._auditPushTimer = setInterval(() => this._flushAuditLogs().catch(console.error), 30_000);
 
     // Connect WebSocket for real-time notifications
     this.wsClient.connect().catch(console.error);
@@ -105,6 +117,9 @@ class SyncManager {
     if (this._pushTimer) { clearInterval(this._pushTimer); this._pushTimer = null; }
     if (this._pullTimer) { clearInterval(this._pullTimer); this._pullTimer = null; }
     if (this._cleanupTimer) { clearInterval(this._cleanupTimer); this._cleanupTimer = null; }
+    if (this._auditPushTimer) { clearInterval(this._auditPushTimer); this._auditPushTimer = null; }
+    // Flush remaining audit logs before stopping
+    this._flushAuditLogs().catch(() => {});
     this.wsClient.disconnect();
     this._setStatus('disconnected');
   }
@@ -121,15 +136,21 @@ class SyncManager {
     if (!this.syncQueue) return;
     if (!this.tokenStore.isConnected()) return;
 
-    // Encrypt payload at rest so plaintext never sits in SQLite
+    // Encrypt payload at rest — never enqueue plaintext to avoid leaking data
     let payload = data;
     if (data) {
       try {
         const syncCrypto = this.authService.getSyncCrypto();
         if (syncCrypto.isUnlocked()) {
           payload = { _enc: syncCrypto.encryptLocal(JSON.stringify(data)) };
+        } else {
+          console.warn('SyncManager: crypto locked, skipping enqueue for', entityType, entityId);
+          return;
         }
-      } catch { /* fall back to plaintext if crypto unavailable */ }
+      } catch (err) {
+        console.error('SyncManager: crypto failed, skipping enqueue:', err.message);
+        return;
+      }
     }
 
     this.syncQueue.enqueue(entityType, entityId, action, payload);
@@ -331,9 +352,9 @@ class SyncManager {
         const db = this.dbService.getDB();
         const now = Math.floor(Date.now() / 1000);
         db.prepare(`
-          INSERT OR IGNORE INTO workspaces (id, user_id, name, is_active, created_at)
-          VALUES (?, ?, ?, 0, ?)
-        `).run(workspaceId, session.userId, 'Synced Workspace', now);
+          INSERT OR IGNORE INTO workspaces (id, user_id, name, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(workspaceId, session.userId, 'Synced Workspace', now, now);
         return workspaceId;
       } catch { /* fall through */ }
     }
@@ -434,8 +455,8 @@ class SyncManager {
           const db = this.dbService.getDB();
           const now = Math.floor(Date.now() / 1000);
           db.prepare(`
-            INSERT OR IGNORE INTO workspaces (id, user_id, name, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, 0, ?, ?)
+            INSERT OR IGNORE INTO workspaces (id, user_id, name, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
           `).run(entityId, session.userId, data.name, now, now);
         }
 
@@ -517,6 +538,68 @@ class SyncManager {
   _onSyncEvents(msg) {
     if (msg.events?.length > 0) {
       this._pull().catch(console.error);
+    }
+  }
+
+  /**
+   * Handle server-authoritative WS events (inbox, badges, broadcast).
+   * Forwards to registered listeners so main.js can notify the renderer.
+   */
+  _onServerEvent(eventType, data) {
+    for (const cb of this._serverEventListeners) {
+      try { cb(eventType, data); } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Register a listener for server-authoritative events.
+   * Callback receives (eventType, data).
+   */
+  onServerEvent(callback) {
+    this._serverEventListeners.push(callback);
+    return () => {
+      this._serverEventListeners = this._serverEventListeners.filter((cb) => cb !== callback);
+    };
+  }
+
+  // ============================================================
+  // AUDIT LOG PUSH
+  // ============================================================
+
+  /**
+   * Buffer an audit log entry for server push.
+   * Called by logManager or IPC handlers.
+   */
+  enqueueAuditLog(logEntry) {
+    if (this._auditLogBuffer.length >= this._auditLogMaxBuffer) {
+      this._auditLogBuffer.shift(); // Drop oldest if buffer is full
+    }
+    this._auditLogBuffer.push({
+      action: logEntry.action_type || logEntry.action || 'unknown',
+      category: logEntry.category || 'system',
+      severity: logEntry.severity || 'info',
+      status: logEntry.status || 'success',
+      target_type: logEntry.target_type || logEntry.tool_id || null,
+      target_id: logEntry.target_id || null,
+      details: logEntry.details || {},
+    });
+  }
+
+  /**
+   * Flush buffered audit logs to the server.
+   */
+  async _flushAuditLogs() {
+    if (this._auditLogBuffer.length === 0) return;
+    if (!this.tokenStore.isConnected()) return;
+
+    const batch = this._auditLogBuffer.splice(0, this._auditLogMaxBuffer);
+    try {
+      const deviceId = this.tokenStore.getTokens()?.device_id || null;
+      await this.apiClient.pushAuditLogs(batch, deviceId);
+    } catch (err) {
+      // Put logs back in front of buffer for retry
+      this._auditLogBuffer.unshift(...batch);
+      console.warn('Audit log push failed, will retry:', err.message);
     }
   }
 

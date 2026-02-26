@@ -158,6 +158,21 @@ async function initializeServices() {
     }
   });
 
+  // Forward server-authoritative WS events to renderer (inbox, badges, broadcasts)
+  syncManager.onServerEvent((eventType, data) => {
+    if (!mainWindow?.webContents) return;
+    if (eventType === 'inbox_message' || eventType === 'admin_broadcast') {
+      mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE, data);
+    } else if (eventType === 'badge_update') {
+      mainWindow.webContents.send('badge:updated', data);
+    }
+  });
+
+  // Forward audit logs from logManager to syncManager for server push
+  logManager.onLogCreated((logEntry) => {
+    syncManager.enqueueAuditLog(logEntry);
+  });
+
   console.log('✅ All services initialized');
 }
 
@@ -411,6 +426,63 @@ function setupIpcHandlers() {
     }
 
     return result;
+  });
+
+  // ========================================
+  // USER SETTINGS HANDLERS
+  // ========================================
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_GET, async () => {
+    try {
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+      const settings = repos.userSettings.findByUserId(session.userId);
+      if (!settings) {
+        return { success: true, settings: { theme: 'dark', language: 'en', notifications_enabled: 1, auto_launch_enabled: 0 } };
+      }
+      return { success: true, settings };
+    } catch (error) {
+      console.error('Get settings error:', error);
+      return { success: false, error: 'Failed to get settings' };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SETTINGS_UPDATE, async (event, updates) => {
+    try {
+      const { session, error: _authErr } = await requireUnlocked();
+      if (_authErr) return _authErr;
+
+      const repos = dbService.getRepositories();
+
+      // Apply updates locally
+      const mappedUpdates = {};
+      if (updates.theme !== undefined) mappedUpdates.theme = updates.theme;
+      if (updates.language !== undefined) mappedUpdates.language = updates.language;
+      if (updates.notifications_enabled !== undefined) mappedUpdates.notificationsEnabled = updates.notifications_enabled;
+      else if (updates.notificationsEnabled !== undefined) mappedUpdates.notificationsEnabled = updates.notificationsEnabled;
+
+      repos.userSettings.update(session.userId, mappedUpdates);
+
+      // Sync
+      const settings = repos.userSettings.findByUserId(session.userId);
+      if (settings) {
+        syncManager.enqueueChange('user_settings', session.userId, 'upsert', {
+          theme: settings.theme,
+          language: settings.language,
+          notifications_enabled: settings.notifications_enabled,
+          auto_launch_enabled: settings.auto_launch_enabled,
+          active_workspace_id: settings.active_workspace_id,
+          additionalSettings: settings.additionalSettings || {},
+        });
+      }
+
+      return { success: true, settings };
+    } catch (error) {
+      console.error('Update settings error:', error);
+      return { success: false, error: 'Failed to update settings' };
+    }
   });
 
   // Logs handlers - user-specific only
@@ -1231,6 +1303,14 @@ function setupIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.BADGE_GET_ALL, async () => {
     try {
+      // When connected, fetch from server (source of truth)
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getBadges();
+          return { success: true, badges: result.badges };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       const badges = repos.badges.findAll();
       return { success: true, badges };
@@ -1246,13 +1326,25 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
-      // Users can only get their own badges unless they're admin
-      if (userId && userId !== session.userId && session.role !== 'ADMIN') {
+      // Users can only get their own badges unless they're admin/dev
+      if (userId && userId !== session.userId && session.role !== 'ADMIN' && session.role !== 'DEV') {
         return { success: false, error: 'Unauthorized' };
       }
 
+      const targetUserId = userId || session.userId;
+
+      // When connected, server is source of truth
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = targetUserId === session.userId
+            ? await syncManager.apiClient.getMyBadges()
+            : await syncManager.apiClient.getUserBadges(targetUserId);
+          return { success: true, badges: result.badges };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
-      const badges = repos.badges.findByUserId(userId || session.userId);
+      const badges = repos.badges.findByUserId(targetUserId);
       return { success: true, badges };
     } catch (error) {
       console.error('Get user badges error:', error);
@@ -1266,7 +1358,6 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
-      // Only admins can assign badges
       if (session.role !== 'ADMIN') {
         return { success: false, error: 'Unauthorized' };
       }
@@ -1275,29 +1366,24 @@ function setupIpcHandlers() {
         return { success: false, error: 'Missing badge assignment parameters' };
       }
 
-      const repos = dbService.getRepositories();
-
-      // Get badge info for notification
-      const badge = repos.badges.findAll().find((b) => b.id === badgeId);
-      if (!badge) {
-        return { success: false, error: 'Badge not found' };
-      }
-
-      // Ensure user exists locally before badge FK insert (server users may not be cached)
-      if (!repos.users.findById(userId)) {
-        // Try to cache from server user list
-        if (syncManager.tokenStore.isConnected()) {
-          try {
-            const result = await syncManager.apiClient.getUsers();
-            const serverUser = (result.users || result).find((u) => u.id === userId);
-            if (serverUser) repos.users.upsertFromServer(serverUser);
-          } catch { /* continue anyway */ }
+      // When connected, server handles everything (assign + inbox notification + WS)
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          await syncManager.apiClient.assignBadge(userId, badgeId);
+          if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
+          return { success: true };
+        } catch (err) {
+          return { success: false, error: err.message || 'Server badge assign failed' };
         }
       }
 
-      repos.badges.assign(userId, badgeId, session.userId);
+      // Offline fallback: local-only
+      const repos = dbService.getRepositories();
 
-      // Create inbox notification
+      const badge = repos.badges.findAll().find((b) => b.id === badgeId);
+      if (!badge) return { success: false, error: 'Badge not found' };
+
+      repos.badges.assign(userId, badgeId, session.userId);
       repos.inbox.createBadgeAssignedMessage(userId, badge.display_name, session.username);
       if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
 
@@ -1314,7 +1400,6 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
-      // Only admins can revoke badges
       if (session.role !== 'ADMIN') {
         return { success: false, error: 'Unauthorized' };
       }
@@ -1323,17 +1408,24 @@ function setupIpcHandlers() {
         return { success: false, error: 'Missing badge revoke parameters' };
       }
 
-      const repos = dbService.getRepositories();
-
-      // Get badge info before revoking
-      const badge = repos.badges.findAll().find((b) => b.id === badgeId);
-      if (!badge) {
-        return { success: false, error: 'Badge not found' };
+      // When connected, server handles everything
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          await syncManager.apiClient.revokeBadge(userId, badgeId);
+          if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
+          return { success: true };
+        } catch (err) {
+          return { success: false, error: err.message || 'Server badge revoke failed' };
+        }
       }
 
-      repos.badges.revoke(userId, badgeId);
+      // Offline fallback
+      const repos = dbService.getRepositories();
 
-      // Create inbox notification
+      const badge = repos.badges.findAll().find((b) => b.id === badgeId);
+      if (!badge) return { success: false, error: 'Badge not found' };
+
+      repos.badges.revoke(userId, badgeId);
       repos.inbox.createBadgeRevokedMessage(userId, badge.display_name, session.username);
       if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
 
@@ -1353,9 +1445,16 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
+      // When connected, server is source of truth
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getInboxMessages();
+          return { success: true, messages: result.messages };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       const messages = repos.inbox.findByUserId(session.userId);
-
       return { success: true, messages };
     } catch (error) {
       console.error('Get inbox error:', error);
@@ -1368,9 +1467,15 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getInboxUnreadCount();
+          return { success: true, count: result.count };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       const count = repos.inbox.countUnread(session.userId);
-
       return { success: true, count };
     } catch (error) {
       console.error('Get unread count error:', error);
@@ -1383,13 +1488,24 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
+      // Server first when connected
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          await syncManager.apiClient.markInboxRead(id);
+          // Also update local cache
+          try {
+            const repos = dbService.getRepositories();
+            repos.inbox.markAsRead(id);
+          } catch { /* local cache miss is fine */ }
+          return { success: true };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       const message = repos.inbox.findById(id);
-
       if (!message || message.user_id !== session.userId) {
         return { success: false, error: 'Message not found' };
       }
-
       repos.inbox.markAsRead(id);
       return { success: true };
     } catch (error) {
@@ -1403,9 +1519,19 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          await syncManager.apiClient.markInboxAllRead();
+          try {
+            const repos = dbService.getRepositories();
+            repos.inbox.markAllAsRead(session.userId);
+          } catch { /* local cache miss is fine */ }
+          return { success: true };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       repos.inbox.markAllAsRead(session.userId);
-
       return { success: true };
     } catch (error) {
       console.error('Mark all read error:', error);
@@ -1418,13 +1544,22 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          await syncManager.apiClient.deleteInboxMessage(id);
+          try {
+            const repos = dbService.getRepositories();
+            repos.inbox.delete(id);
+          } catch { /* local cache miss is fine */ }
+          return { success: true };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       const message = repos.inbox.findById(id);
-
       if (!message || message.user_id !== session.userId) {
         return { success: false, error: 'Message not found' };
       }
-
       repos.inbox.delete(id);
       return { success: true };
     } catch (error) {
@@ -1438,9 +1573,19 @@ function setupIpcHandlers() {
       const { session, error: _authErr } = await requireUnlocked();
       if (_authErr) return _authErr;
 
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          await syncManager.apiClient.deleteInboxReadMessages();
+          try {
+            const repos = dbService.getRepositories();
+            repos.inbox.deleteAllRead(session.userId);
+          } catch { /* local cache miss is fine */ }
+          return { success: true };
+        } catch { /* fall through to local */ }
+      }
+
       const repos = dbService.getRepositories();
       repos.inbox.deleteAllRead(session.userId);
-
       return { success: true };
     } catch (error) {
       console.error('Delete read messages error:', error);
@@ -1462,6 +1607,17 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      // Route through server when connected (server = source of truth for stats)
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getAdminStats();
+          return { success: true, stats: result.stats || result };
+        } catch (err) {
+          console.warn('Admin getStats from server failed, falling back to local:', err.message);
+        }
+      }
+
+      // Offline fallback: local SQLite counts
       const repos = dbService.getRepositories();
       const db = dbService.getDB();
 
@@ -1529,6 +1685,39 @@ function setupIpcHandlers() {
         return { success: false, error: 'Unauthorized' };
       }
 
+      // Route through server when connected (server has all users' logs)
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.getAdminAuditLogs(query);
+          // Normalize server flat rows to nested format expected by AdminPanel UI
+          const normalizedLogs = (result.logs || []).map((row) => ({
+            id: row.id,
+            uuid: row.id?.toString(),
+            timestamp: row.created_at ? new Date(row.created_at).getTime() : 0,
+            duration: null,
+            user: { id: row.user_id, username: row.username || 'system', role: null, roleLevel: null },
+            action: { type: row.action || 'unknown', name: null, tool: { id: null, name: row.target_type || null } },
+            status: row.status || 'success',
+            error: null,
+            meta: { severity: row.severity || 'info', category: row.category || 'system' },
+          }));
+          const summary = normalizedLogs.reduce(
+            (acc, log) => {
+              acc.total += 1;
+              acc.byStatus[log.status] = (acc.byStatus[log.status] || 0) + 1;
+              acc.bySeverity[log.meta.severity] = (acc.bySeverity[log.meta.severity] || 0) + 1;
+              acc.byCategory[log.meta.category] = (acc.byCategory[log.meta.category] || 0) + 1;
+              return acc;
+            },
+            { total: 0, byStatus: {}, bySeverity: {}, byCategory: {} }
+          );
+          return { success: true, logs: normalizedLogs, summary };
+        } catch (err) {
+          console.warn('Admin getAuditLogs from server failed, falling back to local:', err.message);
+        }
+      }
+
+      // Offline fallback: local logManager
       const sanitizeText = (value, maxLen = 120) => {
         if (typeof value !== 'string') return null;
         const trimmed = value.trim();
@@ -1587,159 +1776,6 @@ function setupIpcHandlers() {
     } catch (error) {
       console.error('Get audit logs error:', error);
       return { success: false, error: 'Failed to get audit logs' };
-    }
-  });
-
-  ipcMain.handle(IPC_CHANNELS.ADMIN_GET_OPERATIONS_STATUS, async () => {
-    try {
-      const { session, error: _authErr } = await requireUnlocked();
-      if (_authErr) return _authErr;
-
-      // Only admins and devs can view operations status
-      if (session.role !== 'ADMIN' && session.role !== 'DEV') {
-        return { success: false, error: 'Unauthorized' };
-      }
-
-      const db = dbService.getDB();
-      const nowSec = Math.floor(Date.now() / 1000);
-      const since24hMs = Date.now() - 24 * 60 * 60 * 1000;
-
-      const tableExists = (table) => {
-        const row = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
-        return !!row;
-      };
-
-      const safeCount = (table) => {
-        if (!tableExists(table)) return 0;
-        return db.prepare(`SELECT COUNT(*) as c FROM ${table}`).get().c;
-      };
-
-      const getFileMeta = (filePath) => {
-        if (!filePath || !fs.existsSync(filePath)) {
-          return { exists: false, sizeBytes: 0, updatedAt: null };
-        }
-
-        const stats = fs.statSync(filePath);
-        return {
-          exists: true,
-          sizeBytes: stats.size,
-          updatedAt: stats.mtimeMs
-        };
-      };
-
-      const health = await dbService.healthCheck();
-      const dbPath = health.dbPath || null;
-
-      const sessions = {
-        total: safeCount('sessions'),
-        active: db.prepare('SELECT COUNT(*) as c FROM sessions WHERE expires_at > ?').get(nowSec).c,
-        expired: db.prepare('SELECT COUNT(*) as c FROM sessions WHERE expires_at <= ?').get(nowSec).c
-      };
-
-      const activity = {
-        logsLast24h: tableExists('action_logs')
-          ? db.prepare('SELECT COUNT(*) as c FROM action_logs WHERE timestamp >= ?').get(since24hMs).c
-          : 0,
-        errorsLast24h: tableExists('action_logs')
-          ? db.prepare("SELECT COUNT(*) as c FROM action_logs WHERE timestamp >= ? AND status = 'error'").get(since24hMs).c
-          : 0,
-        failedAuthLast24h: tableExists('action_logs')
-          ? db
-              .prepare("SELECT COUNT(*) as c FROM action_logs WHERE timestamp >= ? AND action_type LIKE 'auth:%' AND status = 'error'")
-              .get(since24hMs).c
-          : 0,
-        pendingSyncOps: safeCount('sync_queue'),
-        unresolvedConflicts: tableExists('sync_conflicts')
-          ? db.prepare('SELECT COUNT(*) as c FROM sync_conflicts WHERE user_reviewed = 0').get().c
-          : 0
-      };
-
-      const runtime = {
-        online: networkMonitor.getStatus(),
-        appVersion: app.getVersion(),
-        platform: process.platform,
-        arch: process.arch,
-        nodeVersion: process.version,
-        electronVersion: process.versions.electron,
-        uptimeSeconds: Math.round(process.uptime()),
-        autoLaunchEnabled: await autoLaunch.isEnabled(),
-        memory: process.memoryUsage()
-      };
-
-      const database = {
-        health,
-        path: dbPath,
-        files: {
-          main: getFileMeta(dbPath),
-          wal: getFileMeta(dbPath ? `${dbPath}-wal` : null),
-          shm: getFileMeta(dbPath ? `${dbPath}-shm` : null)
-        },
-        tables: {
-          users: safeCount('users'),
-          workspaces: safeCount('workspaces'),
-          notes: safeCount('notes'),
-          links: safeCount('links'),
-          fileReferences: safeCount('file_references'),
-          badges: safeCount('badges'),
-          inboxMessages: safeCount('inbox_messages'),
-          actionLogs: safeCount('action_logs'),
-          syncQueue: safeCount('sync_queue'),
-          syncConflicts: safeCount('sync_conflicts')
-        },
-        sessions
-      };
-
-      const checks = [
-        {
-          id: 'db-health',
-          label: 'Database health',
-          status: health.healthy ? 'ok' : 'error',
-          value: health.healthy ? 'Healthy' : 'Unhealthy',
-          details: health.error || `Encryption ${health.encryptionWorking ? 'working' : 'failed'}`
-        },
-        {
-          id: 'session-hygiene',
-          label: 'Session hygiene',
-          status: sessions.expired > 0 ? 'warn' : 'ok',
-          value: `${sessions.active} active`,
-          details: `${sessions.expired} expired session(s) still present`
-        },
-        {
-          id: 'sync-backlog',
-          label: 'Sync backlog',
-          status: activity.pendingSyncOps > 50 ? 'warn' : 'ok',
-          value: `${activity.pendingSyncOps} queued`,
-          details: `${activity.unresolvedConflicts} unresolved conflict(s)`
-        },
-        {
-          id: 'error-rate',
-          label: 'Errors (24h)',
-          status: activity.errorsLast24h > 0 ? 'warn' : 'ok',
-          value: `${activity.errorsLast24h} errors`,
-          details: `${activity.failedAuthLast24h} failed auth event(s)`
-        },
-        {
-          id: 'db-files',
-          label: 'SQLite files',
-          status: database.files.main.exists ? 'ok' : 'error',
-          value: database.files.main.exists ? 'Detected' : 'Missing',
-          details: dbPath || 'No DB file path detected'
-        }
-      ];
-
-      return {
-        success: true,
-        operations: {
-          runtime,
-          database,
-          activity,
-          checks,
-          generatedAt: Date.now()
-        }
-      };
-    } catch (error) {
-      console.error('Get operations status error:', error);
-      return { success: false, error: 'Failed to get operations status' };
     }
   });
 
@@ -1875,19 +1911,30 @@ function setupIpcHandlers() {
         return { success: false, error: 'Title and message are required' };
       }
 
+      const broadcastCategory = category || 'admin-broadcast';
+
+      // When connected, server handles broadcast + inbox creation + WS notification
+      if (syncManager.tokenStore.isConnected()) {
+        try {
+          const result = await syncManager.apiClient.sendInboxBroadcast({
+            title, message, target: target || 'all', userId, category: broadcastCategory,
+          });
+          if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
+          return { success: true, sent: result.sent };
+        } catch (err) {
+          return { success: false, error: err.message || 'Server broadcast failed' };
+        }
+      }
+
+      // Offline fallback: local only
       const repos = dbService.getRepositories();
       const senderUsername = session.username;
-
-      const broadcastCategory = category || 'admin-broadcast';
 
       if (target === 'all') {
         const allUsers = repos.users.findAll();
         const results = repos.inbox.broadcastToUsers(
           allUsers.map((u) => u.id),
-          title,
-          message,
-          senderUsername,
-          broadcastCategory
+          title, message, senderUsername, broadcastCategory
         );
         if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
         return { success: true, sent: results.length };

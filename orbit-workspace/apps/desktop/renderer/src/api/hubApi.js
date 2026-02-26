@@ -22,3 +22,4 @@ export const fileRefs = hubAPI?.fileRefs;
 export const badges = hubAPI?.badges;
 export const inbox = hubAPI?.inbox;
 export const admin = hubAPI?.admin;
+export const settings = hubAPI?.settings;

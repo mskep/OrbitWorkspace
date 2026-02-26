@@ -22,8 +22,8 @@ function App() {
         }
 
         // Get initial online status
-        const status = await hubAPI.system.getStatus();
-        setOnline(status.online);
+        const status = await hubAPI.system?.getStatus?.();
+        setOnline(status?.online ?? false);
 
         // Listen to online status
         if (hubAPI.system) {

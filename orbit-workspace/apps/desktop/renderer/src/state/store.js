@@ -28,6 +28,10 @@ export const useAppStore = create((set) => ({
   activeWorkspace: null,
   setActiveWorkspace: (workspace) => set({ activeWorkspace: workspace }),
 
+  // User Settings
+  userSettings: { theme: 'dark', language: 'en', notifications_enabled: 1 },
+  setUserSettings: (userSettings) => set({ userSettings }),
+
   // Inbox
   unreadInbox: 0,
   setUnreadInbox: (count) => set({ unreadInbox: count }),
