@@ -14,7 +14,6 @@ const LogManager = require('./logManager');
 // Electron-dependent managers will be required after app is ready
 let TrayManager;
 let AutoLaunch;
-let NotificationManager;
 
 const SyncManager = require('./sync/SyncManager');
 const { IPC_CHANNELS } = require('../shared/constants');
@@ -30,7 +29,6 @@ let networkMonitor;
 let autoLaunch;
 let logManager;
 let syncManager;
-let notificationManager;
 let isDev;
 
 // Suppress Chromium GPU/disk cache errors on Windows
@@ -111,110 +109,9 @@ function focusMainWindow() {
   mainWindow.focus();
 }
 
-async function areDesktopNotificationsEnabled() {
-  try {
-    if (!dbService || !authService) return false;
-    const session = await authService.getSession();
-    if (!session?.userId) return false;
-
-    const repos = dbService.getRepositories();
-    const settings = repos.userSettings.findByUserId(session.userId);
-    if (!settings) return true;
-
-    return Boolean(settings.notifications_enabled);
-  } catch {
-    return false;
-  }
-}
-
-function buildDesktopNotification(eventType, data = {}) {
-  const type = (typeof data.type === 'string' ? data.type : eventType || '').replace(/_/g, '-');
-  const title = typeof data.title === 'string' && data.title.trim()
-    ? data.title.trim()
-    : null;
-  const message = typeof data.message === 'string' && data.message.trim()
-    ? data.message.trim()
-    : null;
-
-  if (type === 'badge-update' || type === 'badge-assigned' || eventType === 'badge_update') {
-    const action = (typeof data.action === 'string' ? data.action : '').toLowerCase();
-    if (action === 'revoked') {
-      return {
-        title: 'Badge removed',
-        body: 'One of your badges was revoked.',
-      };
-    }
-    return {
-      title: 'Badge awarded',
-      body: 'A new badge was assigned to your account.',
-    };
-  }
-
-  if (type === 'admin-security') {
-    return {
-      title: title || 'Security alert',
-      body: message || 'A security event was detected on your account.',
-    };
-  }
-
-  if (type === 'admin-maintenance') {
-    return {
-      title: title || 'Maintenance update',
-      body: message || 'A maintenance message is available in your inbox.',
-    };
-  }
-
-  if (type === 'admin-update') {
-    return {
-      title: title || 'Product update',
-      body: message || 'A product update is available in your inbox.',
-    };
-  }
-
-  if (type === 'admin-broadcast' || eventType === 'admin_broadcast') {
-    return {
-      title: title || 'New announcement',
-      body: message || 'You received a new admin broadcast.',
-    };
-  }
-
-  return {
-    title: title || 'New inbox message',
-    body: message || 'You received a new message in your inbox.',
-  };
-}
-
-async function showDesktopNotification(eventType, data = {}, options = {}) {
-  try {
-    if (!notificationManager?.isSupported?.()) return;
-
-    const force = Boolean(options.force);
-    if (!force && mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && mainWindow.isFocused()) {
-      return;
-    }
-
-    const enabled = await areDesktopNotificationsEnabled();
-    if (!enabled) return;
-
-    const payload = buildDesktopNotification(eventType, data);
-    if (!payload.title || !payload.body) return;
-
-    notificationManager.info(payload.title, payload.body, {
-      silent: false,
-      onClick: () => focusMainWindow(),
-    });
-  } catch (error) {
-    console.error('Desktop notification error:', error.message);
-  }
-}
-
-function emitInboxUpdate(data = null, { eventType = 'inbox_message', desktop = false } = {}) {
+function emitInboxUpdate(data = null) {
   if (mainWindow?.webContents) {
     mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE, data);
-  }
-
-  if (desktop) {
-    showDesktopNotification(eventType, data || {}).catch(() => {});
   }
 }
 
@@ -258,9 +155,7 @@ async function initializeServices() {
 
   // Load electron-dependent modules
   AutoLaunch = require('./autoLaunch');
-  NotificationManager = require('./notificationManager');
   autoLaunch = new AutoLaunch();
-  notificationManager = new NotificationManager(app);
 
   // Initialize cloud sync manager
   syncManager = new SyncManager(dbService, authService, networkMonitor, userDataPath);
@@ -280,15 +175,12 @@ async function initializeServices() {
   syncManager.onServerEvent((eventType, data) => {
     if (!mainWindow?.webContents) return;
     if (eventType === 'inbox_message' || eventType === 'admin_broadcast') {
-      emitInboxUpdate(data, { eventType, desktop: true });
+      emitInboxUpdate(data);
     } else if (eventType === 'badge_update') {
-      emitInboxUpdate(
-        {
-          type: 'badge-assigned',
-          ...(data || {}),
-        },
-        { eventType, desktop: true },
-      );
+      emitInboxUpdate({
+        type: 'badge-assigned',
+        ...(data || {}),
+      });
       mainWindow.webContents.send('badge:updated', data);
     }
   });
@@ -552,35 +444,6 @@ function setupIpcHandlers() {
 
     return result;
   });
-  ipcMain.handle(IPC_CHANNELS.SYSTEM_TEST_NOTIFICATION, async () => {
-    try {
-      const { session, error: _authErr } = await requireUnlocked();
-      if (_authErr) return _authErr;
-
-      const enabled = await areDesktopNotificationsEnabled();
-      if (!enabled) {
-        return {
-          success: false,
-          error: 'Notifications are disabled in settings',
-        };
-      }
-
-      await showDesktopNotification(
-        'system-notification',
-        {
-          type: 'system-notification',
-          title: 'Notification test',
-          message: `Desktop notifications are active for ${session.username || 'your account'}.`,
-        },
-        { force: true },
-      );
-
-      return { success: true };
-    } catch (error) {
-      console.error('System test notification error:', error);
-      return { success: false, error: 'Failed to send test notification' };
-    }
-  });
 
   // ========================================
   // USER SETTINGS HANDLERS
@@ -594,8 +457,11 @@ function setupIpcHandlers() {
       const repos = dbService.getRepositories();
       const settings = repos.userSettings.findByUserId(session.userId);
       if (!settings) {
-        return { success: true, settings: { theme: 'dark', language: 'en', notifications_enabled: 1, auto_launch_enabled: 0 } };
+        return { success: true, settings: { theme: 'dark', language: 'en', notifications_enabled: 1, auto_launch_enabled: 0, sound_enabled: 0 } };
       }
+      // Extract sound_enabled from additionalSettings for easy access
+      const additional = settings.additionalSettings ? (typeof settings.additionalSettings === 'string' ? JSON.parse(settings.additionalSettings) : settings.additionalSettings) : {};
+      settings.sound_enabled = additional.sound_enabled ?? 0;
       return { success: true, settings };
     } catch (error) {
       console.error('Get settings error:', error);
@@ -617,6 +483,14 @@ function setupIpcHandlers() {
       if (updates.notifications_enabled !== undefined) mappedUpdates.notificationsEnabled = updates.notifications_enabled;
       else if (updates.notificationsEnabled !== undefined) mappedUpdates.notificationsEnabled = updates.notificationsEnabled;
 
+      // Store sound_enabled in additionalSettings JSON
+      if (updates.sound_enabled !== undefined) {
+        const current = repos.userSettings.findByUserId(session.userId);
+        const additional = current?.additionalSettings ? (typeof current.additionalSettings === 'string' ? JSON.parse(current.additionalSettings) : current.additionalSettings) : {};
+        additional.sound_enabled = updates.sound_enabled;
+        mappedUpdates.additionalSettings = additional;
+      }
+
       repos.userSettings.update(session.userId, mappedUpdates);
 
       // Sync
@@ -631,6 +505,10 @@ function setupIpcHandlers() {
           additionalSettings: settings.additionalSettings || {},
         });
       }
+
+      // Extract sound_enabled for easy access
+      const additionalParsed = settings?.additionalSettings ? (typeof settings.additionalSettings === 'string' ? JSON.parse(settings.additionalSettings) : settings.additionalSettings) : {};
+      if (settings) settings.sound_enabled = additionalParsed.sound_enabled ?? 0;
 
       return { success: true, settings };
     } catch (error) {

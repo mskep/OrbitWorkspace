@@ -36,7 +36,6 @@ const IPC_CHANNELS = {
 
   // System
   SYSTEM_GET_STATUS: 'system:getStatus',
-  SYSTEM_TEST_NOTIFICATION: 'system:testNotification',
   SYSTEM_ONLINE_STATUS: 'system:onlineStatus',
 
   // Backup

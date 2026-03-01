@@ -22,7 +22,6 @@ const IPC_CHANNELS = {
   FS_SAVE_FILE: 'fs:saveFile',
   FS_OPEN_PATH: 'fs:openPath',
   SYSTEM_GET_STATUS: 'system:getStatus',
-    SYSTEM_TEST_NOTIFICATION: 'system:testNotification',
   SYSTEM_ONLINE_STATUS: 'system:onlineStatus',
   LOGS_TAIL: 'logs:tail',
   LOGS_SEARCH: 'logs:search',
@@ -140,7 +139,6 @@ contextBridge.exposeInMainWorld('hubAPI', {
   // System
   system: {
     getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_STATUS),
-        testNotification: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_TEST_NOTIFICATION),
     onOnlineStatus: (callback) => {
       ipcRenderer.on(IPC_CHANNELS.SYSTEM_ONLINE_STATUS, (event, status) => callback(status));
     }

@@ -22,6 +22,7 @@ import hubAPI from '../../api/hubApi';
 import Modal from '../../components/Modal';
 import orbitLogo from '../../assets/orbitlogo.png';
 import { useI18n } from '../../i18n';
+import { playNotificationSound } from '../../utils/notificationSound';
 
 function Sidebar() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ function Sidebar() {
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
   const unreadInbox = useAppStore((state) => state.unreadInbox);
   const setUnreadInbox = useAppStore((state) => state.setUnreadInbox);
+  const userSettings = useAppStore((state) => state.userSettings);
   const { t } = useI18n();
 
   // Workspace state
@@ -80,9 +82,13 @@ function Sidebar() {
   useEffect(() => {
     const cleanup = hubAPI.inbox.onNewMessage(() => {
       loadUnreadCount();
+      // Play notification sound if enabled
+      if (userSettings.sound_enabled) {
+        playNotificationSound();
+      }
     });
     return cleanup;
-  }, [loadUnreadCount]);
+  }, [loadUnreadCount, userSettings.sound_enabled]);
 
   const handleSwitchWorkspace = async (workspaceId) => {
     try {

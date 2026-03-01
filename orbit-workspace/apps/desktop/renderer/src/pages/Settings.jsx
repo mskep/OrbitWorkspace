@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import hubAPI from '../api/hubApi';
 import CustomSelect from '../components/CustomSelect';
 import { useAppStore } from '../state/store';
+import { playNotificationSound } from '../utils/notificationSound';
 import Topbar from '../app/layout/Topbar';
 import LogViewer from '../components/LogViewer';
 import Card from '../components/Card';
@@ -10,7 +11,7 @@ import Badge from '../components/Badge';
 import Skeleton from '../components/Skeleton';
 import {
   Settings as SettingsIcon, Info, Rocket, Monitor,
-  Palette, Globe, Bell, Lock, Eye, EyeOff, Loader, CheckCircle, AlertTriangle,
+  Palette, Globe, Volume2, Lock, Eye, EyeOff, Loader, CheckCircle, AlertTriangle,
   RefreshCw, Smartphone, Trash2,
 } from 'lucide-react';
 
@@ -110,7 +111,6 @@ function Settings() {
   const [autoLaunch, setAutoLaunch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toggleLoading, setToggleLoading] = useState(false);
-  const [testNotificationLoading, setTestNotificationLoading] = useState(false);
 
   // Security / password change
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -184,34 +184,6 @@ function Settings() {
     }
   }
 
-  async function handleTestNotification() {
-    setTestNotificationLoading(true);
-    try {
-      if (typeof hubAPI?.system?.testNotification !== 'function') {
-        window.alert(
-          isFr
-            ? 'Test notifications indisponible. Redémarre l’application Electron.'
-            : 'Notification test unavailable. Restart the Electron app.'
-        );
-        return;
-      }
-
-      const result = await hubAPI.system.testNotification();
-      if (!result?.success) {
-        window.alert(result?.error || (isFr ? 'Test notification impossible' : 'Notification test failed'));
-      }
-    } catch (error) {
-      console.error('Error testing notification:', error);
-      const details = error?.message || String(error || '');
-      window.alert(
-        isFr
-          ? `Test notification impossible${details ? `: ${details}` : ''}`
-          : `Notification test failed${details ? `: ${details}` : ''}`
-      );
-    } finally {
-      setTestNotificationLoading(false);
-    }
-  }
   async function handleChangePassword(e) {
     e.preventDefault();
     setPwError('');
@@ -469,17 +441,17 @@ function Settings() {
                 />
               </SettingRow>
 
-              {/* Notifications */}
+              {/* Notification Sound */}
               <SettingRow
-                icon={<Bell size={20} color="#fff" />}
-                gradient="linear-gradient(135deg, #f6d365, #fda085)"
-                label={t('settings.notifications')}
-                description={t('settings.notificationsDesc')}
+                icon={<Volume2 size={20} color="#fff" />}
+                gradient="linear-gradient(135deg, #a78bfa, #7c3aed)"
+                label={isFr ? 'Son de notification' : 'Notification sound'}
+                description={isFr ? 'Jouer un son lors de la réception d\'un message' : 'Play a sound when receiving a new inbox message'}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <button
-                    onClick={handleTestNotification}
-                    disabled={loading || testNotificationLoading || !userSettings.notifications_enabled}
+                    onClick={() => playNotificationSound()}
+                    disabled={loading || !userSettings.sound_enabled}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -491,19 +463,19 @@ function Settings() {
                       color: 'var(--text-primary)',
                       fontSize: '12px',
                       fontWeight: '600',
-                      cursor: loading || testNotificationLoading || !userSettings.notifications_enabled ? 'not-allowed' : 'pointer',
-                      opacity: loading || testNotificationLoading || !userSettings.notifications_enabled ? 0.55 : 1,
+                      cursor: loading || !userSettings.sound_enabled ? 'not-allowed' : 'pointer',
+                      opacity: loading || !userSettings.sound_enabled ? 0.55 : 1,
                     }}
-                    title={isFr ? 'Envoie une notification locale de test' : 'Send a local test notification'}
+                    title={isFr ? 'Écouter le son de notification' : 'Preview notification sound'}
                   >
-                    {testNotificationLoading ? <Loader size={12} /> : <Bell size={12} />}
-                    {testNotificationLoading ? (isFr ? 'Test...' : 'Testing...') : (isFr ? 'Tester' : 'Test')}
+                    <Volume2 size={12} />
+                    {isFr ? 'Écouter' : 'Preview'}
                   </button>
 
                   <ToggleSwitch
-                    checked={!!userSettings.notifications_enabled}
+                    checked={!!userSettings.sound_enabled}
                     onChange={() =>
-                      updateSetting('notifications_enabled', userSettings.notifications_enabled ? 0 : 1)
+                      updateSetting('sound_enabled', userSettings.sound_enabled ? 0 : 1)
                     }
                     disabled={loading}
                   />

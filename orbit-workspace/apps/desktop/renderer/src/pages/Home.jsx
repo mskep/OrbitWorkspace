@@ -148,8 +148,8 @@ function Home() {
                     <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>
                       {action.timestamp
                         ? new Date(
-                            action.timestamp < 1e12 ? action.timestamp * 1000 : action.timestamp
-                          ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          action.timestamp < 1e12 ? action.timestamp * 1000 : action.timestamp
+                        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                         : ''}
                     </span>
                   </div>
