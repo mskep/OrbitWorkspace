@@ -7,7 +7,6 @@ import {
   FileText,
   Link,
   Inbox,
-  User,
   Settings,
   WifiOff,
   Shield,
@@ -147,9 +146,7 @@ function Sidebar() {
     { id: 'vault', label: t('common.secretVault'), icon: <LockKeyhole size={20} />, path: '/vault' },
     { id: 'notes', label: t('common.notes'), icon: <FileText size={20} />, path: '/notes' },
     { id: 'links', label: t('common.quickLinks'), icon: <Link size={20} />, path: '/links' },
-    { id: 'inbox', label: t('common.inbox'), icon: <Inbox size={20} />, path: '/inbox' },
-    { id: 'profile', label: t('common.profile'), icon: <User size={20} />, path: '/profile' },
-    { id: 'settings', label: t('common.settings'), icon: <Settings size={20} />, path: '/settings' }
+    { id: 'inbox', label: t('common.inbox'), icon: <Inbox size={20} />, path: '/inbox' }
   ];
 
   // Admin section - only for ADMIN and DEV roles
@@ -320,15 +317,7 @@ function Sidebar() {
         ))}
 
         {/* Admin section separator */}
-        {adminItems.length > 0 && (
-          <div
-            style={{
-              height: '1px',
-              backgroundColor: 'var(--border-default)',
-              margin: '12px 16px'
-            }}
-          />
-        )}
+        {adminItems.length > 0 && <div className="sidebar-separator" />}
 
         {/* Admin menu items */}
         {adminItems.map((item) => (
@@ -336,18 +325,35 @@ function Sidebar() {
             key={item.id}
             className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
             onClick={() => navigate(item.path)}
-            style={{
-              background: isActive(item.path)
-                ? 'var(--accent-glow)'
-                : 'transparent',
-              borderLeft: isActive(item.path) ? '3px solid var(--accent-primary)' : 'none'
-            }}
           >
             <span className="sidebar-icon">{item.icon}</span>
             <span className="sidebar-label">{item.label}</span>
           </button>
         ))}
       </nav>
+
+      {/* User Card Footer */}
+      <div className="sidebar-footer">
+        <button
+          className={`sidebar-user-card ${isActive('/profile') ? 'active' : ''}`}
+          onClick={() => navigate('/profile')}
+        >
+          <div className="sidebar-user-avatar">
+            {profile?.avatar || profile?.username?.charAt(0)?.toUpperCase() || '?'}
+          </div>
+          <div className="sidebar-user-info">
+            <span className="sidebar-user-name">{profile?.username || t('common.profile')}</span>
+            <span className="sidebar-user-role">{profile?.role || 'USER'}</span>
+          </div>
+        </button>
+        <button
+          className={`sidebar-footer-btn ${isActive('/settings') ? 'active' : ''}`}
+          onClick={() => navigate('/settings')}
+          aria-label={t('common.settings')}
+        >
+          <Settings size={18} />
+        </button>
+      </div>
 
       {/* Delete Workspace Modal */}
       <Modal
