@@ -6,14 +6,14 @@ import { Inbox, MailOpen, Award, Shield, Bell, Megaphone, CheckCheck, RefreshCw,
 import { useI18n } from '../i18n';
 
 const TYPE_CONFIG = {
-  'badge-assigned': { icon: Award, color: '#f59e0b', label: 'Badge Awarded' },
-  'badge-revoked': { icon: Award, color: '#ef4444', label: 'Badge Removed' },
-  'role-changed': { icon: Shield, color: '#8b5cf6', label: 'Role Updated' },
-  'system-notification': { icon: Bell, color: 'var(--accent)', label: 'System' },
-  'admin-broadcast': { icon: Megaphone, color: '#ec4899', label: 'Announcement' },
-  'admin-maintenance': { icon: Wrench, color: '#f59e0b', label: 'Maintenance' },
-  'admin-update': { icon: Download, color: '#10b981', label: 'Update' },
-  'admin-security': { icon: ShieldAlert, color: '#ef4444', label: 'Security' }
+  'badge-assigned': { icon: Award, color: 'var(--status-warning)', label: 'Badge Awarded' },
+  'badge-revoked': { icon: Award, color: 'var(--status-error)', label: 'Badge Removed' },
+  'role-changed': { icon: Shield, color: 'var(--accent-secondary)', label: 'Role Updated' },
+  'system-notification': { icon: Bell, color: 'var(--accent-primary)', label: 'System' },
+  'admin-broadcast': { icon: Megaphone, color: 'var(--accent-tertiary)', label: 'Announcement' },
+  'admin-maintenance': { icon: Wrench, color: 'var(--status-warning)', label: 'Maintenance' },
+  'admin-update': { icon: Download, color: 'var(--status-success)', label: 'Update' },
+  'admin-security': { icon: ShieldAlert, color: 'var(--status-error)', label: 'Security' }
 };
 
 function formatTimeAgo(timestamp) {

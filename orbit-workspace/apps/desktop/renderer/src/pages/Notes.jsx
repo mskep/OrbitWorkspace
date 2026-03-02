@@ -251,11 +251,9 @@ function Notes() {
           {/* Create Button */}
           <button
             onClick={handleCreateNote}
-            className="btn"
+            className="btn btn-primary"
             style={{
               width: '100%',
-              background: 'var(--accent)',
-              color: '#fff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -364,12 +362,12 @@ function Notes() {
             <div
               style={{
                 padding: '12px 16px',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                backgroundColor: 'var(--status-error-glow)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: 'var(--radius-md)',
                 marginBottom: '16px',
                 fontSize: '13px',
-                color: '#ef4444',
+                color: 'var(--status-error)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between'
@@ -381,7 +379,7 @@ function Notes() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#ef4444',
+                  color: 'var(--status-error)',
                   cursor: 'pointer',
                   padding: '4px'
                 }}
@@ -442,27 +440,8 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
   return (
     <div
       onClick={onSelect}
-      style={{
-        padding: '12px',
-        backgroundColor: isSelected ? 'var(--accent-glow)' : 'var(--bg-secondary)',
-        border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-default)'}`,
-        borderRadius: 'var(--radius-md)',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        position: 'relative'
-      }}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--border-hover)';
-          e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--border-default)';
-          e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-        }
-      }}
+      className={`item-card${isSelected ? ' active' : ''}`}
+      style={{ position: 'relative' }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
         <h4
@@ -489,7 +468,7 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
             padding: '4px',
             background: 'none',
             border: 'none',
-            color: note.is_pinned ? 'var(--accent)' : 'var(--text-tertiary)',
+            color: note.is_pinned ? 'var(--accent-primary)' : 'var(--text-tertiary)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -594,8 +573,8 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
               gap: '6px',
               fontSize: '13px',
               backgroundColor: showPreview ? 'var(--accent-glow)' : undefined,
-              color: showPreview ? 'var(--accent)' : undefined,
-              border: showPreview ? '1px solid var(--accent)' : undefined
+              color: showPreview ? 'var(--accent-primary)' : undefined,
+              border: showPreview ? '1px solid var(--accent-primary)' : undefined
             }}
           >
             {showPreview ? <Code size={16} /> : <Eye size={16} />}
@@ -617,11 +596,9 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
           </button>
           <button
             onClick={onSave}
-            className="btn"
+            className="btn btn-primary"
             style={{
               padding: '8px 16px',
-              background: 'var(--accent)',
-              color: '#fff',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
@@ -806,8 +783,8 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
             style={{
               padding: '10px',
               backgroundColor: note.is_pinned ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
-              color: note.is_pinned ? 'var(--accent)' : 'var(--text-primary)',
-              border: `1px solid ${note.is_pinned ? 'var(--accent)' : 'var(--border-default)'}`,
+              color: note.is_pinned ? 'var(--accent-primary)' : 'var(--text-primary)',
+              border: `1px solid ${note.is_pinned ? 'var(--accent-primary)' : 'var(--border-default)'}`,
               display: 'flex',
               alignItems: 'center'
             }}
@@ -832,7 +809,7 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
             className="btn btn-secondary"
             style={{
               padding: '10px',
-              color: '#ef4444',
+              color: 'var(--status-error)',
               display: 'flex',
               alignItems: 'center'
             }}

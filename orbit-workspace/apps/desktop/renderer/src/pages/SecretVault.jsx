@@ -397,7 +397,7 @@ function SecretVault() {
       <div className="page-content vault-page-content">
         <div className="vault-shell">
           <aside className="vault-sidebar card card-padding-md">
-            <button type="button" className="btn btn-secondary btn-sm vault-create-btn" onClick={handleCreateNew}>
+            <button type="button" className="btn btn-primary btn-sm vault-create-btn" onClick={handleCreateNew}>
               <Plus size={14} />
               {t('vault.createNew')}
             </button>

@@ -338,9 +338,9 @@ function Sidebar() {
             onClick={() => navigate(item.path)}
             style={{
               background: isActive(item.path)
-                ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)'
+                ? 'var(--accent-glow)'
                 : 'transparent',
-              borderLeft: isActive(item.path) ? '3px solid #667eea' : 'none'
+              borderLeft: isActive(item.path) ? '3px solid var(--accent-primary)' : 'none'
             }}
           >
             <span className="sidebar-icon">{item.icon}</span>

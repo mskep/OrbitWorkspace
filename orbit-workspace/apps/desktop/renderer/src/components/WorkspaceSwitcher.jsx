@@ -161,7 +161,7 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
           onClick={() => setCreating(!creating)}
           style={{
             padding: '6px 12px',
-            backgroundColor: creating ? 'var(--bg-tertiary)' : 'var(--accent)',
+            backgroundColor: creating ? 'var(--bg-tertiary)' : 'var(--accent-primary)',
             color: '#fff',
             border: 'none',
             borderRadius: 'var(--radius-md)',
@@ -184,12 +184,12 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
         <div
           style={{
             padding: '12px',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            backgroundColor: 'var(--status-error-glow)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             borderRadius: 'var(--radius-md)',
             marginBottom: '12px',
             fontSize: '14px',
-            color: '#ef4444'
+            color: 'var(--status-error)'
           }}
         >
           {error}
@@ -224,7 +224,7 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
             style={{
               width: '100%',
               padding: '10px',
-              backgroundColor: 'var(--accent)',
+              backgroundColor: 'var(--accent-primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 'var(--radius-md)',
@@ -270,8 +270,8 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px',
-                  backgroundColor: isActive ? 'var(--accent)' : 'var(--bg-tertiary)',
-                  border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border-default)'}`,
+                  backgroundColor: isActive ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  border: `1px solid ${isActive ? 'var(--accent-primary)' : 'var(--border-default)'}`,
                   borderRadius: 'var(--radius-md)',
                   cursor: 'pointer',
                   transition: 'all var(--transition-fast)'
@@ -327,7 +327,7 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
                       color: 'var(--text-tertiary)',
                       transition: 'color var(--transition-fast)'
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--status-error)')}
                     onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                   >
                     <Trash2 size={16} />

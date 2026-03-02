@@ -61,9 +61,9 @@ function AdminPanel() {
 
   const sections = [
     { id: 'overview', label: t('admin.overview'), icon: Shield, accent: '#0ea5e9', surface: 'rgba(14, 165, 233, 0.16)' },
-    { id: 'users', label: t('admin.users'), icon: Users, accent: '#10b981', surface: 'rgba(16, 185, 129, 0.16)' },
-    { id: 'notifications', label: t('admin.notifications'), icon: Megaphone, accent: '#f59e0b', surface: 'rgba(245, 158, 11, 0.16)' },
-    { id: 'logs', label: t('admin.logs'), icon: Activity, accent: '#ef4444', surface: 'rgba(239, 68, 68, 0.16)' },
+    { id: 'users', label: t('admin.users'), icon: Users, accent: 'var(--status-success)', surface: 'var(--status-success-glow)' },
+    { id: 'notifications', label: t('admin.notifications'), icon: Megaphone, accent: 'var(--status-warning)', surface: 'var(--status-warning-glow)' },
+    { id: 'logs', label: t('admin.logs'), icon: Activity, accent: 'var(--status-error)', surface: 'var(--status-error-glow)' },
     { id: 'roles', label: t('admin.roles'), icon: Key, accent: '#14b8a6', surface: 'rgba(20, 184, 166, 0.16)' }
   ];
 
@@ -139,7 +139,7 @@ function AdminPanel() {
       >
         <AlertTriangle size={20} color="#f59e0b" />
         <div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#f59e0b' }}>{isFr ? 'Accès administrateur' : 'Administrator Access'}</div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--status-warning)' }}>{isFr ? 'Accès administrateur' : 'Administrator Access'}</div>
           <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
             {isFr ? 'Vous avez un accès complet au système. Faites attention aux changements.' : 'You have full system access. Be careful with changes made here.'}
           </div>
@@ -252,27 +252,27 @@ function OverviewSection({ stats, loading }) {
       <Card>
         <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>{isFr ? 'Statistiques rapides' : 'Quick Stats'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StatItem label={isFr ? 'Utilisateurs totaux' : 'Total Users'} value={stats?.totalUsers || 0} color="#667eea" />
-          <StatItem label={isFr ? 'Espaces totaux' : 'Total Workspaces'} value={stats?.totalWorkspaces || 0} color="#10b981" />
-          <StatItem label={isFr ? 'Notes totales' : 'Total Notes'} value={stats?.totalNotes || 0} color="#f59e0b" />
+          <StatItem label={isFr ? 'Utilisateurs totaux' : 'Total Users'} value={stats?.totalUsers || 0} color="var(--accent-primary)" />
+          <StatItem label={isFr ? 'Espaces totaux' : 'Total Workspaces'} value={stats?.totalWorkspaces || 0} color="var(--status-success)" />
+          <StatItem label={isFr ? 'Notes totales' : 'Total Notes'} value={stats?.totalNotes || 0} color="var(--status-warning)" />
         </div>
       </Card>
 
       <Card>
         <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>{isFr ? 'Stats de contenu' : 'Content Stats'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StatItem label={isFr ? 'Liens totaux' : 'Total Links'} value={stats?.totalLinks || 0} color="#ec4899" />
-          <StatItem label={isFr ? 'Références fichiers' : 'File References'} value={stats?.totalFileRefs || 0} color="#8b5cf6" />
-          <StatItem label={isFr ? 'Outils actifs' : 'Active Tools'} value={stats?.activeTools || 0} color="#3b82f6" />
+          <StatItem label={isFr ? 'Liens totaux' : 'Total Links'} value={stats?.totalLinks || 0} color="var(--accent-tertiary)" />
+          <StatItem label={isFr ? 'Références fichiers' : 'File References'} value={stats?.totalFileRefs || 0} color="var(--accent-secondary)" />
+          <StatItem label={isFr ? 'Outils actifs' : 'Active Tools'} value={stats?.activeTools || 0} color="var(--status-info)" />
         </div>
       </Card>
 
       <Card>
         <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>{isFr ? 'Santé système' : 'System Health'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <StatItem label={isFr ? 'État base de données' : 'Database Status'} value={isFr ? 'Sain' : 'Healthy'} color="#10b981" />
-          <StatItem label={isFr ? 'Badges totaux' : 'Total Badges'} value={stats?.totalBadges || 0} color="#f59e0b" />
-          <StatItem label={isFr ? 'Éléments boîte total' : 'Total Inbox Items'} value={stats?.totalInboxItems || 0} color="#6366f1" />
+          <StatItem label={isFr ? 'État base de données' : 'Database Status'} value={isFr ? 'Sain' : 'Healthy'} color="var(--status-success)" />
+          <StatItem label={isFr ? 'Badges totaux' : 'Total Badges'} value={stats?.totalBadges || 0} color="var(--status-warning)" />
+          <StatItem label={isFr ? 'Éléments boîte total' : 'Total Inbox Items'} value={stats?.totalInboxItems || 0} color="var(--accent-primary)" />
         </div>
       </Card>
     </div>
@@ -316,13 +316,13 @@ function downloadJson(filename, data) {
 function Pill({ type, value }) {
   let bg, color;
   if (type === 'status') {
-    if (value === 'success') { bg = 'rgba(16, 185, 129, 0.15)'; color = '#10b981'; }
-    else if (value === 'error') { bg = 'rgba(239, 68, 68, 0.15)'; color = '#ef4444'; }
-    else { bg = 'rgba(59, 130, 246, 0.15)'; color = '#3b82f6'; }
+    if (value === 'success') { bg = 'var(--status-success-glow)'; color = 'var(--status-success)'; }
+    else if (value === 'error') { bg = 'var(--status-error-glow)'; color = 'var(--status-error)'; }
+    else { bg = 'var(--status-info-glow)'; color = 'var(--status-info)'; }
   } else {
-    if (value === 'critical' || value === 'high' || value === 'error') { bg = 'rgba(239, 68, 68, 0.15)'; color = '#ef4444'; }
-    else if (value === 'warn' || value === 'warning') { bg = 'rgba(245, 158, 11, 0.15)'; color = '#f59e0b'; }
-    else { bg = 'rgba(16, 185, 129, 0.15)'; color = '#10b981'; }
+    if (value === 'critical' || value === 'high' || value === 'error') { bg = 'var(--status-error-glow)'; color = 'var(--status-error)'; }
+    else if (value === 'warn' || value === 'warning') { bg = 'var(--status-warning-glow)'; color = 'var(--status-warning)'; }
+    else { bg = 'var(--status-success-glow)'; color = 'var(--status-success)'; }
   }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: bg, color, textTransform: 'capitalize' }}>
@@ -473,7 +473,7 @@ function UsersSection({ users = [], loading, onRefresh }) {
     return (
       <th
         onClick={() => handleSort(sortKey)}
-        style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: isActive ? 'var(--accent)' : 'var(--text-tertiary)', cursor: 'pointer', userSelect: 'none' }}
+        style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: isActive ? 'var(--accent-primary)' : 'var(--text-tertiary)', cursor: 'pointer', userSelect: 'none' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {label}
@@ -547,12 +547,12 @@ function UsersSection({ users = [], loading, onRefresh }) {
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={16} color="var(--accent)" />
+                            <User size={16} color="var(--accent-primary)" />
                           </div>
                           <div>
                             <span style={{ fontSize: '14px', fontWeight: '500' }}>{user.username}</span>
                             {isCurrentUser && (
-                              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>({isFr ? 'Vous' : 'You'})</span>
+                              <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--accent-primary)', fontWeight: '600' }}>({isFr ? 'Vous' : 'You'})</span>
                             )}
                           </div>
                         </div>
@@ -579,8 +579,8 @@ function UsersSection({ users = [], loading, onRefresh }) {
                           disabled={updatingUser === user.id || isCurrentUser}
                           size="sm"
                           options={[
-                            { value: 'active', label: isFr ? 'Actif' : 'Active', color: '#10b981' },
-                            { value: 'disabled', label: isFr ? 'Désactivé' : 'Disabled', color: '#ef4444' },
+                            { value: 'active', label: isFr ? 'Actif' : 'Active', color: 'var(--status-success)' },
+                            { value: 'disabled', label: isFr ? 'Désactivé' : 'Disabled', color: 'var(--status-error)' },
                           ]}
                         />
                       </td>
@@ -602,7 +602,7 @@ function UsersSection({ users = [], loading, onRefresh }) {
                               borderRadius: 'var(--radius-sm)',
                               border: '1px solid var(--border-default)',
                               backgroundColor: expandedUser === user.id ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
-                              color: expandedUser === user.id ? 'var(--accent)' : 'var(--text-tertiary)',
+                              color: expandedUser === user.id ? 'var(--accent-primary)' : 'var(--text-tertiary)',
                               fontSize: '11px',
                               fontWeight: '600',
                               cursor: 'pointer',
@@ -796,7 +796,7 @@ function SystemLogsSection() {
     return (
       <th
         onClick={() => handleSort(sortKey)}
-        style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: isActive ? 'var(--accent)' : 'var(--text-tertiary)', cursor: 'pointer', userSelect: 'none' }}
+        style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: isActive ? 'var(--accent-primary)' : 'var(--text-tertiary)', cursor: 'pointer', userSelect: 'none' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {label}
@@ -847,9 +847,9 @@ function SystemLogsSection() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '16px' }}>
         <StatItem label={isFr ? 'Journaux visibles' : 'Visible Logs'} value={quickStats.total} color="var(--text-primary)" />
-        <StatItem label={isFr ? 'Erreurs' : 'Errors'} value={quickStats.errors} color="#ef4444" />
-        <StatItem label={isFr ? 'Avertissements' : 'Warnings'} value={quickStats.warnings} color="#f59e0b" />
-        <StatItem label={isFr ? 'Événements auth' : 'Auth Events'} value={quickStats.authEvents} color="#3b82f6" />
+        <StatItem label={isFr ? 'Erreurs' : 'Errors'} value={quickStats.errors} color="var(--status-error)" />
+        <StatItem label={isFr ? 'Avertissements' : 'Warnings'} value={quickStats.warnings} color="var(--status-warning)" />
+        <StatItem label={isFr ? 'Événements auth' : 'Auth Events'} value={quickStats.authEvents} color="var(--status-info)" />
       </div>
 
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -936,10 +936,10 @@ function SystemLogsSection() {
 
 // ── Notifications Section ────────────────────────────────
 const BROADCAST_CATEGORIES = [
-  { key: 'admin-broadcast', label: 'Announcement', icon: Megaphone, color: '#ec4899' },
-  { key: 'admin-maintenance', label: 'Maintenance', icon: Wrench, color: '#f59e0b' },
-  { key: 'admin-update', label: 'Update', icon: Download, color: '#10b981' },
-  { key: 'admin-security', label: 'Security', icon: ShieldAlert, color: '#ef4444' }
+  { key: 'admin-broadcast', label: 'Announcement', icon: Megaphone, color: 'var(--accent-tertiary)' },
+  { key: 'admin-maintenance', label: 'Maintenance', icon: Wrench, color: 'var(--status-warning)' },
+  { key: 'admin-update', label: 'Update', icon: Download, color: 'var(--status-success)' },
+  { key: 'admin-security', label: 'Security', icon: ShieldAlert, color: 'var(--status-error)' }
 ];
 
 const BROADCAST_TEMPLATES = [
@@ -1102,7 +1102,7 @@ function NotificationsSection({ users = [] }) {
               {BROADCAST_TEMPLATES.map((tpl) => {
                 const catConfig = BROADCAST_CATEGORIES.find((c) => c.key === tpl.category);
                 const TplIcon = catConfig?.icon || Megaphone;
-                const tplColor = catConfig?.color || '#ec4899';
+                const tplColor = catConfig?.color || 'var(--accent-tertiary)';
                 return (
                   <button
                     key={tpl.label}
@@ -1153,9 +1153,9 @@ function NotificationsSection({ users = [] }) {
                   flex: 1,
                   padding: '10px',
                   borderRadius: 'var(--radius-md)',
-                  border: `1px solid ${target === 'all' ? 'var(--accent)' : 'var(--border-default)'}`,
+                  border: `1px solid ${target === 'all' ? 'var(--accent-primary)' : 'var(--border-default)'}`,
                   backgroundColor: target === 'all' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-tertiary)',
-                  color: target === 'all' ? 'var(--accent)' : 'var(--text-secondary)',
+                  color: target === 'all' ? 'var(--accent-primary)' : 'var(--text-secondary)',
                   fontSize: '13px',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -1176,9 +1176,9 @@ function NotificationsSection({ users = [] }) {
                   flex: 1,
                   padding: '10px',
                   borderRadius: 'var(--radius-md)',
-                  border: `1px solid ${target === 'user' ? 'var(--accent)' : 'var(--border-default)'}`,
+                  border: `1px solid ${target === 'user' ? 'var(--accent-primary)' : 'var(--border-default)'}`,
                   backgroundColor: target === 'user' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-tertiary)',
-                  color: target === 'user' ? 'var(--accent)' : 'var(--text-secondary)',
+                  color: target === 'user' ? 'var(--accent-primary)' : 'var(--text-secondary)',
                   fontSize: '13px',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -1226,7 +1226,7 @@ function NotificationsSection({ users = [] }) {
               placeholder={isFr ? 'Titre de la notification...' : 'Notification title...'}
               maxLength={100}
               style={inputStyle}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; }}
+              onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'var(--border-default)'; }}
             />
           </div>
@@ -1243,7 +1243,7 @@ function NotificationsSection({ users = [] }) {
               maxLength={500}
               rows={4}
               style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; }}
+              onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'var(--border-default)'; }}
             />
             <div style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -1425,28 +1425,28 @@ const ROLE_DATA = [
   {
     role: 'ADMIN',
     label: 'Administrator',
-    color: '#667eea',
+    color: 'var(--accent-primary)',
     description: 'Full system access, user management, all permissions',
     permissions: ['NET_ACCESS', 'FS_READ', 'FS_WRITE', 'FS_PICKER', 'RUN_TOOL', 'SPAWN_PROCESS', 'CLIPBOARD', 'NOTIFICATIONS', 'TRAY_CONTROL', 'PREMIUM_TOOLS', 'MANAGE_USERS', 'VIEW_ALL_LOGS', 'SYSTEM_CONFIG', 'INSTALL_TOOLS']
   },
   {
     role: 'DEV',
     label: 'Developer',
-    color: '#f5576c',
+    color: 'var(--status-error)',
     description: 'Extended access, log viewing, tool installation',
     permissions: ['NET_ACCESS', 'FS_READ', 'FS_WRITE', 'FS_PICKER', 'RUN_TOOL', 'SPAWN_PROCESS', 'CLIPBOARD', 'NOTIFICATIONS', 'TRAY_CONTROL', 'PREMIUM_TOOLS', 'VIEW_ALL_LOGS', 'INSTALL_TOOLS']
   },
   {
     role: 'PREMIUM',
     label: 'Premium',
-    color: '#f59e0b',
+    color: 'var(--status-warning)',
     description: 'Standard access with premium tools',
     permissions: ['NET_ACCESS', 'FS_READ', 'FS_WRITE', 'FS_PICKER', 'RUN_TOOL', 'SPAWN_PROCESS', 'CLIPBOARD', 'NOTIFICATIONS', 'TRAY_CONTROL', 'PREMIUM_TOOLS']
   },
   {
     role: 'USER',
     label: 'User',
-    color: '#10b981',
+    color: 'var(--status-success)',
     description: 'Basic access with standard permissions',
     permissions: ['NET_ACCESS', 'FS_READ', 'FS_PICKER', 'RUN_TOOL', 'CLIPBOARD', 'NOTIFICATIONS']
   }

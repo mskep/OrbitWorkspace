@@ -827,7 +827,7 @@ function Settings() {
                           alignItems: 'center',
                           gap: '6px',
                           borderColor: isCurrentDevice ? 'var(--border-default)' : 'rgba(239,68,68,0.45)',
-                          color: isCurrentDevice ? 'var(--text-tertiary)' : '#ef4444',
+                          color: isCurrentDevice ? 'var(--text-tertiary)' : 'var(--status-error)',
                         }}
                       >
                         <Trash2 size={14} />

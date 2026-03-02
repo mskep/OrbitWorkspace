@@ -406,20 +406,7 @@ function Links() {
               setIsEditing(false);
               setSelectedItem(null);
             }}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: activeTab === 'links' ? 'var(--accent)' : 'transparent',
-              color: activeTab === 'links' ? '#fff' : 'var(--text-secondary)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
+            className={`links-tab${activeTab === 'links' ? ' active' : ''}`}
           >
             <LinkIcon size={16} />
             {isFr ? 'Liens rapides' : 'Quick Links'} ({links.length})
@@ -430,20 +417,7 @@ function Links() {
               setIsEditing(false);
               setSelectedItem(null);
             }}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: activeTab === 'files' ? 'var(--accent)' : 'transparent',
-              color: activeTab === 'files' ? '#fff' : 'var(--text-secondary)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
+            className={`links-tab${activeTab === 'files' ? ' active' : ''}`}
           >
             <File size={16} />
             {isFr ? 'Fichiers' : 'File References'} ({fileRefs.length})
@@ -464,11 +438,9 @@ function Links() {
             {/* Create Button */}
             <button
               onClick={activeTab === 'links' ? handleCreateLink : handleCreateFileRef}
-              className="btn"
+              className="btn btn-primary"
               style={{
                 width: '100%',
-                background: 'var(--accent)',
-                color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -575,12 +547,12 @@ function Links() {
               <div
                 style={{
                   padding: '12px 16px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  backgroundColor: 'var(--status-error-glow)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '16px',
                   fontSize: '13px',
-                  color: '#ef4444',
+                  color: 'var(--status-error)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between'
@@ -592,7 +564,7 @@ function Links() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#ef4444',
+                    color: 'var(--status-error)',
                     cursor: 'pointer',
                     padding: '4px'
                   }}
@@ -657,23 +629,7 @@ function Links() {
 // Link Card Component
 function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
   return (
-    <div
-      style={{
-        padding: '12px',
-        backgroundColor: 'var(--bg-secondary)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-md)',
-        transition: 'all 0.2s'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-hover)';
-        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-default)';
-        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-      }}
-    >
+    <div className="item-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
         <h4
           style={{
@@ -697,7 +653,7 @@ function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
               padding: '4px',
               background: 'none',
               border: 'none',
-              color: link.is_favorite ? 'var(--accent)' : 'var(--text-tertiary)',
+              color: link.is_favorite ? 'var(--accent-primary)' : 'var(--text-tertiary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center'
@@ -730,7 +686,7 @@ function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
           rel="noopener noreferrer"
           style={{
             fontSize: '11px',
-            color: 'var(--accent)',
+            color: 'var(--accent-primary)',
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
@@ -768,7 +724,7 @@ function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
               borderRadius: 'var(--radius-sm)',
               cursor: 'pointer',
               fontSize: '11px',
-              color: '#ef4444'
+              color: 'var(--status-error)'
             }}
           >
             <Trash2 size={12} />
@@ -870,25 +826,7 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
   const { Icon, color, bgColor } = getFileIcon(fileRef.path, fileRef.type);
 
   return (
-    <div
-      style={{
-        padding: '12px',
-        backgroundColor: 'var(--bg-secondary)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-md)',
-        transition: 'all 0.2s',
-        cursor: 'pointer'
-      }}
-      onClick={onShowInFolder}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-hover)';
-        e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-default)';
-        e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-      }}
-    >
+    <div className="item-card" onClick={onShowInFolder}>
       <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
         <div
           style={{
@@ -936,15 +874,8 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
                 e.stopPropagation();
                 onOpen();
               }}
+              className="btn btn-primary btn-sm"
               style={{
-                padding: '6px 12px',
-                backgroundColor: 'var(--accent)',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px'
@@ -982,7 +913,7 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
                 borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 fontSize: '11px',
-                color: '#ef4444'
+                color: 'var(--status-error)'
               }}
             >
               <Trash2 size={12} />
@@ -1023,11 +954,9 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
           </button>
           <button
             onClick={onSave}
-            className="btn"
+            className="btn btn-primary"
             style={{
               padding: '8px 16px',
-              background: 'var(--accent)',
-              color: '#fff',
               fontSize: '13px',
               fontWeight: '600',
               display: 'flex',
@@ -1186,11 +1115,9 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
           </button>
           <button
             onClick={onSave}
-            className="btn"
+            className="btn btn-primary"
             style={{
               padding: '8px 16px',
-              background: 'var(--accent)',
-              color: '#fff',
               fontSize: '13px',
               fontWeight: '600',
               display: 'flex',
@@ -1253,29 +1180,13 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
             <button
               onClick={onPickFile}
               type="button"
+              className="btn btn-secondary"
               style={{
                 flex: 1,
-                padding: '10px 16px',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-md)',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent)';
-                e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-default)';
-                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                gap: '8px'
               }}
             >
               <File size={16} />
@@ -1284,29 +1195,13 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
             <button
               onClick={onPickFolder}
               type="button"
+              className="btn btn-secondary"
               style={{
                 flex: 1,
-                padding: '10px 16px',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-md)',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent)';
-                e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-default)';
-                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                gap: '8px'
               }}
             >
               <FolderOpen size={16} />

@@ -332,7 +332,7 @@ p {
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background-color: #ef4444;
+  background-color: var(--status-error);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -886,15 +886,13 @@ input[type="checkbox"]:disabled {
 
 /* Button Variants */
 .btn-primary {
-  background: var(--accent-gradient);
+  background-color: var(--accent-primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-gradient-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4), var(--shadow-glow);
+  background-color: var(--accent-secondary);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -984,6 +982,53 @@ input[type="checkbox"]:disabled {
 
 .card-hover.card-gradient:hover::before {
   opacity: 1;
+}
+
+/* Item card (Notes, Links, Files) */
+.item-card {
+  padding: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.item-card:hover {
+  border-color: var(--border-hover);
+  background-color: var(--bg-hover);
+}
+
+.item-card.active {
+  background-color: var(--accent-glow);
+  border-color: var(--accent-primary);
+}
+
+/* Links page tabs */
+.links-tab {
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.links-tab:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.links-tab.active {
+  background-color: var(--accent-primary);
+  color: #fff;
 }
 
 /* ================================================================
@@ -2621,12 +2666,15 @@ input[type="checkbox"]:disabled {
 /* Submit */
 .auth-submit {
   margin-top: auto;
+  background: var(--accent-gradient);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
   transition: all var(--transition-normal);
 }
 
 .auth-submit:hover:not(:disabled) {
+  background: var(--accent-gradient-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px var(--accent-glow);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4), var(--shadow-glow);
 }
 
 .auth-submit:active:not(:disabled) {
@@ -2965,9 +3013,9 @@ input[type="checkbox"]:disabled {
 }
 
 .inbox-filter-tab.active {
-  border-color: var(--accent);
-  background-color: rgba(99, 102, 241, 0.08);
-  color: var(--accent);
+  border-color: var(--accent-primary);
+  background-color: var(--accent-glow);
+  color: var(--accent-primary);
 }
 
 .inbox-filter-count {
@@ -2981,13 +3029,13 @@ input[type="checkbox"]:disabled {
 }
 
 .inbox-filter-count.active {
-  background-color: var(--accent);
+  background-color: var(--accent-primary);
   color: #fff;
 }
 
 .inbox-filter-count.has-unread:not(.active) {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background-color: var(--status-error-glow);
+  color: var(--status-error);
 }
 
 /* Action buttons */
@@ -3008,8 +3056,8 @@ input[type="checkbox"]:disabled {
 }
 
 .inbox-action-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
   background-color: rgba(99, 102, 241, 0.06);
 }
 
@@ -3146,7 +3194,7 @@ input[type="checkbox"]:disabled {
 }
 
 .inbox-mark-read-btn:hover {
-  color: var(--accent);
+  color: var(--accent-primary);
   background-color: var(--bg-hover);
 }
 
@@ -3468,7 +3516,7 @@ input[type="checkbox"]:disabled {
 .tools-v2-warning {
   border: 1px solid rgba(245, 158, 11, 0.32);
   background: rgba(245, 158, 11, 0.1);
-  color: #fbbf24;
+  color: var(--status-warning);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   font-size: 12px;
@@ -3596,13 +3644,13 @@ input[type="checkbox"]:disabled {
 }
 
 .tools-v2-badge.ok {
-  color: #34d399;
+  color: var(--status-success);
   background: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .tools-v2-badge.warn {
-  color: #f87171;
+  color: var(--status-error);
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.35);
 }
@@ -3654,7 +3702,7 @@ input[type="checkbox"]:disabled {
 }
 
 .tools-v2-detail-card li.missing {
-  color: #fca5a5;
+  color: var(--status-error);
 }
 
 .tools-v2-detail-card pre {
@@ -3738,13 +3786,13 @@ input[type="checkbox"]:disabled {
 .tools-v2-inline-status.success {
   border: 1px solid rgba(16, 185, 129, 0.35);
   background: rgba(16, 185, 129, 0.14);
-  color: #34d399;
+  color: var(--status-success);
 }
 
 .tools-v2-inline-status.error {
   border: 1px solid rgba(239, 68, 68, 0.35);
   background: rgba(239, 68, 68, 0.14);
-  color: #fca5a5;
+  color: var(--status-error);
 }
 
 .tools-v2-generator-options {
@@ -4051,15 +4099,10 @@ input[type="checkbox"]:disabled {
 .vault-create-btn.btn {
   width: 100%;
   justify-content: flex-start;
-  border: 1px solid var(--border-default);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
   padding: 10px 12px;
 }
 
 .vault-create-btn.btn:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-elevated);
   transform: none;
   box-shadow: none;
 }
@@ -4095,8 +4138,8 @@ input[type="checkbox"]:disabled {
 
 .vault-archive-btn.active {
   color: #fff;
-  border-color: rgba(99, 102, 241, 0.85);
-  background: rgba(99, 102, 241, 0.28);
+  border-color: var(--accent-primary);
+  background: var(--accent-glow-strong);
 }
 
 .vault-list {
@@ -4158,9 +4201,9 @@ input[type="checkbox"]:disabled {
 }
 
 .vault-item.active {
-  border-color: rgba(99, 102, 241, 0.6);
-  background: rgba(99, 102, 241, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.24);
+  border-color: var(--accent-primary);
+  background: var(--accent-glow);
+  box-shadow: inset 0 0 0 1px var(--accent-glow-strong);
 }
 
 .vault-item-header {
@@ -4226,9 +4269,9 @@ input[type="checkbox"]:disabled {
   margin-bottom: 2px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(239, 68, 68, 0.45);
-  background: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--status-error-glow);
+  color: var(--status-error);
   font-size: 13px;
 }
 

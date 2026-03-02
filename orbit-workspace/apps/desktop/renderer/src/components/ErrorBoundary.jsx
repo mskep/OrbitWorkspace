@@ -50,14 +50,14 @@ class ErrorBoundary extends React.Component {
               width: '64px',
               height: '64px',
               borderRadius: '50%',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              backgroundColor: 'var(--status-error-glow)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: '20px'
             }}
           >
-            <AlertTriangle size={32} color="#ef4444" />
+            <AlertTriangle size={32} color="var(--status-error)" />
           </div>
 
           <h3
@@ -109,7 +109,7 @@ class ErrorBoundary extends React.Component {
                 style={{
                   fontSize: '11px',
                   fontFamily: 'monospace',
-                  color: '#ef4444',
+                  color: 'var(--status-error)',
                   overflow: 'auto',
                   margin: 0
                 }}

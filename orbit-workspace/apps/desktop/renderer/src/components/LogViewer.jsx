@@ -20,26 +20,26 @@ import ErrorBoundary from './ErrorBoundary';
 // Status configuration avec couleurs fixes
 const STATUS_CONFIG = {
   success: {
-    color: '#10b981',
-    bg: 'rgba(16, 185, 129, 0.15)',
+    color: 'var(--status-success)',
+    bg: 'var(--status-success-glow)',
     icon: CheckCircle,
     label: 'Success'
   },
   error: {
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.15)',
+    color: 'var(--status-error)',
+    bg: 'var(--status-error-glow)',
     icon: XCircle,
     label: 'Error'
   },
   pending: {
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.15)',
+    color: 'var(--status-warning)',
+    bg: 'var(--status-warning-glow)',
     icon: Clock,
     label: 'Pending'
   },
   failed: {
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.15)',
+    color: 'var(--status-error)',
+    bg: 'var(--status-error-glow)',
     icon: XCircle,
     label: 'Failed'
   }
@@ -172,9 +172,9 @@ function LogItem({ log, isExpanded, onToggle }) {
                 style={{
                   marginBottom: '12px',
                   padding: '12px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  backgroundColor: 'var(--status-error-glow)',
                   borderRadius: 'var(--radius-sm)',
-                  borderLeft: '3px solid #ef4444'
+                  borderLeft: '3px solid var(--status-error)'
                 }}
               >
                 <div
@@ -189,7 +189,7 @@ function LogItem({ log, isExpanded, onToggle }) {
                 </div>
                 <div
                   style={{
-                    color: '#ef4444',
+                    color: 'var(--status-error)',
                     fontFamily: 'monospace',
                     fontSize: '12px',
                     wordBreak: 'break-word'
@@ -239,11 +239,11 @@ function LogItem({ log, isExpanded, onToggle }) {
         style={{
           padding: '16px',
           borderRadius: 'var(--radius-md)',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid #ef4444'
+          backgroundColor: 'var(--status-error-glow)',
+          border: '1px solid var(--status-error)'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--status-error)' }}>
           <AlertTriangle size={16} />
           <span style={{ fontSize: '14px', fontWeight: '600' }}>Failed to render log</span>
         </div>
@@ -441,14 +441,14 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
             width: '64px',
             height: '64px',
             borderRadius: '50%',
-            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+            backgroundColor: 'var(--status-error-glow)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '20px'
           }}
         >
-          <AlertTriangle size={32} color="#ef4444" />
+          <AlertTriangle size={32} color="var(--status-error)" />
         </div>
         <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Failed to load logs</h3>
         <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>{error}</p>
@@ -489,8 +489,8 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                   borderRadius: '12px',
                   fontSize: '11px',
                   fontWeight: '600',
-                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                  color: '#10b981'
+                  backgroundColor: 'var(--status-success-glow)',
+                  color: 'var(--status-success)'
                 }}
               >
                 <div
@@ -498,7 +498,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: '#10b981',
+                    backgroundColor: 'var(--status-success)',
                     animation: 'pulse 2s infinite'
                   }}
                 />

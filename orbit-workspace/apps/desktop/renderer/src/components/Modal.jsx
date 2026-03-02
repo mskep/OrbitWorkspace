@@ -12,10 +12,10 @@ import { X, AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucide-react';
  */
 
 const TYPE_STYLES = {
-  confirm: { icon: AlertTriangle, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
-  alert: { icon: AlertCircle, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
-  info: { icon: Info, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' },
-  success: { icon: CheckCircle, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' }
+  confirm: { icon: AlertTriangle, color: 'var(--status-error)', bg: 'var(--status-error-glow)' },
+  alert: { icon: AlertCircle, color: 'var(--status-error)', bg: 'var(--status-error-glow)' },
+  info: { icon: Info, color: 'var(--accent-primary)', bg: 'var(--accent-glow)' },
+  success: { icon: CheckCircle, color: 'var(--status-success)', bg: 'var(--status-success-glow)' }
 };
 
 function Modal({
@@ -38,7 +38,7 @@ function Modal({
   const style = TYPE_STYLES[type] || TYPE_STYLES.info;
   const Icon = style.icon;
   const hasCancel = type === 'confirm';
-  const btnColor = type === 'confirm' || type === 'alert' ? '#ef4444' : type === 'success' ? '#10b981' : 'var(--accent)';
+  const btnColor = type === 'confirm' || type === 'alert' ? 'var(--status-error)' : type === 'success' ? 'var(--status-success)' : 'var(--accent-primary)';
 
   return (
     <div
