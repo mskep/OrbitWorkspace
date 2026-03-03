@@ -144,6 +144,42 @@ export async function authRoutes(fastify) {
     return reply.status(200).send({ message: 'Password reset via recovery, all sessions revoked' });
   });
 
+  // POST /api/v1/auth/recover-reset-public (no auth — recovery key is the proof)
+  // For when user is not logged in (forgot password, recovery from login page)
+  fastify.post('/recover-reset-public', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email', 'recovery_key', 'new_password', 'new_salt', 'new_encrypted_master_key', 'new_kdf_params'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          recovery_key: { type: 'string', minLength: 64, maxLength: 64 },
+          new_password: { type: 'string', minLength: 8, maxLength: 128 },
+          new_salt: { type: 'string', minLength: 1 },
+          new_encrypted_master_key: { type: 'string', minLength: 1 },
+          new_kdf_params: {
+            type: 'object',
+            required: ['algorithm', 'memoryCost', 'timeCost', 'parallelism', 'hashLength'],
+            properties: {
+              algorithm: { type: 'string' },
+              memoryCost: { type: 'integer' },
+              timeCost: { type: 'integer' },
+              parallelism: { type: 'integer' },
+              hashLength: { type: 'integer' },
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+    config: {
+      rateLimit: rateLimitConfigs.recover,
+    },
+  }, async (request, reply) => {
+    await authService.recoverResetPublic(fastify.pg, request.body);
+    return reply.status(200).send({ message: 'Password reset via recovery, all sessions revoked' });
+  });
+
   // PUT /api/v1/auth/password (strict auth — DB check for immediate revocation)
   fastify.put('/password', {
     onRequest: [authenticateStrict],

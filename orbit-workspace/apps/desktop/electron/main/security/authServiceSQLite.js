@@ -562,17 +562,20 @@ class AuthServiceSQLite {
         kdfParams,
       });
 
-      // Sync updated crypto to server if connected
-      if (this.apiClient && this.tokenStore?.isConnected()) {
+      // Sync password reset to server (public endpoint — no auth needed)
+      if (this.apiClient) {
         try {
-          await this.apiClient.recoverReset({
+          await this.apiClient.recoverResetPublic({
+            email: matchedUser.email || db.prepare('SELECT email FROM users WHERE id = ?').get(matchedUser.user_id)?.email,
+            recovery_key: recoveryKeyHex,
             new_password: newPassword,
             new_salt: newSaltHex,
             new_encrypted_master_key: newEncMasterKeyB64,
             new_kdf_params: kdfParams,
           });
         } catch (err) {
-          console.warn('Recovery: failed to sync crypto to server:', err.message);
+          console.warn('Recovery: failed to sync password to server:', err.message);
+          return { success: false, error: 'Failed to update password on server: ' + err.message };
         }
       }
 

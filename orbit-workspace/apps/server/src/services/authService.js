@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { createDecipheriv } from 'crypto';
 import { hashPassword, verifyPassword, hashToken, generateToken } from '../utils/crypto.js';
 import { BadRequest, Unauthorized, Conflict } from '../utils/errors.js';
 import { usersQueries } from '../db/queries/users.js';
@@ -398,6 +399,72 @@ export async function recoverReset(pg, userId, data) {
     // Revoke all existing sessions (force re-login everywhere)
     await client.query(sessionsQueries.revokeByUser, [userId]);
 
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Public recovery-based password reset — no JWT required.
+ * The recovery key is verified server-side by attempting to decrypt the recovery_blob.
+ * If the AES-256-GCM auth tag validates, the user has proven possession of the key.
+ */
+export async function recoverResetPublic(pg, data) {
+  const { email, recovery_key, new_password, new_salt, new_encrypted_master_key, new_kdf_params } = data;
+
+  // Validate KDF params bounds
+  if (new_kdf_params.memoryCost > 1048576 || new_kdf_params.timeCost > 10 || new_kdf_params.parallelism > 16) {
+    throw new BadRequest('KDF parameters exceed allowed bounds');
+  }
+
+  // Get user's recovery blob from DB
+  const { rows } = await pg.query(userCryptoQueries.findRecoveryByEmail, [email]);
+  if (rows.length === 0) {
+    throw new Unauthorized('Invalid recovery credentials');
+  }
+
+  const { recovery_blob } = rows[0];
+
+  // Verify recovery key by attempting AES-256-GCM decryption
+  try {
+    const recoveryKey = Buffer.from(recovery_key, 'hex');
+    const blob = Buffer.from(recovery_blob, 'base64');
+    const iv = blob.subarray(0, 12);
+    const tag = blob.subarray(-16);
+    const encrypted = blob.subarray(12, -16);
+
+    const decipher = createDecipheriv('aes-256-gcm', recoveryKey, iv);
+    decipher.setAuthTag(tag);
+    decipher.update(encrypted);
+    decipher.final(); // Throws if auth tag is invalid
+  } catch {
+    throw new Unauthorized('Invalid recovery credentials');
+  }
+
+  // Recovery key is valid — find user and reset password
+  const { rows: userRows } = await pg.query(
+    'SELECT id FROM users WHERE email = $1 AND status = \'active\'',
+    [email],
+  );
+  if (userRows.length === 0) {
+    throw new Unauthorized('Invalid recovery credentials');
+  }
+
+  const userId = userRows[0].id;
+  const newHash = await hashPassword(new_password);
+
+  const client = await pg.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(usersQueries.updatePasswordHash, [userId, newHash]);
+    await client.query(userCryptoQueries.updatePasswordCrypto, [
+      userId, new_salt, new_encrypted_master_key, JSON.stringify(new_kdf_params),
+    ]);
+    await client.query(sessionsQueries.revokeByUser, [userId]);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

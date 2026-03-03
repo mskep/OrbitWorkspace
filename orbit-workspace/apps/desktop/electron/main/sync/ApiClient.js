@@ -82,9 +82,14 @@ class ApiClient {
     return this._request('PUT', '/auth/password', data, true);
   }
 
-  /** POST /api/v1/auth/recover-reset (after client-side recovery) */
+  /** POST /api/v1/auth/recover-reset (after client-side recovery, requires auth) */
   async recoverReset(data) {
     return this._request('POST', '/auth/recover-reset', data, true);
+  }
+
+  /** POST /api/v1/auth/recover-reset-public (no auth — recovery key is the proof) */
+  async recoverResetPublic(data) {
+    return this._request('POST', '/auth/recover-reset-public', data, false);
   }
 
   // ============================================================
