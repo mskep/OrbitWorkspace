@@ -68,6 +68,12 @@ export async function register(pg, jwt, data, request) {
       [user.id],
     );
 
+    // Clean up any orphaned device with the same fingerprint (e.g. from a deleted account)
+    await client.query(
+      'DELETE FROM devices WHERE device_fingerprint = $1',
+      [device_fingerprint],
+    );
+
     // Register device
     const { rows: [device] } = await client.query(devicesQueries.create, [
       user.id, device_name, device_fingerprint,
