@@ -6,9 +6,7 @@ import {
   LockKeyhole,
   FileText,
   Link,
-  Inbox,
   Settings,
-  WifiOff,
   Shield,
   Plus,
   Check,
@@ -140,19 +138,32 @@ function Sidebar() {
     }
   };
 
-  const menuItems = [
-    { id: 'home', label: t('common.dashboard'), icon: <Home size={20} />, path: '/home' },
-    { id: 'tools', label: t('common.myTools'), icon: <Wrench size={20} />, path: '/tools' },
-    { id: 'vault', label: t('common.secretVault'), icon: <LockKeyhole size={20} />, path: '/vault' },
-    { id: 'notes', label: t('common.notes'), icon: <FileText size={20} />, path: '/notes' },
-    { id: 'links', label: t('common.quickLinks'), icon: <Link size={20} />, path: '/links' },
-    { id: 'inbox', label: t('common.inbox'), icon: <Inbox size={20} />, path: '/inbox' }
+  const navSections = [
+    {
+      label: null,
+      items: [
+        { id: 'home', label: t('common.dashboard'), icon: <Home size={20} />, path: '/home' }
+      ]
+    },
+    {
+      label: 'Workspace',
+      items: [
+        { id: 'tools', label: t('common.myTools'), icon: <Wrench size={20} />, path: '/tools' },
+        { id: 'vault', label: t('common.secretVault'), icon: <LockKeyhole size={20} />, path: '/vault' },
+        { id: 'notes', label: t('common.notes'), icon: <FileText size={20} />, path: '/notes' },
+        { id: 'links', label: t('common.quickLinks'), icon: <Link size={20} />, path: '/links' }
+      ]
+    },
+    {
+      label: 'System',
+      items: [
+        { id: 'settings', label: t('common.settings'), icon: <Settings size={20} />, path: '/settings' },
+        ...(isAdminOrDev
+          ? [{ id: 'admin', label: t('common.adminPanel'), icon: <Shield size={20} />, path: '/admin' }]
+          : [])
+      ]
+    }
   ];
-
-  // Admin section - only for ADMIN and DEV roles
-  const adminItems = isAdminOrDev
-    ? [{ id: 'admin', label: t('common.adminPanel'), icon: <Shield size={20} />, path: '/admin', isAdmin: true }]
-    : [];
 
   const isActive = (path) => location.pathname.startsWith(path);
   const getWorkspaceInitial = (name) => {
@@ -183,12 +194,6 @@ function Sidebar() {
             }}
           />
         </div>
-        {!isOnline && (
-          <div className="offline-indicator">
-            <WifiOff size={12} style={{ marginRight: '4px' }} />
-            {t('common.offline')}
-          </div>
-        )}
       </div>
 
       {/* Workspace Manager */}
@@ -298,61 +303,29 @@ function Sidebar() {
         )}
       </div>
       <nav className="sidebar-nav">
-        {/* Regular menu items */}
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
-            style={{ position: 'relative' }}
-          >
-            <span className="sidebar-icon">{item.icon}</span>
-            <span className="sidebar-label">{item.label}</span>
-            {item.id === 'inbox' && (
-              <span className={`sidebar-inbox-badge ${unreadInbox > 0 ? 'visible' : ''}`}>
-                {unreadInbox > 99 ? '99+' : unreadInbox}
-              </span>
+        {navSections.map((section, index) => (
+          <div key={section.label || index} className="sidebar-section">
+            {section.label && (
+              <span className="sidebar-section-label">{section.label}</span>
             )}
-          </button>
-        ))}
-
-        {/* Admin section separator */}
-        {adminItems.length > 0 && <div className="sidebar-separator" />}
-
-        {/* Admin menu items */}
-        {adminItems.map((item) => (
-          <button
-            key={item.id}
-            className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
-          >
-            <span className="sidebar-icon">{item.icon}</span>
-            <span className="sidebar-label">{item.label}</span>
-          </button>
+            {section.items.map((item) => (
+              <button
+                key={item.id}
+                className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
+                onClick={() => navigate(item.path)}
+              >
+                <span className="sidebar-icon">{item.icon}</span>
+                <span className="sidebar-label">{item.label}</span>
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
 
-      {/* User Card Footer */}
-      <div className="sidebar-footer">
-        <button
-          className={`sidebar-user-card ${isActive('/profile') ? 'active' : ''}`}
-          onClick={() => navigate('/profile')}
-        >
-          <div className="sidebar-user-avatar">
-            {profile?.avatar || profile?.username?.charAt(0)?.toUpperCase() || '?'}
-          </div>
-          <div className="sidebar-user-info">
-            <span className="sidebar-user-name">{profile?.username || t('common.profile')}</span>
-            <span className="sidebar-user-role">{profile?.role || 'USER'}</span>
-          </div>
-        </button>
-        <button
-          className={`sidebar-footer-btn ${isActive('/settings') ? 'active' : ''}`}
-          onClick={() => navigate('/settings')}
-          aria-label={t('common.settings')}
-        >
-          <Settings size={18} />
-        </button>
+      {/* Version / Status */}
+      <div className="sidebar-branding">
+        <span className={`sidebar-status-dot ${isOnline ? 'online' : 'offline'}`} />
+        <span className="sidebar-branding-text">Orbit v1.0</span>
       </div>
 
       {/* Delete Workspace Modal */}
