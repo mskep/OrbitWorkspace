@@ -62,7 +62,7 @@ class AuthServiceSQLite {
         return { success: false, error: 'Invalid email format' };
       }
 
-      const usernameRegex = /^[a-zA-Z0-9_-]{3,32}$/;
+      const usernameRegex = /^[-a-zA-Z0-9_]{3,32}$/;
       if (!usernameRegex.test(username)) {
         return { success: false, error: 'Username must be 3-32 chars (letters, numbers, _ -)' };
       }
