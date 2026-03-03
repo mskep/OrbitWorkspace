@@ -36,7 +36,8 @@ const buildApp = async () => {
       request.log.error(error);
       return reply.status(500).send({
         error: 'Internal Server Error',
-        message: config.isProd() ? 'An unexpected error occurred' : error.message,
+        message: error.message,
+        ...(error.code && { code: error.code }),
       });
     }
 

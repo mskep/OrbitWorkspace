@@ -378,7 +378,7 @@ function Auth() {
                     onChange={handleChange}
                     required
                     autoComplete="username"
-                    pattern="[-a-zA-Z0-9_]{3,32}"
+                    pattern="[a-zA-Z0-9_\\-]{3,32}"
                     title={t('auth.usernameTitle')}
                   />
                 </div>
