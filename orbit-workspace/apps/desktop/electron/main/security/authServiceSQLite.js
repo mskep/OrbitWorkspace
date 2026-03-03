@@ -200,7 +200,7 @@ class AuthServiceSQLite {
       const repos = this.dbService.getRepositories();
       repos.users.upsertFromServer(result.user);
 
-      // Cache crypto material locally (for offline unlock on restart)
+      // Cache crypto material locally (for offline unlock + recovery)
       const existingCrypto = repos.userCrypto.findByUserId(result.user.id);
       if (!existingCrypto) {
         repos.userCrypto.create({
@@ -208,7 +208,7 @@ class AuthServiceSQLite {
           salt: result.crypto.salt,
           encryptedMasterKey: result.crypto.encrypted_master_key,
           kdfParams: result.crypto.kdf_params,
-          recoveryBlob: '',
+          recoveryBlob: result.crypto.recovery_blob || '',
         });
       } else {
         repos.userCrypto.updatePasswordCrypto(result.user.id, {
@@ -216,6 +216,10 @@ class AuthServiceSQLite {
           encryptedMasterKey: result.crypto.encrypted_master_key,
           kdfParams: result.crypto.kdf_params,
         });
+        // Update recovery blob if server provided one and local is empty
+        if (result.crypto.recovery_blob && !existingCrypto.recovery_blob) {
+          repos.userCrypto.updateRecoveryBlob(result.user.id, result.crypto.recovery_blob);
+        }
       }
 
       // Don't create a Default Workspace on login — sync will restore the user's

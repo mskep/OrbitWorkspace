@@ -135,16 +135,23 @@ export async function login(pg, jwt, data, request) {
 
   if (existingDevices.length > 0) {
     device = existingDevices[0];
-    // Verify device belongs to this user
+    // Device belongs to another user — reassign it (same physical device, different account)
     if (device.user_id !== user.id) {
-      throw new Unauthorized('Device registered to another account');
+      await pg.query('DELETE FROM devices WHERE id = $1', [device.id]);
+      const { rows: [newDevice] } = await pg.query(devicesQueries.create, [
+        user.id, device_name, device_fingerprint,
+        telemetry.ip, telemetry.ipMasked, telemetry.userAgent,
+        telemetry.country, telemetry.region, telemetry.city,
+      ]);
+      device = newDevice;
+    } else {
+      const { rows: [updatedDevice] } = await pg.query(devicesQueries.updateLastSeen, [
+        device.id,
+        telemetry.ip, telemetry.ipMasked, telemetry.userAgent,
+        telemetry.country, telemetry.region, telemetry.city,
+      ]);
+      if (updatedDevice) device = updatedDevice;
     }
-    const { rows: [updatedDevice] } = await pg.query(devicesQueries.updateLastSeen, [
-      device.id,
-      telemetry.ip, telemetry.ipMasked, telemetry.userAgent,
-      telemetry.country, telemetry.region, telemetry.city,
-    ]);
-    if (updatedDevice) device = updatedDevice;
   } else {
     // Atomic: lock user row, check count, create device + session in one transaction
     const client = await pg.connect();
@@ -186,6 +193,7 @@ export async function login(pg, jwt, data, request) {
         crypto: {
           salt: cryptoRows[0].salt,
           encrypted_master_key: cryptoRows[0].encrypted_master_key,
+          recovery_blob: cryptoRows[0].recovery_blob,
           kdf_params: cryptoRows[0].kdf_params,
         },
         ...tokens,
@@ -216,6 +224,7 @@ export async function login(pg, jwt, data, request) {
     crypto: {
       salt: cryptoRows[0].salt,
       encrypted_master_key: cryptoRows[0].encrypted_master_key,
+      recovery_blob: cryptoRows[0].recovery_blob,
       kdf_params: cryptoRows[0].kdf_params,
     },
     ...tokens,

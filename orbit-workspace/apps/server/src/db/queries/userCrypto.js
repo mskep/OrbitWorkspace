@@ -10,9 +10,9 @@ export const userCryptoQueries = {
     FROM user_crypto WHERE user_id = $1
   `,
 
-  // Returns crypto material for login (no recovery_blob — that's a separate flow)
+  // Returns crypto material for login (includes recovery_blob for local cache)
   findForLogin: `
-    SELECT salt, encrypted_master_key, kdf_params
+    SELECT salt, encrypted_master_key, recovery_blob, kdf_params
     FROM user_crypto WHERE user_id = $1
   `,
 
