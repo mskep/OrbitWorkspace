@@ -123,9 +123,9 @@ function Profile() {
       <div className="page">
         <Topbar title={t('profile.title')} />
         <div className="page-content">
-          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="container-lg">
             <Skeleton variant="rect" style={{ height: '200px', marginBottom: '24px' }} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+            <div className="profile-skeleton-grid">
               <Skeleton variant="rect" style={{ height: '120px' }} />
               <Skeleton variant="rect" style={{ height: '120px' }} />
               <Skeleton variant="rect" style={{ height: '120px' }} />
@@ -155,61 +155,28 @@ function Profile() {
       <Topbar title={t('profile.title')} />
 
       <div className="page-content">
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="container-lg">
           {/* Profile Header Card */}
-          <Card style={{ marginBottom: '32px', overflow: 'visible' }}>
-            <div
-              style={{
-                background: roleConfig.gradient,
-                height: '120px',
-                margin: '-24px -24px 0 -24px',
-                borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0'
-              }}
-            />
+          <Card className="mb-6" style={{ overflow: 'visible' }}>
+            <div className="profile-banner" style={{ background: roleConfig.gradient }} />
 
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '24px',
-                marginTop: '-60px',
-                padding: '0 24px 24px 24px'
-              }}
-            >
+            <div className="profile-card-body">
               {/* Avatar */}
-              <div
-                style={{
-                  width: '120px',
-                  height: '120px',
-                  borderRadius: '50%',
-                  background: roleConfig.gradient,
-                  border: '4px solid var(--bg-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '36px',
-                  fontWeight: '700',
-                  color: '#fff',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  flexShrink: 0
-                }}
-              >
+              <div className="profile-avatar-lg" style={{ background: roleConfig.gradient }}>
                 {profile.avatar || getInitials(profile.username)}
               </div>
 
               {/* Profile Info */}
-              <div style={{ flex: 1, paddingTop: '70px' }}>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}
-                >
-                  <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>{profile.username}</h2>
+              <div className="profile-info-block">
+                <div className="profile-name-row">
+                  <h2 className="profile-username">{profile.username}</h2>
                   <Badge variant={roleConfig.color}>
-                    <RoleIcon size={12} style={{ marginRight: '4px' }} />
+                    <RoleIcon size={12} className="icon-mr" />
                     {roleConfig.label}
                   </Badge>
                   {profile.premiumEnabled && (
                     <Badge variant="premium">
-                      <Star size={12} style={{ marginRight: '4px' }} />
+                      <Star size={12} className="icon-mr" />
                       Premium
                     </Badge>
                   )}
@@ -217,14 +184,8 @@ function Profile() {
                     <span
                       key={badge.id}
                       title={badge.description}
+                      className="profile-badge-pill"
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '2px 8px',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: '12px',
-                        fontWeight: '500',
                         backgroundColor: `${badge.color}15`,
                         color: badge.color,
                         border: `1px solid ${badge.color}30`
@@ -234,7 +195,7 @@ function Profile() {
                       {badge.display_name}
                     </span>
                   ))}
-                  <div style={{ marginLeft: 'auto' }}>
+                  <div className="ml-auto">
                     <Button variant="danger" size="sm" onClick={handleLogout} disabled={loggingOut}>
                       <LogOut size={14} />
                       {loggingOut ? t('profile.loggingOut') : t('profile.logout')}
@@ -242,23 +203,15 @@ function Profile() {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    color: 'var(--text-secondary)',
-                    fontSize: '14px'
-                  }}
-                >
+                <div className="profile-details">
                   {profile.email && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div className="profile-detail-row">
                       <User size={14} />
                       {profile.email}
                     </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div className="profile-detail-group">
+                    <div className="profile-detail-row">
                       <Calendar size={14} />
                       {t('profile.joined')}{' '}
                       {(() => {
@@ -269,15 +222,12 @@ function Profile() {
                       })()}
                     </div>
                     {profile.status && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="profile-detail-row">
                         <Activity size={14} />
                         {t('profile.status')}{' '}
                         <span
-                          style={{
-                            color: profile.status === 'active' ? '#10b981' : '#ef4444',
-                            fontWeight: '600',
-                            textTransform: 'capitalize'
-                          }}
+                          className="profile-status-text"
+                          style={{ color: profile.status === 'active' ? 'var(--status-success)' : 'var(--status-error)' }}
                         >
                           {profile.status}
                         </span>
@@ -290,84 +240,39 @@ function Profile() {
           </Card>
 
           {/* Stats Grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '24px',
-              marginBottom: '32px'
-            }}
-          >
+          <div className="profile-stats-grid">
             <Card>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: 'var(--radius-lg)',
-                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
+              <div className="profile-stat-card">
+                <div className="profile-stat-icon" style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}>
                   <Activity size={28} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
-                    {profile.stats?.totalActions || 0}
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                    {t('profile.totalActions')}
-                  </div>
+                  <div className="profile-stat-value">{profile.stats?.totalActions || 0}</div>
+                  <div className="profile-stat-label">{t('profile.totalActions')}</div>
                 </div>
               </div>
             </Card>
 
             <Card>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: 'var(--radius-lg)',
-                    background: 'linear-gradient(135deg, #f093fb, #f5576c)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
+              <div className="profile-stat-card">
+                <div className="profile-stat-icon" style={{ background: 'linear-gradient(135deg, #f093fb, #f5576c)' }}>
                   <SettingsIcon size={28} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
-                    {profile.stats?.toolsUsed || 0}
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>{t('profile.toolsUsed')}</div>
+                  <div className="profile-stat-value">{profile.stats?.toolsUsed || 0}</div>
+                  <div className="profile-stat-label">{t('profile.toolsUsed')}</div>
                 </div>
               </div>
             </Card>
 
             <Card>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: 'var(--radius-lg)',
-                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
+              <div className="profile-stat-card">
+                <div className="profile-stat-icon" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
                   <User size={28} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: 1 }}>
-                    {profile.stats?.loginCount || 1}
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>{t('profile.loginCount')}</div>
+                  <div className="profile-stat-value">{profile.stats?.loginCount || 1}</div>
+                  <div className="profile-stat-label">{t('profile.loginCount')}</div>
                 </div>
               </div>
             </Card>
@@ -375,56 +280,20 @@ function Profile() {
 
           {/* Permissions Section (read-only, derived from role) */}
           <Card>
-            <h3
-              style={{
-                margin: '0 0 8px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '20px'
-              }}
-            >
+            <h3 className="section-heading" style={{ marginBottom: '8px' }}>
               <Shield size={20} />
               {t('profile.permissionsAccess')}
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>
+            <p className="profile-perm-desc">
               {t('profile.permissionsDesc', { role: roleConfig.label })}
             </p>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '12px'
-              }}
-            >
+            <div className="profile-perm-grid">
               {Object.entries(PERMISSION_LABELS).map(([key, label]) => {
                 const isEnabled = profile.permissions.includes(key);
                 return (
-                  <div
-                    key={key}
-                    style={{
-                      padding: '16px',
-                      borderRadius: 'var(--radius-md)',
-                      border: `1px solid ${isEnabled ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-                      backgroundColor: isEnabled ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-tertiary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px'
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '50%',
-                        backgroundColor: isEnabled ? 'var(--status-success)' : 'var(--border-default)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}
-                    >
+                  <div key={key} className={`profile-perm-card ${isEnabled ? 'enabled' : 'disabled'}`}>
+                    <div className={`profile-perm-icon ${isEnabled ? 'enabled' : 'disabled'}`}>
                       {isEnabled ? (
                         <CheckCircle size={16} color="#fff" />
                       ) : (
@@ -432,22 +301,10 @@ function Profile() {
                       )}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontWeight: '600',
-                          fontSize: '14px',
-                          color: isEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
-                        }}
-                      >
+                      <div className={`profile-perm-label ${isEnabled ? 'enabled' : 'disabled'}`}>
                         {label}
                       </div>
-                      <div
-                        style={{
-                          fontSize: '12px',
-                          color: 'var(--text-tertiary)',
-                          marginTop: '2px'
-                        }}
-                      >
+                      <div className="profile-perm-status">
                         {isEnabled ? t('profile.granted') : t('profile.notAvailable')}
                       </div>
                     </div>

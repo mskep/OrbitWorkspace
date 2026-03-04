@@ -116,63 +116,17 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
   };
 
   if (loading) {
-    return (
-      <div
-        style={{
-          padding: '16px',
-          textAlign: 'center',
-          color: 'var(--text-tertiary)'
-        }}
-      >
-        Loading workspaces...
-      </div>
-    );
+    return <div className="ws-loading">Loading workspaces...</div>;
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        border: '1px solid var(--border-default)'
-      }}
-    >
+    <div className="ws-container">
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px'
-        }}
-      >
-        <h3
-          style={{
-            margin: 0,
-            fontSize: '16px',
-            fontWeight: '600',
-            color: 'var(--text-primary)'
-          }}
-        >
-          Workspaces
-        </h3>
+      <div className="ws-header">
+        <h3 className="ws-title">Workspaces</h3>
         <button
           onClick={() => setCreating(!creating)}
-          style={{
-            padding: '6px 12px',
-            backgroundColor: creating ? 'var(--bg-tertiary)' : 'var(--accent-primary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '14px',
-            fontWeight: '500',
-            transition: 'all var(--transition-fast)'
-          }}
+          className={`ws-new-btn ${creating ? 'active' : ''}`}
         >
           <Plus size={16} />
           {creating ? 'Cancel' : 'New'}
@@ -180,84 +134,29 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
       </div>
 
       {/* Error Message */}
-      {error && (
-        <div
-          style={{
-            padding: '12px',
-            backgroundColor: 'var(--status-error-glow)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: '12px',
-            fontSize: '14px',
-            color: 'var(--status-error)'
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className="alert alert-error">{error}</div>}
 
       {/* Create Workspace Form */}
       {creating && (
-        <form onSubmit={handleCreateWorkspace} style={{ marginBottom: '16px' }}>
+        <form onSubmit={handleCreateWorkspace} className="ws-form">
           <input
             type="text"
             value={newWorkspaceName}
             onChange={(e) => setNewWorkspaceName(e.target.value)}
             placeholder="Workspace name..."
             autoFocus
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              boxSizing: 'border-box',
-              marginBottom: '8px'
-            }}
+            className="ws-input"
           />
-          <button
-            type="submit"
-            disabled={!newWorkspaceName.trim()}
-            style={{
-              width: '100%',
-              padding: '10px',
-              backgroundColor: 'var(--accent-primary)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: newWorkspaceName.trim() ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-              fontWeight: '500',
-              opacity: newWorkspaceName.trim() ? 1 : 0.5
-            }}
-          >
+          <button type="submit" disabled={!newWorkspaceName.trim()} className="ws-submit">
             Create Workspace
           </button>
         </form>
       )}
 
       {/* Workspaces List */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}
-      >
+      <div className="ws-list">
         {workspaces.length === 0 ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '32px',
-              color: 'var(--text-tertiary)',
-              fontSize: '14px'
-            }}
-          >
-            No workspaces yet. Create one to get started!
-          </div>
+          <div className="ws-empty">No workspaces yet. Create one to get started!</div>
         ) : (
           workspaces.map((workspace) => {
             const isActive = activeWorkspace?.id === workspace.id;
@@ -265,49 +164,12 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
             return (
               <div
                 key={workspace.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px',
-                  backgroundColor: isActive ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  border: `1px solid ${isActive ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)'
-                }}
+                className={`ws-item ${isActive ? 'active' : ''}`}
                 onClick={() => !isActive && handleSwitchWorkspace(workspace.id)}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
-                    e.currentTarget.style.borderColor = 'var(--border-hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                    e.currentTarget.style.borderColor = 'var(--border-default)';
-                  }
-                }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    flex: 1
-                  }}
-                >
+                <div className="ws-item-info">
                   {isActive && <Check size={18} color="#fff" />}
-                  <span
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: isActive ? '600' : '500',
-                      color: isActive ? '#fff' : 'var(--text-primary)'
-                    }}
-                  >
-                    {workspace.name}
-                  </span>
+                  <span className="ws-item-name">{workspace.name}</span>
                 </div>
 
                 {/* Delete button (only show if not active and more than 1 workspace) */}
@@ -317,18 +179,7 @@ function WorkspaceSwitcher({ onWorkspaceChange }) {
                       e.stopPropagation();
                       handleDeleteWorkspace(workspace.id, workspace.name);
                     }}
-                    style={{
-                      padding: '6px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      color: 'var(--text-tertiary)',
-                      transition: 'color var(--transition-fast)'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--status-error)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                    className="ws-delete-btn"
                   >
                     <Trash2 size={16} />
                   </button>

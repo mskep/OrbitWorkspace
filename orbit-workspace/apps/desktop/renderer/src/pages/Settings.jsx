@@ -18,46 +18,15 @@ import {
 /* ── Reusable toggle switch ─────────────────────────────────── */
 function ToggleSwitch({ checked, onChange, disabled }) {
   return (
-    <label
-      style={{
-        position: 'relative',
-        display: 'inline-block',
-        width: '52px',
-        height: '28px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
-        flexShrink: 0,
-      }}
-    >
+    <label className={`toggle-switch${disabled ? ' disabled' : ''}`}>
       <input
         type="checkbox"
         checked={checked}
         onChange={onChange}
         disabled={disabled}
-        style={{ opacity: 0, width: 0, height: 0 }}
       />
-      <span
-        style={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: checked ? 'var(--accent-primary)' : 'var(--border-default)',
-          transition: 'var(--transition-default)',
-          borderRadius: '28px',
-        }}
-      >
-        <span
-          style={{
-            position: 'absolute',
-            height: '20px',
-            width: '20px',
-            left: checked ? '28px' : '4px',
-            bottom: '4px',
-            backgroundColor: 'white',
-            transition: 'var(--transition-default)',
-            borderRadius: '50%',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-          }}
-        />
+      <span className="toggle-switch-track">
+        <span className="toggle-switch-knob" />
       </span>
     </label>
   );
@@ -66,38 +35,14 @@ function ToggleSwitch({ checked, onChange, disabled }) {
 /* ── Setting row with icon, label, description, and control ── */
 function SettingRow({ icon, gradient, label, description, children }) {
   return (
-    <div
-      style={{
-        padding: '16px',
-        borderRadius: 'var(--radius-md)',
-        backgroundColor: 'var(--bg-tertiary)',
-        border: '1px solid var(--border-default)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: 'var(--radius-md)',
-            background: gradient,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
+    <div className="setting-row">
+      <div className="setting-row-left">
+        <div className="setting-row-icon" style={{ background: gradient }}>
           {icon}
         </div>
         <div>
-          <div style={{ fontWeight: '600', fontSize: '14px' }}>{label}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-            {description}
-          </div>
+          <div className="setting-row-label">{label}</div>
+          <div className="setting-row-desc">{description}</div>
         </div>
       </div>
       {children}
@@ -388,23 +333,15 @@ function Settings() {
       <Topbar title={t('settings.title')} />
 
       <div className="page-content">
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="container-lg">
           {/* ── Preferences ─────────────────────────────── */}
-          <Card style={{ marginBottom: '24px' }}>
-            <h3
-              style={{
-                margin: '0 0 20px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '20px',
-              }}
-            >
+          <Card className="mb-6">
+            <h3 className="section-heading">
               <SettingsIcon size={20} />
               {t('settings.preferences')}
             </h3>
 
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div className="grid-gap-3">
               {/* Theme */}
               <SettingRow
                 icon={<Palette size={20} color="#fff" />}
@@ -448,24 +385,11 @@ function Settings() {
                 label={isFr ? 'Son de notification' : 'Notification sound'}
                 description={isFr ? 'Jouer un son lors de la réception d\'un message' : 'Play a sound when receiving a new inbox message'}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="flex-center flex-gap-3">
                   <button
+                    className="btn-preview"
                     onClick={() => playNotificationSound()}
                     disabled={loading || !userSettings.sound_enabled}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 10px',
-                      borderRadius: '10px',
-                      border: '1px solid var(--border-default)',
-                      background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      cursor: loading || !userSettings.sound_enabled ? 'not-allowed' : 'pointer',
-                      opacity: loading || !userSettings.sound_enabled ? 0.55 : 1,
-                    }}
                     title={isFr ? 'Écouter le son de notification' : 'Preview notification sound'}
                   >
                     <Volume2 size={12} />
@@ -499,52 +423,21 @@ function Settings() {
           </Card>
 
           {/* ── Security ────────────────────────────────── */}
-          <Card style={{ marginBottom: '24px' }}>
-            <h3
-              style={{
-                margin: '0 0 20px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '20px',
-              }}
-            >
+          <Card className="mb-6">
+            <h3 className="section-heading">
               <Lock size={20} />
               {t('settings.security')}
             </h3>
 
             {!showPasswordForm ? (
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border-default)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'linear-gradient(135deg, #ef4444, #f97316)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
+              <div className="setting-row">
+                <div className="setting-row-left">
+                  <div className="setting-row-icon" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
                     <Lock size={20} color="#fff" />
                   </div>
                   <div>
-                    <div style={{ fontWeight: '600', fontSize: '14px' }}>{t('settings.password')}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                      {t('settings.passwordDesc')}
-                    </div>
+                    <div className="setting-row-label">{t('settings.password')}</div>
+                    <div className="setting-row-desc">{t('settings.passwordDesc')}</div>
                   </div>
                 </div>
                 <button className="btn btn-secondary btn-sm" onClick={() => setShowPasswordForm(true)}>
@@ -554,49 +447,21 @@ function Settings() {
             ) : (
               <form onSubmit={handleChangePassword}>
                 {pwError && (
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      backgroundColor: 'var(--status-error-glow)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      borderRadius: 'var(--radius-md)',
-                      marginBottom: '16px',
-                      fontSize: '13px',
-                      color: 'var(--status-error)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
+                  <div className="alert alert-error">
                     <AlertTriangle size={14} /> {pwError}
                   </div>
                 )}
 
                 {pwSuccess && (
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      backgroundColor: 'var(--status-success-glow)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      borderRadius: 'var(--radius-md)',
-                      marginBottom: '16px',
-                      fontSize: '13px',
-                      color: 'var(--status-success)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
+                  <div className="alert alert-success">
                     <CheckCircle size={14} /> {pwSuccess}
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', maxWidth: '520px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      {t('settings.currentPassword')}
-                    </label>
-                    <div style={{ position: 'relative' }}>
+                <div className="flex-col flex-gap-3 mb-4" style={{ maxWidth: '520px' }}>
+                  <div className="form-group">
+                    <label>{t('settings.currentPassword')}</label>
+                    <div className="relative">
                       <input
                         type={showPw ? 'text' : 'password'}
                         value={pwForm.oldPassword}
@@ -608,22 +473,16 @@ function Settings() {
                       />
                       <button
                         type="button"
+                        className="input-password-toggle"
                         onClick={() => setShowPw(!showPw)}
-                        style={{
-                          position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                          background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', padding: '4px'
-                        }}
                       >
                         {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      {t('settings.newPassword')}
-                    </label>
+                  <div className="form-group">
+                    <label>{t('settings.newPassword')}</label>
                     <input
                       type={showPw ? 'text' : 'password'}
                       value={pwForm.newPassword}
@@ -635,10 +494,8 @@ function Settings() {
                     />
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      {t('settings.confirmNewPassword')}
-                    </label>
+                  <div className="form-group">
+                    <label>{t('settings.confirmNewPassword')}</label>
                     <input
                       type={showPw ? 'text' : 'password'}
                       value={pwForm.confirmPassword}
@@ -651,7 +508,7 @@ function Settings() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button
                     className="btn btn-secondary btn-sm"
                     type="button"
@@ -667,9 +524,8 @@ function Settings() {
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-primary btn-sm flex-center flex-gap-2"
                     disabled={pwLoading}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
                     {pwLoading ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Lock size={14} />}
                     {pwLoading ? t('settings.changingPassword') : t('settings.changePassword')}
@@ -680,33 +536,24 @@ function Settings() {
           </Card>
 
           {/* ── Sessions & Devices ─────────────────────── */}
-          <Card style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <h3
-                style={{
-                  margin: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '20px',
-                }}
-              >
+          <Card className="mb-6">
+            <div className="flex-between flex-gap-3 mb-4">
+              <h3 className="section-heading" style={{ margin: 0 }}>
                 <Smartphone size={20} />
                 {isFr ? 'Sessions & appareils' : 'Sessions & Devices'}
               </h3>
 
               <button
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm flex-center flex-gap-2"
                 onClick={handleRefreshDevices}
                 disabled={devicesLoading || syncLoading}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <RefreshCw size={14} style={devicesLoading ? { animation: 'spin 1s linear infinite' } : undefined} />
                 {isFr ? 'Rafraîchir' : 'Refresh'}
               </button>
             </div>
 
-            <div style={{ display: 'grid', gap: '12px', marginBottom: '16px' }}>
+            <div className="grid-gap-3 mb-4">
               <SettingRow
                 icon={<Lock size={20} color="#fff" />}
                 gradient="linear-gradient(135deg, #f59e0b, #d97706)"
@@ -720,46 +567,28 @@ function Settings() {
             </div>
 
             {syncError && (
-              <div
-                style={{
-                  padding: '10px 14px',
-                  backgroundColor: 'var(--status-error-glow)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
-                  fontSize: '13px',
-                  color: 'var(--status-error)',
-                }}
-              >
+              <div className="alert alert-error">
                 {syncError}
               </div>
             )}
 
             {!syncStatus?.connected ? (
-              <div
-                style={{
-                  padding: '14px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px dashed var(--border-default)',
-                  color: 'var(--text-tertiary)',
-                  fontSize: '13px',
-                }}
-              >
+              <div className="notice-dashed">
                 {isFr
                   ? 'Cloud non connecté. La session locale sur cet appareil reste active.'
                   : 'Cloud sync is disconnected. The local session on this device remains active.'}
               </div>
             ) : devicesLoading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex-col flex-gap-3">
                 <Skeleton variant="rect" style={{ height: '64px' }} />
                 <Skeleton variant="rect" style={{ height: '64px' }} />
               </div>
             ) : visibleDevices.length === 0 ? (
-              <div style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>
+              <div className="notice-dashed">
                 {isFr ? 'Aucun appareil cloud enregistré.' : 'No registered cloud devices.'}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="flex-col flex-gap-3">
                 {visibleDevices.map((device) => {
                   const isCurrentDevice = !!syncStatus?.deviceId && device.id === syncStatus.deviceId;
                   const isRevokeLoading = revokingDeviceId === device.id;
@@ -773,28 +602,16 @@ function Settings() {
                     .join(', ') || (isFr ? 'Localisation inconnue' : 'Unknown location');
 
                   return (
-                    <div
-                      key={device.id}
-                      style={{
-                        padding: '12px 14px',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border-default)',
-                        backgroundColor: 'var(--bg-tertiary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                      }}
-                    >
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                    <div key={device.id} className="device-card">
+                      <div className="device-card-info">
+                        <div className="device-card-name">
+                          <span>
                             {device.device_name || (isFr ? 'Appareil sans nom' : 'Unnamed device')}
                           </span>
                           {isCurrentDevice && <Badge variant="success" size="sm">{isFr ? 'Appareil actuel' : 'Current device'}</Badge>}
                           {device.is_new_device && !isCurrentDevice && <Badge variant="warning" size="sm">{isFr ? 'Nouvel appareil' : 'New device'}</Badge>}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div className="device-card-meta">
                           <span>{isFr ? 'ID' : 'ID'}: {device.id}</span>
                           <span>{isFr ? 'Dernière activité' : 'Last seen'}: {formatDateTime(device.last_seen_at)}</span>
                           <span>{isFr ? 'Ajouté le' : 'Added'}: {formatDateTime(device.created_at)}</span>
@@ -803,9 +620,9 @@ function Settings() {
                             {device.last_ip && (
                               <button
                                 type="button"
-                                className="btn btn-secondary"
+                                className="btn btn-secondary btn-sm"
                                 onClick={() => toggleIpVisibility(device.id)}
-                                style={{ marginLeft: '8px', padding: '2px 8px', fontSize: '11px', lineHeight: 1.4 }}
+                                style={{ marginLeft: 'var(--space-2)', padding: '2px 8px', fontSize: 'var(--text-xs)', lineHeight: 1.4 }}
                               >
                                 {isIpVisible
                                   ? (isFr ? 'Masquer' : 'Hide')
@@ -819,16 +636,9 @@ function Settings() {
                       </div>
 
                       <button
-                        className="btn btn-secondary btn-sm"
+                        className={`btn btn-secondary btn-sm flex-center flex-gap-2${isCurrentDevice ? '' : ' btn-revoke'}`}
                         onClick={() => handleRevokeDevice(device.id)}
                         disabled={isCurrentDevice || isRevokeLoading}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          borderColor: isCurrentDevice ? 'var(--border-default)' : 'rgba(239,68,68,0.45)',
-                          color: isCurrentDevice ? 'var(--text-tertiary)' : 'var(--status-error)',
-                        }}
                       >
                         <Trash2 size={14} />
                         {isCurrentDevice
@@ -842,27 +652,19 @@ function Settings() {
             )}
           </Card>
           {/* ── Application Info ────────────────────────── */}
-          <Card style={{ marginBottom: '24px' }}>
-            <h3
-              style={{
-                margin: '0 0 20px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '20px',
-              }}
-            >
+          <Card className="mb-6">
+            <h3 className="section-heading">
               <Info size={20} />
               {t('settings.appInfo')}
             </h3>
 
             {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex-col flex-gap-3">
                 <Skeleton variant="rect" style={{ height: '60px' }} />
                 <Skeleton variant="rect" style={{ height: '60px' }} />
               </div>
             ) : systemStatus ? (
-              <div style={{ display: 'grid', gap: '12px' }}>
+              <div className="grid-gap-3">
                 <SettingRow
                   icon={
                     <span style={{ fontSize: '18px', fontWeight: '700', color: '#fff' }}>v</span>
@@ -890,7 +692,7 @@ function Settings() {
                 />
               </div>
             ) : (
-              <div style={{ color: 'var(--text-secondary)' }}>
+              <div className="notice-dashed">
                 {t('settings.unableToLoadSystemInfo')}
               </div>
             )}
@@ -898,15 +700,7 @@ function Settings() {
 
           {/* ── Activity Logs ──────────────────────────── */}
           <Card>
-            <h3
-              style={{
-                margin: '0 0 20px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '20px',
-              }}
-            >
+            <h3 className="section-heading">
               {t('settings.activityLogs')}
             </h3>
             <LogViewer />

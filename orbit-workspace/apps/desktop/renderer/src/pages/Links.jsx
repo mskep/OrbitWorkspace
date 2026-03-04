@@ -366,8 +366,8 @@ function Links() {
     return (
       <div className="page">
         <Topbar title={t('common.quickLinks')} />
-        <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement...' : 'Loading...'}</div>
+        <div className="page-content loading-center">
+          <div className="text-muted-center">{isFr ? 'Chargement...' : 'Loading...'}</div>
         </div>
       </div>
     );
@@ -390,16 +390,9 @@ function Links() {
     <div className="page">
       <Topbar title={t('common.quickLinks')} />
 
-      <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="page-content links-layout">
         {/* Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            borderBottom: '1px solid var(--border-default)',
-            paddingBottom: '12px'
-          }}
-        >
+        <div className="links-tabs">
           <button
             onClick={() => {
               setActiveTab('links');
@@ -424,96 +417,36 @@ function Links() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px' }}>
+        <div className="links-body">
           {/* List Sidebar */}
-          <div
-            style={{
-              width: '350px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              flexShrink: 0
-            }}
-          >
+          <div className="links-sidebar">
             {/* Create Button */}
             <button
               onClick={activeTab === 'links' ? handleCreateLink : handleCreateFileRef}
-              className="btn btn-primary"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '12px',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}
+              className="btn btn-primary btn-full flex-center flex-gap-2"
             >
               <Plus size={18} />
               {activeTab === 'links' ? (isFr ? 'Nouveau lien' : 'New Link') : (isFr ? 'Nouveau fichier' : 'New File Reference')}
             </button>
 
             {/* Search */}
-            <div style={{ position: 'relative' }}>
+            <div className="search-input-wrapper">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={activeTab === 'links' ? (isFr ? 'Rechercher des liens...' : 'Search links...') : (isFr ? 'Rechercher des fichiers...' : 'Search files...')}
-                style={{
-                  width: '100%',
-                  padding: '10px 40px 10px 12px',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-default)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '13px',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
               />
-              <button
-                onClick={handleSearch}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-tertiary)',
-                  cursor: 'pointer',
-                  padding: '6px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
+              <button onClick={handleSearch} className="search-icon-btn">
                 <Search size={16} />
               </button>
             </div>
 
             {/* List */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                paddingRight: '4px'
-              }}
-            >
+            <div className="links-sidebar-list">
               {currentData.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '40px 20px',
-                    color: 'var(--text-tertiary)',
-                    fontSize: '13px'
-                  }}
-                >
+                <div className="empty-list-placeholder">
                   {searchQuery ? (activeTab === 'links' ? (isFr ? 'Aucun lien trouvé' : 'No links found') : (isFr ? 'Aucun fichier trouvé' : 'No files found')) : (activeTab === 'links' ? (isFr ? 'Aucun lien pour le moment' : 'No links yet') : (isFr ? 'Aucun fichier pour le moment' : 'No files yet'))}
                 </div>
               ) : activeTab === 'links' ? (
@@ -542,33 +475,11 @@ function Links() {
           </div>
 
           {/* Editor/Content Area */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="notes-content-area">
             {error && (
-              <div
-                style={{
-                  padding: '12px 16px',
-                  backgroundColor: 'var(--status-error-glow)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '16px',
-                  fontSize: '13px',
-                  color: 'var(--status-error)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}
-              >
+              <div className="alert alert-error flex-between">
                 <span>{error}</span>
-                <button
-                  onClick={() => setError('')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--status-error)',
-                    cursor: 'pointer',
-                    padding: '4px'
-                  }}
-                >
+                <button onClick={() => setError('')} className="btn-icon-ghost btn-icon-danger">
                   <X size={16} />
                 </button>
               </div>
@@ -630,105 +541,26 @@ function Links() {
 function LinkCard({ link, onEdit, onDelete, onToggleFavorite }) {
   return (
     <div className="item-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-        <h4
-          style={{
-            margin: 0,
-            fontSize: '14px',
-            fontWeight: '600',
-            color: 'var(--text-primary)',
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            paddingRight: '8px'
-          }}
+      <div className="flex-between mb-2" style={{ alignItems: 'start' }}>
+        <h4 className="item-card-title">{link.title}</h4>
+        <button
+          onClick={onToggleFavorite}
+          className={`btn-icon-ghost${link.is_favorite ? ' active' : ''}`}
         >
-          {link.title}
-        </h4>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            onClick={onToggleFavorite}
-            style={{
-              padding: '4px',
-              background: 'none',
-              border: 'none',
-              color: link.is_favorite ? 'var(--accent-primary)' : 'var(--text-tertiary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            <Star size={14} fill={link.is_favorite ? 'currentColor' : 'none'} />
-          </button>
-        </div>
+          <Star size={14} fill={link.is_favorite ? 'currentColor' : 'none'} />
+        </button>
       </div>
 
-      {link.description && (
-        <p
-          style={{
-            margin: '0 0 8px 0',
-            fontSize: '12px',
-            color: 'var(--text-secondary)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {link.description}
-        </p>
-      )}
+      {link.description && <p className="item-card-desc">{link.description}</p>}
 
-      <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
-        <a
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontSize: '11px',
-            color: 'var(--accent-primary)',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
+      <div className="flex-between">
+        <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-url">
           <ExternalLink size={10} />
           {link.url}
         </a>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            onClick={onEdit}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '11px',
-              color: 'var(--text-primary)'
-            }}
-          >
-            <Edit size={12} />
-          </button>
-          <button
-            onClick={onDelete}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '11px',
-              color: 'var(--status-error)'
-            }}
-          >
-            <Trash2 size={12} />
-          </button>
+        <div className="flex-center" style={{ gap: '4px' }}>
+          <button onClick={onEdit} className="btn-tiny"><Edit size={12} /></button>
+          <button onClick={onDelete} className="btn-tiny danger"><Trash2 size={12} /></button>
         </div>
       </div>
     </div>
@@ -827,97 +659,19 @@ function FileRefCard({ fileRef, onEdit, onDelete, onOpen, onShowInFolder }) {
 
   return (
     <div className="item-card" onClick={onShowInFolder}>
-      <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-        <div
-          style={{
-            padding: '8px',
-            backgroundColor: bgColor,
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
+      <div className="flex-center flex-gap-3" style={{ alignItems: 'start' }}>
+        <div className="file-icon-badge" style={{ backgroundColor: bgColor }}>
           <Icon size={20} color={color} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h4
-            style={{
-              margin: '0 0 4px 0',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: 'var(--text-primary)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {fileRef.name}
-          </h4>
-          {fileRef.description && (
-            <p
-              style={{
-                margin: '0 0 4px 0',
-                fontSize: '12px',
-                color: 'var(--text-secondary)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {fileRef.description}
-            </p>
-          )}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen();
-              }}
-              className="btn btn-primary btn-sm"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <ExternalLink size={12} />
-              Open
+          <h4 className="item-card-title" style={{ paddingRight: 0, whiteSpace: 'nowrap' }}>{fileRef.name}</h4>
+          {fileRef.description && <p className="item-card-desc">{fileRef.description}</p>}
+          <div className="flex-center flex-gap-2" style={{ marginTop: 'var(--space-2)' }}>
+            <button onClick={(e) => { e.stopPropagation(); onOpen(); }} className="btn btn-primary btn-sm flex-center flex-gap-2">
+              <ExternalLink size={12} /> Open
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                fontSize: '11px',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <Edit size={12} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-                fontSize: '11px',
-                color: 'var(--status-error)'
-              }}
-            >
-              <Trash2 size={12} />
-            </button>
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="btn-tiny"><Edit size={12} /></button>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="btn-tiny danger"><Trash2 size={12} /></button>
           </div>
         </div>
       </div>
@@ -930,155 +684,41 @@ function LinkEditor({ formData, setFormData, onSave, onCancel, isNew }) {
   const { language } = useI18n();
   const isFr = language === 'fr';
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        padding: '24px',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-default)',
-        animation: 'fadeIn 0.3s ease-in-out'
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
+    <div className="editor-panel">
+      <div className="flex-between mb-6">
+        <h3 className="section-heading" style={{ margin: 0 }}>
           {isNew ? (isFr ? 'Nouveau lien' : 'New Link') : (isFr ? 'Modifier le lien' : 'Edit Link')}
         </h3>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={onCancel}
-            className="btn btn-secondary"
-            style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <X size={16} />
-            Cancel
+        <div className="flex-center flex-gap-2">
+          <button onClick={onCancel} className="btn btn-secondary btn-sm flex-center flex-gap-2">
+            <X size={16} /> Cancel
           </button>
-          <button
-            onClick={onSave}
-            className="btn btn-primary"
-            style={{
-              padding: '8px 16px',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Save size={16} />
-            Save
+          <button onClick={onSave} className="btn btn-primary btn-sm flex-center flex-gap-2">
+            <Save size={16} /> Save
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: 'var(--text-secondary)',
-              marginBottom: '8px'
-            }}
-          >
-            Title *
-          </label>
-          <input
-            type="text"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Enter link title..."
-            autoFocus
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
+      <div className="flex-col" style={{ gap: 'var(--space-4)' }}>
+        <div className="form-group">
+          <label>Title *</label>
+          <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Enter link title..." autoFocus />
         </div>
 
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: 'var(--text-secondary)',
-              marginBottom: '8px'
-            }}
-          >
-            URL *
-          </label>
-          <input
-            type="url"
-            value={formData.url}
-            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-            placeholder="https://example.com"
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
+        <div className="form-group">
+          <label>URL *</label>
+          <input type="url" value={formData.url} onChange={(e) => setFormData({ ...formData, url: e.target.value })} placeholder="https://example.com" />
         </div>
 
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: 'var(--text-secondary)',
-              marginBottom: '8px'
-            }}
-          >
-            Description
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Optional description..."
-            rows={3}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              fontFamily: 'inherit',
-              resize: 'vertical',
-              boxSizing: 'border-box'
-            }}
-          />
+        <div className="form-group">
+          <label>Description</label>
+          <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Optional description..." rows={3} style={{ resize: 'vertical' }} />
         </div>
 
         {isNew && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="checkbox"
-              id="favorite"
-              checked={formData.isFavorite}
-              onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
-              style={{ cursor: 'pointer' }}
-            />
-            <label htmlFor="favorite" style={{ fontSize: '13px', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              Add to favorites
-            </label>
+          <div className="flex-center flex-gap-2">
+            <input type="checkbox" id="favorite" checked={formData.isFavorite} onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })} />
+            <label htmlFor="favorite" style={{ fontSize: 'var(--text-sm)', cursor: 'pointer' }}>Add to favorites</label>
           </div>
         )}
       </div>
@@ -1091,174 +731,43 @@ function FileRefEditor({ formData, setFormData, onSave, onCancel, isNew, onPickF
   const { language } = useI18n();
   const isFr = language === 'fr';
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        padding: '24px',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-default)',
-        animation: 'fadeIn 0.3s ease-in-out'
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
+    <div className="editor-panel">
+      <div className="flex-between mb-6">
+        <h3 className="section-heading" style={{ margin: 0 }}>
           {isNew ? (isFr ? 'Nouveau fichier' : 'New File Reference') : (isFr ? 'Modifier le fichier' : 'Edit File Reference')}
         </h3>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={onCancel}
-            className="btn btn-secondary"
-            style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <X size={16} />
-            Cancel
+        <div className="flex-center flex-gap-2">
+          <button onClick={onCancel} className="btn btn-secondary btn-sm flex-center flex-gap-2">
+            <X size={16} /> Cancel
           </button>
-          <button
-            onClick={onSave}
-            className="btn btn-primary"
-            style={{
-              padding: '8px 16px',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Save size={16} />
-            Save
+          <button onClick={onSave} className="btn btn-primary btn-sm flex-center flex-gap-2">
+            <Save size={16} /> Save
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: 'var(--text-secondary)',
-              marginBottom: '8px'
-            }}
-          >
-            Name *
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Enter file name..."
-            autoFocus
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
+      <div className="flex-col" style={{ gap: 'var(--space-4)' }}>
+        <div className="form-group">
+          <label>Name *</label>
+          <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter file name..." autoFocus />
         </div>
 
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: 'var(--text-secondary)',
-              marginBottom: '8px'
-            }}
-          >
-            File/Folder Path *
-          </label>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <button
-              onClick={onPickFile}
-              type="button"
-              className="btn btn-secondary"
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              <File size={16} />
-              Browse File
+        <div className="form-group">
+          <label>File/Folder Path *</label>
+          <div className="browse-btns">
+            <button onClick={onPickFile} type="button" className="btn btn-secondary">
+              <File size={16} /> Browse File
             </button>
-            <button
-              onClick={onPickFolder}
-              type="button"
-              className="btn btn-secondary"
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              <FolderOpen size={16} />
-              Browse Folder
+            <button onClick={onPickFolder} type="button" className="btn btn-secondary">
+              <FolderOpen size={16} /> Browse Folder
             </button>
           </div>
-          <input
-            type="text"
-            value={formData.path}
-            onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-            placeholder="C:\path\to\file.txt or use browse buttons above"
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '13px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              fontFamily: 'monospace',
-              boxSizing: 'border-box'
-            }}
-          />
+          <input type="text" value={formData.path} onChange={(e) => setFormData({ ...formData, path: e.target.value })} placeholder="C:\path\to\file.txt or use browse buttons above" style={{ fontFamily: 'monospace' }} />
         </div>
 
-        <div>
-          <label
-            style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: 'var(--text-secondary)',
-              marginBottom: '8px'
-            }}
-          >
-            Description
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Optional description..."
-            rows={3}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              outline: 'none',
-              fontFamily: 'inherit',
-              resize: 'vertical',
-              boxSizing: 'border-box'
-            }}
-          />
+        <div className="form-group">
+          <label>Description</label>
+          <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Optional description..." rows={3} style={{ resize: 'vertical' }} />
         </div>
       </div>
     </div>

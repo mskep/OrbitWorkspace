@@ -211,8 +211,8 @@ function Notes() {
     return (
       <div className="page">
         <Topbar title={t('common.notes')} />
-        <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>{isFr ? 'Chargement des notes...' : 'Loading notes...'}</div>
+        <div className="page-content loading-center">
+          <div className="text-muted-center">{isFr ? 'Chargement des notes...' : 'Loading notes...'}</div>
         </div>
       </div>
     );
@@ -237,109 +237,41 @@ function Notes() {
     <div className="page">
       <Topbar title={t('common.notes')} />
 
-      <div className="page-content" style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 100px)' }}>
+      <div className="page-content notes-layout">
         {/* Notes List Sidebar */}
-        <div
-          style={{
-            width: '320px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            flexShrink: 0
-          }}
-        >
+        <div className="notes-sidebar">
           {/* Create Button */}
           <button
             onClick={handleCreateNote}
-            className="btn btn-primary"
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              padding: '12px',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}
+            className="btn btn-primary btn-full flex-center flex-gap-2"
           >
             <Plus size={18} />
             {isFr ? 'Nouvelle note' : 'New Note'}
           </button>
 
           {/* Search */}
-          <div style={{ position: 'relative' }}>
+          <div className="search-input-wrapper">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder={isFr ? 'Rechercher des notes...' : 'Search notes...'}
-              style={{
-                width: '100%',
-                padding: '10px 40px 10px 12px',
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '13px',
-                color: 'var(--text-primary)',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
             />
-            <button
-              onClick={handleSearch}
-              style={{
-                position: 'absolute',
-                right: '8px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-tertiary)',
-                cursor: 'pointer',
-                padding: '6px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
+            <button onClick={handleSearch} className="search-icon-btn">
               <Search size={16} />
             </button>
           </div>
 
           {/* Notes Count */}
-          <div
-            style={{
-              fontSize: '12px',
-              color: 'var(--text-tertiary)',
-              fontWeight: '500',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-          >
+          <div className="notes-count">
             {notes.length} {notes.length === 1 ? 'Note' : 'Notes'}
           </div>
 
           {/* Notes List */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              paddingRight: '4px'
-            }}
-          >
+          <div className="notes-sidebar-list">
             {notes.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  color: 'var(--text-tertiary)',
-                  fontSize: '13px'
-                }}
-              >
+              <div className="empty-list-placeholder">
                 {searchQuery ? (isFr ? 'Aucune note trouvee' : 'No notes found') : (isFr ? 'Aucune note pour le moment. Cree ta premiere note.' : 'No notes yet. Create your first note!')}
               </div>
             ) : (
@@ -357,33 +289,11 @@ function Notes() {
         </div>
 
         {/* Note Content Area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div className="notes-content-area">
           {error && (
-            <div
-              style={{
-                padding: '12px 16px',
-                backgroundColor: 'var(--status-error-glow)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '16px',
-                fontSize: '13px',
-                color: 'var(--status-error)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
-            >
+            <div className="alert alert-error flex-between">
               <span>{error}</span>
-              <button
-                onClick={() => setError('')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--status-error)',
-                  cursor: 'pointer',
-                  padding: '4px'
-                }}
-              >
+              <button onClick={() => setError('')} className="btn-icon-ghost btn-icon-danger">
                 <X size={16} />
               </button>
             </div>
@@ -438,99 +348,36 @@ function Notes() {
 // Note Card Component
 function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
   return (
-    <div
-      onClick={onSelect}
-      className={`item-card${isSelected ? ' active' : ''}`}
-      style={{ position: 'relative' }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-        <h4
-          style={{
-            margin: 0,
-            fontSize: '14px',
-            fontWeight: '600',
-            color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            paddingRight: '8px'
-          }}
-        >
+    <div onClick={onSelect} className={`item-card${isSelected ? ' active' : ''}`}>
+      <div className="flex-between mb-2" style={{ alignItems: 'start' }}>
+        <h4 className={`note-card-title${isSelected ? ' active' : ''}`}>
           {note.title}
         </h4>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onTogglePin();
-          }}
-          style={{
-            padding: '4px',
-            background: 'none',
-            border: 'none',
-            color: note.is_pinned ? 'var(--accent-primary)' : 'var(--text-tertiary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            flexShrink: 0
-          }}
+          onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+          className={`btn-icon-ghost${note.is_pinned ? ' active' : ''}`}
           title={note.is_pinned ? 'Unpin' : 'Pin'}
         >
           <Pin size={14} fill={note.is_pinned ? 'currentColor' : 'none'} />
         </button>
       </div>
 
-      <p
-        style={{
-          margin: '0 0 8px 0',
-          fontSize: '12px',
-          color: 'var(--text-secondary)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          lineHeight: '1.5'
-        }}
-      >
+      <p className="note-card-excerpt">
         {note.content || 'No content'}
       </p>
 
       {note.tags && (
-        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
-          {note.tags
-            .split(',')
-            .slice(0, 3)
-            .map((tag, i) => (
-              <span
-                key={i}
-                style={{
-                  padding: '2px 6px',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '10px',
-                  color: 'var(--text-tertiary)',
-                  fontWeight: '500'
-                }}
-              >
-                {tag.trim()}
-              </span>
-            ))}
+        <div className="note-card-tags">
+          {note.tags.split(',').slice(0, 3).map((tag, i) => (
+            <span key={i} className="note-tag">{tag.trim()}</span>
+          ))}
           {note.tags.split(',').length > 3 && (
-            <span
-              style={{
-                padding: '2px 6px',
-                fontSize: '10px',
-                color: 'var(--text-tertiary)'
-              }}
-            >
-              +{note.tags.split(',').length - 3}
-            </span>
+            <span className="note-tag">+{note.tags.split(',').length - 3}</span>
           )}
         </div>
       )}
 
-      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
+      <div className="note-card-date">
         {new Date(note.updated_at * 1000).toLocaleDateString()}
       </div>
     </div>
@@ -544,68 +391,26 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
   const isFr = language === 'fr';
 
   return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        backgroundColor: 'var(--bg-secondary)',
-        padding: '24px',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-default)',
-        overflow: 'hidden'
-      }}
-    >
+    <div className="notes-panel">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>
+      <div className="flex-between">
+        <h3 className="section-heading" style={{ margin: 0 }}>
           {isNew ? (isFr ? 'Nouvelle note' : 'New Note') : (isFr ? 'Modifier la note' : 'Edit Note')}
         </h3>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="flex-center flex-gap-2">
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className="btn btn-secondary"
-            style={{
-              padding: '8px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '13px',
-              backgroundColor: showPreview ? 'var(--accent-glow)' : undefined,
-              color: showPreview ? 'var(--accent-primary)' : undefined,
-              border: showPreview ? '1px solid var(--accent-primary)' : undefined
-            }}
+            className={`btn btn-secondary btn-sm flex-center flex-gap-2${showPreview ? ' active' : ''}`}
+            style={showPreview ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' } : undefined}
           >
             {showPreview ? <Code size={16} /> : <Eye size={16} />}
             {showPreview ? 'Editor' : 'Preview'}
           </button>
-          <button
-            onClick={onCancel}
-            className="btn btn-secondary"
-            style={{
-              padding: '8px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '13px'
-            }}
-          >
+          <button onClick={onCancel} className="btn btn-secondary btn-sm flex-center flex-gap-2">
             <X size={16} />
             Cancel
           </button>
-          <button
-            onClick={onSave}
-            className="btn btn-primary"
-            style={{
-              padding: '8px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '13px',
-              fontWeight: '600'
-            }}
-          >
+          <button onClick={onSave} className="btn btn-primary btn-sm flex-center flex-gap-2">
             <Save size={16} />
             Save
           </button>
@@ -615,69 +420,27 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
       {/* Title */}
       <input
         type="text"
+        className="note-title-input"
         value={formData.title}
         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
         placeholder="Note title..."
         autoFocus
-        style={{
-          padding: '12px 16px',
-          backgroundColor: 'var(--bg-tertiary)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '16px',
-          fontWeight: '600',
-          color: 'var(--text-primary)',
-          outline: 'none'
-        }}
       />
 
       {/* Tags */}
-      <div style={{ position: 'relative' }}>
-        <Tag
-          size={16}
-          style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-tertiary)'
-          }}
-        />
+      <div className="note-tags-input-wrapper">
+        <Tag size={16} className="tag-icon" />
         <input
           type="text"
           value={formData.tags}
           onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
           placeholder="Tags (comma separated)..."
-          style={{
-            width: '100%',
-            padding: '10px 12px 10px 36px',
-            backgroundColor: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '13px',
-            color: 'var(--text-primary)',
-            outline: 'none',
-            boxSizing: 'border-box'
-          }}
         />
       </div>
 
       {/* Content: Editor or Preview */}
       {showPreview ? (
-        <div
-          className="markdown-body"
-          style={{
-            flex: 1,
-            padding: '20px',
-            backgroundColor: 'var(--bg-tertiary)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-default)',
-            overflowY: 'auto',
-            fontSize: '14px',
-            lineHeight: '1.7',
-            color: 'var(--text-primary)'
-          }}
-        >
+        <div className="markdown-body note-markdown-preview">
           {formData.content ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{formData.content}</ReactMarkdown>
           ) : (
@@ -686,25 +449,11 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
         </div>
       ) : (
         <textarea
+          className="note-textarea"
           value={formData.content}
           onChange={(e) => setFormData({ ...formData, content: e.target.value })}
           placeholder="Write in Markdown... (# headings, **bold**, *italic*, - lists, ```code```)"
-          style={{
-            flex: 1,
-            padding: '16px',
-            backgroundColor: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '14px',
-            color: 'var(--text-primary)',
-            outline: 'none',
-            fontFamily: "'SF Mono', 'Fira Code', 'Consolas', monospace",
-            resize: 'none',
-            lineHeight: '1.6',
-            tabSize: 2
-          }}
           onKeyDown={(e) => {
-            // Tab support in textarea
             if (e.key === 'Tab') {
               e.preventDefault();
               const start = e.target.selectionStart;
@@ -725,50 +474,15 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
 // Note Viewer Component
 function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        backgroundColor: 'var(--bg-secondary)',
-        padding: '24px',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-default)',
-        overflowY: 'auto'
-      }}
-    >
+    <div className="notes-panel notes-panel-viewer">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '16px' }}>
+      <div className="flex-between" style={{ alignItems: 'start', gap: 'var(--space-4)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h1
-            style={{
-              margin: '0 0 12px 0',
-              fontSize: '28px',
-              fontWeight: '700',
-              color: 'var(--text-primary)',
-              wordBreak: 'break-word'
-            }}
-          >
-            {note.title}
-          </h1>
+          <h1 className="note-viewer-title">{note.title}</h1>
           {note.tags && (
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <div className="flex-center flex-gap-2" style={{ flexWrap: 'wrap' }}>
               {note.tags.split(',').map((tag, i) => (
-                <span
-                  key={i}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'var(--bg-tertiary)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '12px',
-                    color: 'var(--text-secondary)',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
+                <span key={i} className="note-tag-viewer">
                   <Tag size={12} />
                   {tag.trim()}
                 </span>
@@ -776,65 +490,26 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+        <div className="flex-center flex-gap-2" style={{ flexShrink: 0 }}>
           <button
             onClick={onTogglePin}
-            className="btn btn-secondary"
-            style={{
-              padding: '10px',
-              backgroundColor: note.is_pinned ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
-              color: note.is_pinned ? 'var(--accent-primary)' : 'var(--text-primary)',
-              border: `1px solid ${note.is_pinned ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-              display: 'flex',
-              alignItems: 'center'
-            }}
+            className="btn btn-secondary btn-icon-pad"
+            style={note.is_pinned ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' } : undefined}
             title={note.is_pinned ? 'Unpin' : 'Pin'}
           >
             <Pin size={18} fill={note.is_pinned ? 'currentColor' : 'none'} />
           </button>
-          <button
-            onClick={onEdit}
-            className="btn btn-secondary"
-            style={{
-              padding: '10px',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-            title="Edit"
-          >
+          <button onClick={onEdit} className="btn btn-secondary btn-icon-pad" title="Edit">
             <Edit size={18} />
           </button>
-          <button
-            onClick={onDelete}
-            className="btn btn-secondary"
-            style={{
-              padding: '10px',
-              color: 'var(--status-error)',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-            title="Delete"
-          >
+          <button onClick={onDelete} className="btn btn-secondary btn-icon-pad btn-icon-danger" title="Delete">
             <Trash2 size={18} />
           </button>
         </div>
       </div>
 
       {/* Content - Rendered as Markdown */}
-      <div
-        className="markdown-body"
-        style={{
-          flex: 1,
-          padding: '20px',
-          backgroundColor: 'var(--bg-tertiary)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '15px',
-          lineHeight: '1.8',
-          color: 'var(--text-primary)',
-          overflowY: 'auto',
-          wordBreak: 'break-word'
-        }}
-      >
+      <div className="markdown-body note-markdown-content">
         {note.content ? (
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
         ) : (
@@ -843,23 +518,12 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
       </div>
 
       {/* Metadata */}
-      <div
-        style={{
-          padding: '16px',
-          backgroundColor: 'var(--bg-tertiary)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '12px',
-          color: 'var(--text-tertiary)',
-          display: 'flex',
-          gap: '24px',
-          flexWrap: 'wrap'
-        }}
-      >
+      <div className="note-metadata">
         <div>
-          <span style={{ fontWeight: '600' }}>Created:</span> {new Date(note.created_at * 1000).toLocaleString()}
+          <strong>Created:</strong> {new Date(note.created_at * 1000).toLocaleString()}
         </div>
         <div>
-          <span style={{ fontWeight: '600' }}>Updated:</span> {new Date(note.updated_at * 1000).toLocaleString()}
+          <strong>Updated:</strong> {new Date(note.updated_at * 1000).toLocaleString()}
         </div>
       </div>
     </div>

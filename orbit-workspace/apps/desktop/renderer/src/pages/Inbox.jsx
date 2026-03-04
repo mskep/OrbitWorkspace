@@ -143,7 +143,7 @@ function InboxPage() {
       <Topbar
         title={isFr ? 'Boîte de réception' : 'Inbox'}
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="flex-center flex-gap-2">
             <button onClick={loadMessages} title={isFr ? 'Rafraîchir' : 'Refresh'} className="inbox-action-btn">
               <RefreshCw size={14} />
             </button>
@@ -159,7 +159,7 @@ function InboxPage() {
 
       <div className="page-content">
         {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+        <div className="inbox-filter-bar">
           {filters.map((tab) => (
             <button
               key={tab.key}
@@ -180,7 +180,7 @@ function InboxPage() {
 
         {/* Messages list */}
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="inbox-skeleton-list">
             {[1, 2, 3].map((i) => (
               <div key={i} className="inbox-skeleton" />
             ))}
@@ -189,22 +189,22 @@ function InboxPage() {
           <div className="inbox-empty">
             {filter === 'unread' ? (
               <>
-                <CheckCheck size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                <span style={{ fontSize: '15px', fontWeight: '600' }}>{isFr ? 'Tout est à jour' : 'All caught up'}</span>
-                <span style={{ fontSize: '13px', marginTop: '4px', opacity: 0.6 }}>{isFr ? 'Aucun message non lu' : 'No unread messages'}</span>
+                <CheckCheck size={48} className="inbox-empty-icon" />
+                <span className="inbox-empty-title">{isFr ? 'Tout est à jour' : 'All caught up'}</span>
+                <span className="inbox-empty-subtitle">{isFr ? 'Aucun message non lu' : 'No unread messages'}</span>
               </>
             ) : (
               <>
-                <Inbox size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                <span style={{ fontSize: '15px', fontWeight: '600' }}>{isFr ? 'Aucun message' : 'No messages'}</span>
-                <span style={{ fontSize: '13px', marginTop: '4px', opacity: 0.6 }}>
+                <Inbox size={48} className="inbox-empty-icon" />
+                <span className="inbox-empty-title">{isFr ? 'Aucun message' : 'No messages'}</span>
+                <span className="inbox-empty-subtitle">
                   {filter === 'read' ? (isFr ? 'Aucun message lu' : 'No read messages') : (isFr ? 'Votre boîte de réception est vide' : 'Your inbox is empty')}
                 </span>
               </>
             )}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="inbox-list">
             {filtered.map((msg) => {
               const config = TYPE_CONFIG[msg.type] || TYPE_CONFIG['system-notification'];
               const Icon = config.icon;
@@ -223,18 +223,9 @@ function InboxPage() {
                   </div>
 
                   {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                      <span
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: isUnread ? '700' : '500',
-                          color: 'var(--text-primary)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
+                  <div className="inbox-message-body">
+                    <div className="inbox-message-header">
+                      <span className={`inbox-message-title ${isUnread ? 'unread' : 'read'}`}>
                         {msg.title}
                       </span>
                       <span

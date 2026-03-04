@@ -43,21 +43,7 @@ function Home() {
       <div className="page-content">
         <section className="hero">
           <div className="hero-content">
-            <div
-              className="badge-premium"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'var(--accent-glow)',
-                color: 'var(--accent-primary)',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '12px',
-                fontWeight: '700',
-                marginBottom: '16px'
-              }}
-            >
+            <div className="home-badge">
               <Sparkles size={14} />
               {t('home.systemReady')}
             </div>
@@ -70,42 +56,30 @@ function Home() {
 
         <div className="tool-grid">
           <div className="tool-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div
-                style={{
-                  padding: '10px',
-                  background: 'var(--accent-glow)',
-                  borderRadius: 'var(--radius-md)',
-                  color: 'var(--accent-primary)'
-                }}
-              >
+            <div className="tool-card-header">
+              <div className="tool-card-icon">
                 <Cpu size={24} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>{t('home.systemStatus')}</h3>
+              <h3 className="tool-card-title">{t('home.systemStatus')}</h3>
             </div>
 
             {isLoading ? (
               <div className="skeleton" style={{ height: '100px', width: '100%' }}></div>
             ) : systemStatus ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-tertiary)' }}>{t('home.connection')}</span>
-                  <span
-                    style={{
-                      color: systemStatus.online ? 'var(--status-success)' : 'var(--status-error)',
-                      fontWeight: 600
-                    }}
-                  >
+              <div className="flex-col flex-gap-3">
+                <div className="stat-row">
+                  <span className="stat-row-label">{t('home.connection')}</span>
+                  <span className="stat-row-value" style={{ color: systemStatus.online ? 'var(--status-success)' : 'var(--status-error)' }}>
                     {systemStatus.online ? t('common.online') : t('common.offlineState')}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-tertiary)' }}>{t('common.platform')}</span>
-                  <span style={{ fontWeight: 600 }}>{systemStatus.platform}</span>
+                <div className="stat-row">
+                  <span className="stat-row-label">{t('common.platform')}</span>
+                  <span className="stat-row-value">{systemStatus.platform}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span style={{ color: 'var(--text-tertiary)' }}>{t('home.security')}</span>
-                  <span style={{ color: 'var(--status-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="stat-row">
+                  <span className="stat-row-label">{t('home.security')}</span>
+                  <span className="stat-row-value flex-center flex-gap-2" style={{ color: 'var(--status-success)' }}>
                     <ShieldCheck size={14} /> {t('common.active')}
                   </span>
                 </div>
@@ -114,38 +88,23 @@ function Home() {
           </div>
 
           <div className="tool-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div
-                style={{
-                  padding: '10px',
-                  background: 'var(--accent-glow)',
-                  borderRadius: 'var(--radius-md)',
-                  color: 'var(--accent-primary)'
-                }}
-              >
+            <div className="tool-card-header">
+              <div className="tool-card-icon">
                 <Activity size={24} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>{t('home.recentActivity')}</h3>
+              <h3 className="tool-card-title">{t('home.recentActivity')}</h3>
             </div>
 
             {isLoading ? (
               <div className="skeleton" style={{ height: '100px', width: '100%' }}></div>
             ) : recentActions.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex-col flex-gap-3">
                 {recentActions.slice(0, 3).map((action, i) => (
-                  <div
-                    key={action.id || i}
-                    style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 500,
-                        color: action.status === 'error' ? 'var(--status-error)' : 'var(--text-primary)'
-                      }}
-                    >
+                  <div key={action.id || i} className="stat-row" style={{ fontSize: 'var(--text-sm)' }}>
+                    <span style={{ fontWeight: 500, color: action.status === 'error' ? 'var(--status-error)' : 'var(--text-primary)' }}>
                       {action.type || action.action?.type || t('home.recentActivity')}
                     </span>
-                    <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>
+                    <span className="stat-row-label" style={{ fontSize: 'var(--text-xs)' }}>
                       {action.timestamp
                         ? new Date(
                           action.timestamp < 1e12 ? action.timestamp * 1000 : action.timestamp
@@ -156,38 +115,23 @@ function Home() {
                 ))}
               </div>
             ) : (
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>{t('home.noRecentActivity')}</p>
+              <p className="stat-row-label">{t('home.noRecentActivity')}</p>
             )}
           </div>
 
           <div className="tool-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div
-                style={{
-                  padding: '10px',
-                  background: 'var(--accent-glow)',
-                  borderRadius: 'var(--radius-md)',
-                  color: 'var(--accent-primary)'
-                }}
-              >
+            <div className="tool-card-header">
+              <div className="tool-card-icon">
                 <Zap size={24} />
               </div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>{t('home.quickActions')}</h3>
+              <h3 className="tool-card-title">{t('home.quickActions')}</h3>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                onClick={() => navigate('/tools')}
-                className="btn btn-secondary"
-                style={{ justifyContent: 'space-between', width: '100%' }}
-              >
+            <div className="flex-col flex-gap-3">
+              <button onClick={() => navigate('/tools')} className="btn btn-secondary btn-full-between">
                 {t('home.openMyTools')} <ArrowUpRight size={16} />
               </button>
-              <button
-                onClick={() => navigate('/inbox')}
-                className="btn btn-secondary"
-                style={{ justifyContent: 'space-between', width: '100%' }}
-              >
+              <button onClick={() => navigate('/inbox')} className="btn btn-secondary btn-full-between">
                 {t('home.viewInbox')} <ArrowUpRight size={16} />
               </button>
             </div>

@@ -59,69 +59,24 @@ function LogItem({ log, isExpanded, onToggle }) {
     const StatusIcon = statusConfig.icon;
 
     return (
-      <div
-        style={{
-          padding: '16px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'var(--bg-tertiary)',
-          border: '1px solid var(--border-default)',
-          cursor: 'pointer',
-          transition: 'all var(--transition-fast)'
-        }}
-        onClick={onToggle}
-      >
+      <div className="log-item" onClick={onToggle}>
         {/* Log Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            flexWrap: 'wrap'
-          }}
-        >
+        <div className="log-header">
           {/* Status Icon Circle */}
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: statusConfig.color,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
+          <div className="log-status-circle" style={{ backgroundColor: statusConfig.color }}>
             <StatusIcon size={16} color="#fff" />
           </div>
 
           {/* Log Details */}
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <div
-              style={{
-                fontWeight: '600',
-                fontSize: '14px',
-                marginBottom: '4px'
-              }}
-            >
-              {(log.type || 'Unknown Action').toString()}
-            </div>
-            <div
-              style={{
-                fontSize: '12px',
-                color: 'var(--text-tertiary)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                flexWrap: 'wrap'
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div className="log-details">
+            <div className="log-type">{(log.type || 'Unknown Action').toString()}</div>
+            <div className="log-meta">
+              <span className="log-meta-item">
                 <Clock size={12} />
                 {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown time'}
               </span>
               {log.tool_id && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="log-meta-item">
                   <SettingsIcon size={12} />
                   {log.tool_id.toString()}
                 </span>
@@ -130,18 +85,10 @@ function LogItem({ log, isExpanded, onToggle }) {
           </div>
 
           {/* Status Badge & Chevron */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="log-badges">
             <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '11px',
-                fontWeight: '600',
-                backgroundColor: statusConfig.bg,
-                color: statusConfig.color
-              }}
+              className="log-status-badge"
+              style={{ backgroundColor: statusConfig.bg, color: statusConfig.color }}
             >
               {statusConfig.label}
             </span>
@@ -158,72 +105,20 @@ function LogItem({ log, isExpanded, onToggle }) {
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div
-            style={{
-              marginTop: '16px',
-              paddingTop: '16px',
-              borderTop: '1px solid var(--border-default)',
-              fontSize: '13px'
-            }}
-          >
+          <div className="log-expanded">
             {/* Error Message */}
             {log.error && (
-              <div
-                style={{
-                  marginBottom: '12px',
-                  padding: '12px',
-                  backgroundColor: 'var(--status-error-glow)',
-                  borderRadius: 'var(--radius-sm)',
-                  borderLeft: '3px solid var(--status-error)'
-                }}
-              >
-                <div
-                  style={{
-                    color: 'var(--text-tertiary)',
-                    fontSize: '11px',
-                    marginBottom: '4px',
-                    fontWeight: '600'
-                  }}
-                >
-                  Error Message
-                </div>
-                <div
-                  style={{
-                    color: 'var(--status-error)',
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                    wordBreak: 'break-word'
-                  }}
-                >
-                  {log.error.toString()}
-                </div>
+              <div className="log-error-block">
+                <div className="log-detail-label">Error Message</div>
+                <div className="log-error-text">{log.error.toString()}</div>
               </div>
             )}
 
             {/* Payload */}
             {log.payload && (
               <div>
-                <div
-                  style={{
-                    color: 'var(--text-tertiary)',
-                    fontSize: '11px',
-                    marginBottom: '6px',
-                    fontWeight: '600'
-                  }}
-                >
-                  Payload
-                </div>
-                <pre
-                  style={{
-                    padding: '12px',
-                    backgroundColor: 'var(--bg-primary)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '11px',
-                    overflow: 'auto',
-                    margin: 0,
-                    maxHeight: '200px'
-                  }}
-                >
+                <div className="log-payload-label">Payload</div>
+                <pre className="log-payload-pre">
                   {typeof log.payload === 'string' ? log.payload : JSON.stringify(log.payload, null, 2)}
                 </pre>
               </div>
@@ -235,17 +130,10 @@ function LogItem({ log, isExpanded, onToggle }) {
   } catch (error) {
     console.error('Error rendering log item:', error, log);
     return (
-      <div
-        style={{
-          padding: '16px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'var(--status-error-glow)',
-          border: '1px solid var(--status-error)'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--status-error)' }}>
+      <div className="log-render-error">
+        <div className="log-render-error-content">
           <AlertTriangle size={16} />
-          <span style={{ fontSize: '14px', fontWeight: '600' }}>Failed to render log</span>
+          <span className="log-render-error-text">Failed to render log</span>
         </div>
       </div>
     );
@@ -415,7 +303,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="log-skeleton-list">
         <Skeleton variant="rect" style={{ height: '60px' }} />
         <Skeleton variant="rect" style={{ height: '80px' }} />
         <Skeleton variant="rect" style={{ height: '80px' }} />
@@ -426,32 +314,12 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
 
   if (error) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px',
-          textAlign: 'center'
-        }}
-      >
-        <div
-          style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--status-error-glow)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '20px'
-          }}
-        >
+      <div className="log-error-state">
+        <div className="log-error-icon">
           <AlertTriangle size={32} color="var(--status-error)" />
         </div>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Failed to load logs</h3>
-        <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '20px' }}>{error}</p>
+        <h3 className="log-error-title">Failed to load logs</h3>
+        <p className="log-error-desc">{error}</p>
         <Button onClick={loadLogs}>
           <RefreshCw size={14} />
           Try Again
@@ -464,50 +332,21 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
     <ErrorBoundary>
       <div className="log-viewer">
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '20px',
-            gap: '16px',
-            flexWrap: 'wrap'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="log-viewer-header">
+          <div className="log-viewer-title-row">
+            <h4 className="log-viewer-title">
               <Activity size={18} />
               Activity Logs
             </h4>
             {enableRealtime && wsRef.current?.readyState === WebSocket.OPEN && (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  backgroundColor: 'var(--status-success-glow)',
-                  color: 'var(--status-success)'
-                }}
-              >
-                <div
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--status-success)',
-                    animation: 'pulse 2s infinite'
-                  }}
-                />
+              <span className="log-live-badge">
+                <div className="log-live-dot" />
                 Live
               </span>
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="log-viewer-actions">
             <Button variant="ghost" size="sm" onClick={loadLogs}>
               <RefreshCw size={14} />
               Refresh
@@ -521,25 +360,9 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
 
         {/* Filters */}
         {showFilters && (
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              marginBottom: '20px',
-              flexWrap: 'wrap'
-            }}
-          >
-            <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-              <Search
-                size={16}
-                style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-tertiary)'
-                }}
-              />
+          <div className="log-filters">
+            <div className="log-search-wrapper">
+              <Search size={16} className="log-search-icon" />
               <input
                 type="text"
                 placeholder="Search logs..."
@@ -550,7 +373,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="log-filter-btns">
               {['all', 'success', 'error', 'pending'].map((status) => (
                 <button
                   key={status}
@@ -568,7 +391,7 @@ function LogViewer({ limit = 50, enableRealtime = true, showFilters = true }) {
         )}
 
         {/* Logs List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="log-list">
           {filteredLogs.map((log) => {
             if (!log || !log.id) {
               console.warn('[LogViewer] Invalid log entry:', log);

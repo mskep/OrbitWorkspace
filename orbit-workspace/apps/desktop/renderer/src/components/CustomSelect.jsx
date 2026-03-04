@@ -59,6 +59,8 @@ function CustomSelect({
 
   const isSm = size === 'sm';
 
+  // These styles are heavily dependent on props (size, open, disabled, selected color)
+  // so they remain inline as dynamic computed styles
   const triggerStyle = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -116,7 +118,7 @@ function CustomSelect({
         style={triggerStyle}
         disabled={disabled}
       >
-        {selected?.icon && <span style={{ display: 'flex', alignItems: 'center', lineHeight: 1 }}>{selected.icon}</span>}
+        {selected?.icon && <span className="flex-center" style={{ lineHeight: 1 }}>{selected.icon}</span>}
         <span>{selected?.label || placeholder}</span>
         <ChevronDown
           size={isSm ? 12 : 14}
@@ -165,7 +167,7 @@ function CustomSelect({
                   e.currentTarget.style.backgroundColor = isActive ? 'var(--accent-glow)' : 'transparent';
                 }}
               >
-                {opt.icon && <span style={{ display: 'flex', alignItems: 'center', lineHeight: 1, flexShrink: 0 }}>{opt.icon}</span>}
+                {opt.icon && <span className="flex-center" style={{ lineHeight: 1, flexShrink: 0 }}>{opt.icon}</span>}
                 <span style={{ flex: 1 }}>{opt.label}</span>
                 {isActive && (
                   <Check
