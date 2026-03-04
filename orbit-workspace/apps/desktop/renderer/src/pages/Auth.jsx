@@ -223,48 +223,31 @@ function Auth() {
     setRecoveryFile(null);
   };
 
+  const titles = {
+    login: { title: t('auth.signIn'), subtitle: t('auth.brandSubtitle') },
+    register: { title: t('auth.createAccount'), subtitle: t('auth.brandSubtitle') },
+    recover: { title: t('auth.resetPassword'), subtitle: t('auth.recoveryInfo') },
+  };
+
   return (
     <div className="auth-page">
-      {/* Ambient background */}
-      <div className="auth-bg">
-        <div className="auth-bg-orb auth-bg-orb-1" />
-        <div className="auth-bg-orb auth-bg-orb-2" />
-        <div className="auth-bg-orb auth-bg-orb-3" />
-        <div className="auth-bg-grid" />
-      </div>
+      <div className="auth-mesh" />
 
-      <div className="auth-container">
-        {/* Left: Branding */}
-        <div className="auth-brand">
-          <img src={orbitLogo} alt="Orbit" className="auth-logo" />
-          <h1 className="auth-brand-title">Orbit</h1>
-          <p className="auth-brand-subtitle">{t('auth.brandSubtitle')}</p>
-          <div className="auth-brand-features">
-            <div className="auth-feature">
-              <ShieldCheck size={16} />
-              <span>{t('auth.featureEncryption')}</span>
-            </div>
-            <div className="auth-feature">
-              <Lock size={16} />
-              <span>{t('auth.featureLocalFirst')}</span>
-            </div>
-            <div className="auth-feature">
-              <FileKey size={16} />
-              <span>{t('auth.featureRecovery')}</span>
-            </div>
-          </div>
-        </div>
+      <div className="auth-card">
+        {/* Header */}
+        <img src={orbitLogo} alt="Orbit" className="auth-card-logo" />
+        <h1 className="auth-card-title">{titles[mode].title}</h1>
+        <p className="auth-card-subtitle">{titles[mode].subtitle}</p>
 
-        {/* Right: Form */}
-        <div className="auth-form-section">
-          {/* Mode tabs */}
+        {/* Tabs — only for login/register */}
+        {mode !== 'recover' && (
           <div className="auth-tabs">
             <button
               className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
               onClick={() => switchMode('login')}
               disabled={loading}
             >
-              <LogIn size={16} />
+              <LogIn size={15} />
               {t('auth.signIn')}
             </button>
             <button
@@ -272,246 +255,239 @@ function Auth() {
               onClick={() => switchMode('register')}
               disabled={loading}
             >
-              <UserPlus size={16} />
+              <UserPlus size={15} />
               {t('auth.register')}
             </button>
           </div>
+        )}
 
-          {/* Error / Success */}
-          {error && (
-            <div className="auth-alert auth-alert-error">
-              <AlertCircle size={16} />
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="auth-alert auth-alert-success">
-              <ShieldCheck size={16} />
-              {success}
-            </div>
-          )}
-
-          {/* Login Form */}
-          {mode === 'login' && (
-            <form onSubmit={handleLogin} className="auth-form">
-              <div className="auth-input-group">
-                <label>{t('auth.emailOrUsername')}</label>
-                <div className="auth-input-wrapper">
-                  <User size={18} className="auth-input-icon" />
-                  <input
-                    type="text"
-                    name="identifier"
-                    placeholder={t('auth.enterEmailOrUsername')}
-                    value={formData.identifier}
-                    onChange={handleChange}
-                    required
-                    autoComplete="username"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.password')}</label>
-                <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder={t('auth.enterPassword')}
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    autoComplete="current-password"
-                  />
-                  <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-options">
-                <button type="button" className="auth-link" onClick={() => switchMode('recover')}>
-                  {t('auth.forgotPassword')}
-                </button>
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
-                {loading ? (
-                  <><Loader size={18} className="auth-spinner" /> {t('auth.signingIn')}</>
-                ) : (
-                  <><LogIn size={18} /> {t('auth.signIn')}</>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* Register Form */}
-          {mode === 'register' && (
-            <form onSubmit={handleRegister} className="auth-form">
-              <div className="auth-input-group">
-                <label>{t('auth.email')}</label>
-                <div className="auth-input-wrapper">
-                  <Mail size={18} className="auth-input-icon" />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="your@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    autoComplete="email"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.username')}</label>
-                <div className="auth-input-wrapper">
-                  <User size={18} className="auth-input-icon" />
-                  <input
-                    type="text"
-                    name="username"
-                    placeholder={t('auth.usernamePlaceholder')}
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                    autoComplete="username"
-                    pattern="[a-zA-Z0-9_\\-]{3,32}"
-                    title={t('auth.usernameTitle')}
-                  />
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.password')}</label>
-                <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder={t('auth.min8')}
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    autoComplete="new-password"
-                    minLength={8}
-                  />
-                  <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.confirmPassword')}</label>
-                <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    placeholder={t('auth.repeatPassword')}
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    autoComplete="new-password"
-                    minLength={8}
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
-                {loading ? (
-                  <><Loader size={18} className="auth-spinner" /> {t('auth.creatingAccount')}</>
-                ) : (
-                  <><UserPlus size={18} /> {t('auth.createAccount')}</>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* Recovery Form */}
-          {mode === 'recover' && (
-            <form onSubmit={handleRecover} className="auth-form">
-              <div className="auth-recover-info">
-                <FileKey size={24} />
-                <p>
-                  {t('auth.recoveryInfo')}
-                </p>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.recoveryFile')}</label>
-                <button
-                  type="button"
-                  className={`auth-file-picker ${recoveryFile ? 'has-file' : ''}`}
-                  onClick={handlePickRecoveryFile}
-                >
-                  <FileKey size={18} />
-                  <span>{recoveryFile ? recoveryFile.fileName : t('auth.selectRecoveryFile')}</span>
-                  {recoveryFile && <ShieldCheck size={16} className="auth-file-check" />}
-                </button>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.newPassword')}</label>
-                <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={t('auth.min8')}
-                    value={newPassword}
-                    onChange={(e) => { setNewPassword(e.target.value); if (error) setError(''); }}
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                    autoFocus
-                  />
-                  <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-input-group">
-                <label>{t('auth.confirmNewPassword')}</label>
-                <div className="auth-input-wrapper">
-                  <Lock size={18} className="auth-input-icon" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={t('auth.repeatNewPassword')}
-                    value={confirmNewPassword}
-                    onChange={(e) => { setConfirmNewPassword(e.target.value); if (error) setError(''); }}
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
-                {loading ? (
-                  <><Loader size={18} className="auth-spinner" /> {t('auth.recovering')}</>
-                ) : (
-                  <><ShieldCheck size={18} /> {t('auth.resetPassword')}</>
-                )}
-              </button>
-
-              <button type="button" className="auth-back-link" onClick={() => switchMode('login')}>
-                {t('auth.backToSignIn')}
-              </button>
-            </form>
-          )}
-
-          {/* Footer */}
-          <div className="auth-footer">
-            Orbit v0.1.0
+        {/* Alerts */}
+        {error && (
+          <div className="auth-alert auth-alert-error">
+            <AlertCircle size={16} />
+            {error}
           </div>
+        )}
+        {success && (
+          <div className="auth-alert auth-alert-success">
+            <ShieldCheck size={16} />
+            {success}
+          </div>
+        )}
+
+        {/* Login Form */}
+        {mode === 'login' && (
+          <form onSubmit={handleLogin} className="auth-form">
+            <div className="auth-input-group">
+              <label>{t('auth.emailOrUsername')}</label>
+              <div className="auth-input-wrapper">
+                <User size={18} className="auth-input-icon" />
+                <input
+                  type="text"
+                  name="identifier"
+                  placeholder={t('auth.enterEmailOrUsername')}
+                  value={formData.identifier}
+                  onChange={handleChange}
+                  required
+                  autoComplete="username"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="auth-input-group">
+              <label>{t('auth.password')}</label>
+              <div className="auth-input-wrapper">
+                <Lock size={18} className="auth-input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder={t('auth.enterPassword')}
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  autoComplete="current-password"
+                />
+                <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="auth-options">
+              <button type="button" className="auth-link" onClick={() => switchMode('recover')}>
+                {t('auth.forgotPassword')}
+              </button>
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
+              {loading ? (
+                <><Loader size={18} className="auth-spinner" /> {t('auth.signingIn')}</>
+              ) : (
+                <><LogIn size={18} /> {t('auth.signIn')}</>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Register Form */}
+        {mode === 'register' && (
+          <form onSubmit={handleRegister} className="auth-form">
+            <div className="auth-input-group">
+              <label>{t('auth.email')}</label>
+              <div className="auth-input-wrapper">
+                <Mail size={18} className="auth-input-icon" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="your@email.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  autoComplete="email"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="auth-input-group">
+              <label>{t('auth.username')}</label>
+              <div className="auth-input-wrapper">
+                <User size={18} className="auth-input-icon" />
+                <input
+                  type="text"
+                  name="username"
+                  placeholder={t('auth.usernamePlaceholder')}
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  autoComplete="username"
+                  pattern="[a-zA-Z0-9_\\-]{3,32}"
+                  title={t('auth.usernameTitle')}
+                />
+              </div>
+            </div>
+
+            <div className="auth-input-group">
+              <label>{t('auth.password')}</label>
+              <div className="auth-input-wrapper">
+                <Lock size={18} className="auth-input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder={t('auth.min8')}
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                  minLength={8}
+                />
+                <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="auth-input-group">
+              <label>{t('auth.confirmPassword')}</label>
+              <div className="auth-input-wrapper">
+                <Lock size={18} className="auth-input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="confirmPassword"
+                  placeholder={t('auth.repeatPassword')}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                  minLength={8}
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
+              {loading ? (
+                <><Loader size={18} className="auth-spinner" /> {t('auth.creatingAccount')}</>
+              ) : (
+                <><UserPlus size={18} /> {t('auth.createAccount')}</>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Recovery Form */}
+        {mode === 'recover' && (
+          <form onSubmit={handleRecover} className="auth-form">
+            <div className="auth-input-group">
+              <label>{t('auth.recoveryFile')}</label>
+              <button
+                type="button"
+                className={`auth-file-picker ${recoveryFile ? 'has-file' : ''}`}
+                onClick={handlePickRecoveryFile}
+              >
+                <FileKey size={18} />
+                <span>{recoveryFile ? recoveryFile.fileName : t('auth.selectRecoveryFile')}</span>
+                {recoveryFile && <ShieldCheck size={16} className="auth-file-check" />}
+              </button>
+            </div>
+
+            <div className="auth-input-group">
+              <label>{t('auth.newPassword')}</label>
+              <div className="auth-input-wrapper">
+                <Lock size={18} className="auth-input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={t('auth.min8')}
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); if (error) setError(''); }}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  autoFocus
+                />
+                <button type="button" className="auth-toggle-pw" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="auth-input-group">
+              <label>{t('auth.confirmNewPassword')}</label>
+              <div className="auth-input-wrapper">
+                <Lock size={18} className="auth-input-icon" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={t('auth.repeatNewPassword')}
+                  value={confirmNewPassword}
+                  onChange={(e) => { setConfirmNewPassword(e.target.value); if (error) setError(''); }}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-lg btn-full auth-submit" disabled={loading}>
+              {loading ? (
+                <><Loader size={18} className="auth-spinner" /> {t('auth.recovering')}</>
+              ) : (
+                <><ShieldCheck size={18} /> {t('auth.resetPassword')}</>
+              )}
+            </button>
+
+            <button type="button" className="auth-back-link" onClick={() => switchMode('login')}>
+              {t('auth.backToSignIn')}
+            </button>
+          </form>
+        )}
+
+        {/* Footer */}
+        <div className="auth-footer">
+          Orbit v0.1.0
         </div>
       </div>
 
-      {/* Recovery File Save Prompt (post-register/migrate) */}
+      {/* Recovery File Save Prompt */}
       {recoveryPrompt && (
         <div className="auth-overlay">
           <div className="auth-modal">
@@ -519,9 +495,7 @@ function Auth() {
               <ShieldCheck size={32} />
             </div>
             <h2>{t('auth.saveRecoveryTitle')}</h2>
-            <p>
-              {t('auth.saveRecoveryText')}
-            </p>
+            <p>{t('auth.saveRecoveryText')}</p>
             <button className="btn btn-primary btn-lg btn-full" onClick={handleSaveRecoveryFile}>
               <Download size={18} />
               {t('auth.downloadRecoveryFile')}

@@ -50,6 +50,11 @@ function App() {
     document.documentElement.setAttribute('lang', lang);
   }, [userSettings?.language]);
 
+  useEffect(() => {
+    const theme = userSettings?.theme || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [userSettings?.theme]);
+
   if (isLoading) {
     return <LoadingSpinner fullscreen />;
   }

@@ -53,13 +53,7 @@ function Unlock() {
 
   return (
     <div className="auth-page">
-      {/* Animated background */}
-      <div className="auth-bg">
-        <div className="auth-bg-orb auth-bg-orb-1" />
-        <div className="auth-bg-orb auth-bg-orb-2" />
-        <div className="auth-bg-orb auth-bg-orb-3" />
-        <div className="auth-bg-grid" />
-      </div>
+      <div className="auth-mesh" />
 
       <div className="unlock-card">
         {/* Lock icon */}
