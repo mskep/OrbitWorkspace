@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag, Eye, Code } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag } from 'lucide-react';
 import hubAPI from '../api/hubApi';
 import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
+import BlockNoteEditor from '../components/BlockNoteEditor';
+import { extractPlainText } from '../utils/noteUtils';
 import { useI18n } from '../i18n';
 
 /**
- * Notes Page - Full CRUD for notes with markdown editor
+ * Notes Page - Full CRUD for notes with BlockNote editor
  */
 function Notes() {
   const { t, language } = useI18n();
@@ -318,6 +318,7 @@ function Notes() {
                 }
               }}
               isNew={!selectedNote}
+              noteId={selectedNote?.id}
             />
           ) : (
             <NoteViewer
@@ -363,7 +364,7 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
       </div>
 
       <p className="note-card-excerpt">
-        {note.content || 'No content'}
+        {extractPlainText(note.content) || 'No content'}
       </p>
 
       {note.tags && (
@@ -384,9 +385,8 @@ function NoteCard({ note, isSelected, onSelect, onTogglePin }) {
   );
 }
 
-// Note Editor Component with Markdown preview
-function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
-  const [showPreview, setShowPreview] = useState(false);
+// Note Editor Component with BlockNote
+function NoteEditor({ formData, setFormData, onSave, onCancel, isNew, noteId }) {
   const { language } = useI18n();
   const isFr = language === 'fr';
 
@@ -398,14 +398,6 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
           {isNew ? (isFr ? 'Nouvelle note' : 'New Note') : (isFr ? 'Modifier la note' : 'Edit Note')}
         </h3>
         <div className="flex-center flex-gap-2">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className={`btn btn-secondary btn-sm flex-center flex-gap-2${showPreview ? ' active' : ''}`}
-            style={showPreview ? { backgroundColor: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' } : undefined}
-          >
-            {showPreview ? <Code size={16} /> : <Eye size={16} />}
-            {showPreview ? 'Editor' : 'Preview'}
-          </button>
           <button onClick={onCancel} className="btn btn-secondary btn-sm flex-center flex-gap-2">
             <X size={16} />
             Cancel
@@ -438,35 +430,15 @@ function NoteEditor({ formData, setFormData, onSave, onCancel, isNew }) {
         />
       </div>
 
-      {/* Content: Editor or Preview */}
-      {showPreview ? (
-        <div className="markdown-body note-markdown-preview">
-          {formData.content ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{formData.content}</ReactMarkdown>
-          ) : (
-            <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>Nothing to preview</span>
-          )}
-        </div>
-      ) : (
-        <textarea
-          className="note-textarea"
-          value={formData.content}
-          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-          placeholder="Write in Markdown... (# headings, **bold**, *italic*, - lists, ```code```)"
-          onKeyDown={(e) => {
-            if (e.key === 'Tab') {
-              e.preventDefault();
-              const start = e.target.selectionStart;
-              const end = e.target.selectionEnd;
-              const newContent = formData.content.substring(0, start) + '  ' + formData.content.substring(end);
-              setFormData({ ...formData, content: newContent });
-              requestAnimationFrame(() => {
-                e.target.selectionStart = e.target.selectionEnd = start + 2;
-              });
-            }
-          }}
+      {/* BlockNote Editor */}
+      <div className="note-blocknote-wrapper">
+        <BlockNoteEditor
+          key={noteId || 'new'}
+          initialContent={formData.content}
+          onChange={(json) => setFormData((prev) => ({ ...prev, content: json }))}
+          editable={true}
         />
-      )}
+      </div>
     </div>
   );
 }
@@ -508,13 +480,13 @@ function NoteViewer({ note, onEdit, onDelete, onTogglePin }) {
         </div>
       </div>
 
-      {/* Content - Rendered as Markdown */}
-      <div className="markdown-body note-markdown-content">
-        {note.content ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
-        ) : (
-          <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>No content</span>
-        )}
+      {/* Content - BlockNote read-only */}
+      <div className="note-blocknote-wrapper note-blocknote-viewer">
+        <BlockNoteEditor
+          key={note.id}
+          initialContent={note.content || ''}
+          editable={false}
+        />
       </div>
 
       {/* Metadata */}

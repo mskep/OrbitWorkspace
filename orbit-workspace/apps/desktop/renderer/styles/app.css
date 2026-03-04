@@ -5038,43 +5038,151 @@ input[type="checkbox"]:disabled {
 }
 
 /* Markdown content area */
-.note-markdown-preview {
+/* BlockNote editor wrapper */
+.note-blocknote-wrapper {
   flex: 1;
-  padding: var(--space-5);
-  background-color: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-default);
-  overflow-y: auto;
+  background-color: var(--bg-tertiary);
+  min-height: 300px;
+}
+
+/* BlockNote container: toolbar on top, editor below */
+.note-blocknote-wrapper .bn-container {
+  display: flex;
+  flex-direction: column-reverse;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Hide all BlockNote placeholders by default */
+.note-blocknote-wrapper .bn-block-outer .bn-inline-content:has(> .bn-inline-content-type[data-is-empty-and-focused])::before,
+.note-blocknote-wrapper [class*="isEmpty"]::before,
+.note-blocknote-wrapper .bn-block-content[data-is-empty-and-focused] .bn-inline-content::before {
+  content: none !important;
+}
+
+/* Show placeholder ONLY on the first block when editor has a single empty block — lang-aware */
+:root[lang="fr"] .note-blocknote-wrapper .bn-block-group > .bn-block-outer:first-child:last-child .bn-block-content[data-is-empty-and-focused] .bn-inline-content::before {
+  content: "Écris ici ou tape '/' pour les commandes" !important;
+  opacity: 0.4;
+}
+:root:not([lang="fr"]) .note-blocknote-wrapper .bn-block-group > .bn-block-outer:first-child:last-child .bn-block-content[data-is-empty-and-focused] .bn-inline-content::before {
+  content: "Type here or press '/' for commands" !important;
+  opacity: 0.4;
+}
+
+/* Editor area */
+.note-blocknote-wrapper .bn-editor {
+  flex: 1;
+  min-height: 280px;
   font-size: var(--text-sm);
   line-height: 1.7;
   color: var(--text-primary);
+  padding: var(--space-4);
+  overflow-y: auto;
 }
 
-.note-markdown-content {
-  flex: 1;
-  padding: var(--space-5);
-  background-color: var(--bg-tertiary);
-  border-radius: var(--radius-md);
+/* Static toolbar pinned at top */
+.note-blocknote-wrapper .bn-formatting-toolbar {
+  width: 100%;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: none;
+  padding: 6px 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: flex-start;
+}
+
+/* Checklist styling */
+.note-blocknote-wrapper [data-content-type="checkListItem"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.note-blocknote-wrapper [data-content-type="checkListItem"] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+  vertical-align: middle;
+  transition: all var(--transition-fast);
+}
+
+.note-blocknote-wrapper [data-content-type="checkListItem"] input[type="checkbox"]:checked {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.note-blocknote-wrapper [data-content-type="checkListItem"] input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.note-blocknote-wrapper [data-content-type="checkListItem"] input[type="checkbox"]:hover {
+  border-color: var(--accent-primary);
+}
+
+/* Read-only viewer variant */
+.note-blocknote-viewer {
+  border: none;
+  background-color: transparent;
+}
+
+.note-blocknote-viewer .bn-editor {
   font-size: var(--text-base);
   line-height: 1.8;
-  color: var(--text-primary);
-  overflow-y: auto;
-  word-break: break-word;
 }
 
-.note-textarea {
-  flex: 1;
-  padding: var(--space-4);
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--text-primary);
-  outline: none;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-  resize: none;
-  line-height: 1.6;
-  tab-size: 2;
+/* BlockNote font override to match app */
+.bn-container,
+.bn-container * {
+  font-family: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* BlockNote theme overrides — dark */
+.bn-container[data-color-scheme="dark"] {
+  --bn-colors-editor-text: var(--text-primary);
+  --bn-colors-editor-background: transparent;
+  --bn-colors-menu-text: var(--text-primary);
+  --bn-colors-menu-background: var(--bg-elevated);
+  --bn-colors-tooltip-text: var(--text-primary);
+  --bn-colors-tooltip-background: var(--bg-elevated);
+  --bn-colors-hovered-text: var(--text-primary);
+  --bn-colors-hovered-background: var(--bg-hover);
+  --bn-colors-selected-text: var(--text-primary);
+  --bn-colors-selected-background: var(--accent-glow);
+}
+
+/* BlockNote theme overrides — light */
+[data-theme="light"] .bn-container[data-color-scheme="light"] {
+  --bn-colors-editor-text: var(--text-primary);
+  --bn-colors-editor-background: transparent;
+  --bn-colors-menu-text: var(--text-primary);
+  --bn-colors-menu-background: var(--bg-elevated);
+  --bn-colors-hovered-background: var(--bg-hover);
+  --bn-colors-selected-background: var(--accent-glow);
 }
 
 /* Viewer title */

@@ -86,8 +86,11 @@ function createWindow() {
     }
   });
 
-  // Block new window creation (popups, target=_blank)
-  mainWindow.webContents.setWindowOpenHandler(() => {
+  // Open external URLs in the system browser instead of creating new windows
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+    }
     return { action: 'deny' };
   });
 
