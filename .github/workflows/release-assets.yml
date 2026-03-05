@@ -1,0 +1,64 @@
+name: Release Assets
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag to build and attach assets to (example: v0.3.1)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-assets-${{ inputs.tag_name || github.event.release.tag_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installer:
+    if: startsWith(inputs.tag_name || github.event.release.tag_name, 'v')
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: orbit-workspace
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: refs/tags/${{ inputs.tag_name || github.event.release.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: orbit-workspace/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build renderer
+        run: npm run build:renderer
+
+      - name: Build Windows installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist
+
+      - name: Upload installer assets to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name || github.event.release.tag_name }}
+          fail_on_unmatched_files: true
+          files: |
+            orbit-workspace/dist/Orbit Setup *.exe
+            orbit-workspace/dist/Orbit Setup *.exe.blockmap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
