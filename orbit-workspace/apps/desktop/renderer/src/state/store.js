@@ -74,6 +74,17 @@ export const useAppStore = create((set) => ({
   currentPage: 'home',
   setCurrentPage: (page) => set({ currentPage: page }),
 
+  // Toasts
+  toasts: [],
+  showToast: (message, type = 'info', duration = 3000) =>
+    set((state) => ({
+      toasts: [...state.toasts, { id: Date.now() + Math.random(), message, type, duration }],
+    })),
+  closeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
+
   // Cloud Sync
   syncStatus: {
     status: 'disconnected',

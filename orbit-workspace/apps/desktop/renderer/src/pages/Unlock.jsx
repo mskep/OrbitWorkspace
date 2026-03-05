@@ -87,7 +87,7 @@ function Unlock() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); if (error) setError(''); }}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 placeholder={t('auth.enterPassword')}
                 required
                 autoFocus

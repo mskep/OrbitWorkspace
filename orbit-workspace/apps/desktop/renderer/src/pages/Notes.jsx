@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Pin, Edit, Trash2, Save, X, FileText, Tag } from 'lucide-react';
+import { Plus, Search, Pin, Edit, Trash2, Save, FileText, Tag, X } from 'lucide-react';
 import hubAPI from '../api/hubApi';
 import { useAppStore } from '../state/store';
 import Topbar from '../app/layout/Topbar';
@@ -17,12 +17,12 @@ function Notes() {
   const isFr = language === 'fr';
   const activeWorkspace = useAppStore((state) => state.activeWorkspace);
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
+  const showToast = useAppStore((state) => state.showToast);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNote, setSelectedNote] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, noteId: null, noteTitle: '' });
 
   // Form state
@@ -43,7 +43,7 @@ function Notes() {
       // Get active workspace
       const workspaceResult = await hubAPI.workspaces.getActive();
       if (!workspaceResult.success) {
-        setError('No active workspace. Please create a workspace first.');
+        showToast(isFr ? 'Aucun espace actif' : 'No active workspace', 'error');
         setLoading(false);
         return;
       }
@@ -54,7 +54,7 @@ function Notes() {
       await loadNotes(workspaceResult.workspace.id);
     } catch (err) {
       console.error('Failed to load workspace and notes:', err);
-      setError('Failed to load notes');
+      showToast(isFr ? 'Erreur de chargement' : 'Failed to load notes', 'error');
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,6 @@ function Notes() {
     setIsEditing(true);
     setSelectedNote(null);
     setFormData({ title: '', content: '', tags: '' });
-    setError('');
   };
 
   const handleEditNote = (note) => {
@@ -112,18 +111,16 @@ function Notes() {
       content: note.content,
       tags: note.tags || ''
     });
-    setError('');
   };
 
   const handleSaveNote = async () => {
     if (!formData.title.trim()) {
-      setError('Title is required');
+      showToast(isFr ? 'Le titre est requis' : 'Title is required', 'error');
       return;
     }
 
     try {
       if (selectedNote) {
-        // Update existing note
         const result = await hubAPI.notes.update({
           id: selectedNote.id,
           title: formData.title,
@@ -135,12 +132,11 @@ function Notes() {
           await loadNotes(activeWorkspace.id);
           setIsEditing(false);
           setSelectedNote(result.note);
-          setError('');
+          showToast(isFr ? 'Note sauvegardée' : 'Note saved', 'success');
         } else {
-          setError(result.error || 'Failed to update note');
+          showToast(result.error || (isFr ? 'Erreur de mise à jour' : 'Failed to update note'), 'error');
         }
       } else {
-        // Create new note
         const result = await hubAPI.notes.create({
           workspaceId: activeWorkspace.id,
           title: formData.title,
@@ -153,14 +149,14 @@ function Notes() {
           await loadNotes(activeWorkspace.id);
           setIsEditing(false);
           setSelectedNote(result.note);
-          setError('');
+          showToast(isFr ? 'Note créée' : 'Note created', 'success');
         } else {
-          setError(result.error || 'Failed to create note');
+          showToast(result.error || (isFr ? 'Erreur de création' : 'Failed to create note'), 'error');
         }
       }
     } catch (err) {
       console.error('Failed to save note:', err);
-      setError('Failed to save note');
+      showToast(isFr ? 'Erreur de sauvegarde' : 'Failed to save note', 'error');
     }
   };
 
@@ -174,12 +170,13 @@ function Notes() {
           setIsEditing(false);
         }
         setDeleteModal({ isOpen: false, noteId: null, noteTitle: '' });
+        showToast(isFr ? 'Note supprimée' : 'Note deleted', 'success');
       } else {
-        setError(result.error || 'Failed to delete note');
+        showToast(result.error || (isFr ? 'Erreur de suppression' : 'Failed to delete note'), 'error');
       }
     } catch (err) {
       console.error('Failed to delete note:', err);
-      setError('Failed to delete note');
+      showToast(isFr ? 'Erreur de suppression' : 'Failed to delete note', 'error');
     }
   };
 
@@ -204,7 +201,6 @@ function Notes() {
   const handleViewNote = (note) => {
     setSelectedNote(note);
     setIsEditing(false);
-    setError('');
   };
 
   if (loading) {
@@ -290,15 +286,6 @@ function Notes() {
 
         {/* Note Content Area */}
         <div className="notes-content-area">
-          {error && (
-            <div className="alert alert-error flex-between">
-              <span>{error}</span>
-              <button onClick={() => setError('')} className="btn-icon-ghost btn-icon-danger">
-                <X size={16} />
-              </button>
-            </div>
-          )}
-
           {!selectedNote && !isEditing ? (
             <EmptyState
               icon={FileText}
@@ -312,7 +299,6 @@ function Notes() {
               onSave={handleSaveNote}
               onCancel={() => {
                 setIsEditing(false);
-                setError('');
                 if (!selectedNote) {
                   setFormData({ title: '', content: '', tags: '' });
                 }

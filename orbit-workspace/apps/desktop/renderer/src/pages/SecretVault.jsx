@@ -70,6 +70,7 @@ function SecretVault() {
   const { t } = useI18n();
   const activeWorkspace = useAppStore((state) => state.activeWorkspace);
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
+  const showToast = useAppStore((state) => state.showToast);
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +80,6 @@ function SecretVault() {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState('');
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [revealedIds, setRevealedIds] = useState(() => new Set());
   const [copyState, setCopyState] = useState({ id: null, status: 'idle' });
@@ -133,7 +133,6 @@ function SecretVault() {
 
   async function loadWorkspaceAndItems() {
     setLoading(true);
-    setError('');
 
     try {
       const workspaceResult = await hubAPI.workspaces.getActive();
@@ -146,7 +145,7 @@ function SecretVault() {
       await loadItems(workspaceResult.workspace.id);
     } catch (err) {
       console.error('Failed to load vault workspace:', err);
-      setError('Failed to load Secret Vault');
+      showToast(t('vault.saveError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -166,7 +165,7 @@ function SecretVault() {
         : await hubAPI.vault.getAll(payload);
 
       if (!result?.success) {
-        setError(result?.error || 'Failed to load vault items');
+        showToast(result?.error || 'Failed to load vault items', 'error');
         setItems([]);
         return;
       }
@@ -184,7 +183,7 @@ function SecretVault() {
       }
     } catch (err) {
       console.error('Failed to load vault items:', err);
-      setError('Failed to load vault items');
+      showToast('Failed to load vault items', 'error');
       setItems([]);
     }
   }
@@ -196,7 +195,6 @@ function SecretVault() {
       ...EMPTY_FORM,
       type: typeFilter === 'all' ? 'password' : typeFilter,
     });
-    setError('');
   }
 
   function handleEditSelected() {
@@ -212,28 +210,25 @@ function SecretVault() {
       tags: selectedItem.tags || '',
     });
     setIsEditing(true);
-    setError('');
   }
 
   function handleCancelEdit() {
     setIsEditing(false);
-    setError('');
     setFormData(EMPTY_FORM);
   }
 
   async function handleSave() {
     if (!formData.title.trim()) {
-      setError(t('vault.requiredTitle'));
+      showToast(t('vault.requiredTitle'), 'error');
       return;
     }
 
     if (!activeWorkspace?.id) {
-      setError(t('vault.emptyWorkspaceDesc'));
+      showToast(t('vault.emptyWorkspaceDesc'), 'error');
       return;
     }
 
     setSaving(true);
-    setError('');
 
     try {
       const payload = {
@@ -252,7 +247,7 @@ function SecretVault() {
         : await hubAPI.vault.create(payload);
 
       if (!result?.success) {
-        setError(result?.error || t('vault.saveError'));
+        showToast(result?.error || t('vault.saveError'), 'error');
         return;
       }
 
@@ -260,9 +255,10 @@ function SecretVault() {
       setIsEditing(false);
       setFormData(EMPTY_FORM);
       await loadItems(activeWorkspace.id, updated?.id || selectedId);
+      showToast(selectedId ? t('vault.editItem') + ' ✓' : t('vault.createNew') + ' ✓', 'success');
     } catch (err) {
       console.error('Vault save failed:', err);
-      setError(t('vault.saveError'));
+      showToast(t('vault.saveError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -274,7 +270,7 @@ function SecretVault() {
     try {
       const result = await hubAPI.vault.delete({ id: deleteModal.id });
       if (!result?.success) {
-        setError(result?.error || 'Failed to delete vault item');
+        showToast(result?.error || 'Failed to delete vault item', 'error');
         return;
       }
 
@@ -288,9 +284,10 @@ function SecretVault() {
       if (activeWorkspace?.id) {
         await loadItems(activeWorkspace.id);
       }
+      showToast(t('common.delete') + ' ✓', 'success');
     } catch (err) {
       console.error('Vault delete failed:', err);
-      setError('Failed to delete vault item');
+      showToast('Failed to delete vault item', 'error');
     }
   }
 
@@ -298,7 +295,7 @@ function SecretVault() {
     try {
       const result = await hubAPI.vault.toggleArchived({ id: item.id });
       if (!result?.success) {
-        setError(result?.error || 'Failed to update archive state');
+        showToast(result?.error || 'Failed to update archive state', 'error');
         return;
       }
 
@@ -307,7 +304,7 @@ function SecretVault() {
       }
     } catch (err) {
       console.error('Vault archive toggle failed:', err);
-      setError('Failed to update archive state');
+      showToast('Failed to update archive state', 'error');
     }
   }
 
@@ -315,7 +312,7 @@ function SecretVault() {
     try {
       const result = await hubAPI.vault.togglePin({ id: item.id });
       if (!result?.success) {
-        setError(result?.error || 'Failed to update pin state');
+        showToast(result?.error || 'Failed to update pin state', 'error');
         return;
       }
 
@@ -324,7 +321,7 @@ function SecretVault() {
       }
     } catch (err) {
       console.error('Vault pin toggle failed:', err);
-      setError('Failed to update pin state');
+      showToast('Failed to update pin state', 'error');
     }
   }
 
@@ -441,7 +438,6 @@ function SecretVault() {
                     onClick={() => {
                       setSelectedId(item.id);
                       setIsEditing(false);
-                      setError('');
                     }}
                   >
                     <div className="vault-item-header">
@@ -462,8 +458,6 @@ function SecretVault() {
           </aside>
 
           <section className="vault-main">
-            {error ? <div className="vault-error">{error}</div> : null}
-
             {isEditing ? (
               <div className="vault-editor card card-padding-lg">
                 <div className="vault-editor-header">

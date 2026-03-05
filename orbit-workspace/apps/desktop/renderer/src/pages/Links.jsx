@@ -34,6 +34,7 @@ function Links() {
   const isFr = language === 'fr';
   const activeWorkspace = useAppStore((state) => state.activeWorkspace);
   const setActiveWorkspace = useAppStore((state) => state.setActiveWorkspace);
+  const showToast = useAppStore((state) => state.showToast);
   const [activeTab, setActiveTab] = useState('links'); // 'links' or 'files'
   const [links, setLinks] = useState([]);
   const [fileRefs, setFileRefs] = useState([]);
@@ -41,7 +42,6 @@ function Links() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, title: '', type: '' });
 
   // Form state
@@ -71,7 +71,7 @@ function Links() {
       // Get active workspace
       const workspaceResult = await hubAPI.workspaces.getActive();
       if (!workspaceResult.success) {
-        setError('No active workspace. Please create a workspace first.');
+        showToast(isFr ? 'Aucun espace actif' : 'No active workspace', 'error');
         setLoading(false);
         return;
       }
@@ -83,7 +83,7 @@ function Links() {
       await loadFileRefs(workspaceResult.workspace.id);
     } catch (err) {
       console.error('Failed to load workspace and data:', err);
-      setError('Failed to load data');
+      showToast(isFr ? 'Erreur de chargement' : 'Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
@@ -153,14 +153,12 @@ function Links() {
     setIsEditing(true);
     setSelectedItem(null);
     setFormData({ title: '', url: '', description: '', isFavorite: false });
-    setError('');
   };
 
   const handleCreateFileRef = () => {
     setIsEditing(true);
     setSelectedItem(null);
     setFileFormData({ name: '', path: '', description: '', type: 'file' });
-    setError('');
   };
 
   const handleEditLink = (link) => {
@@ -172,7 +170,6 @@ function Links() {
       description: link.description || '',
       isFavorite: link.is_favorite
     });
-    setError('');
   };
 
   const handleEditFileRef = (fileRef) => {
@@ -184,18 +181,16 @@ function Links() {
       description: fileRef.description || '',
       type: fileRef.type || 'file'
     });
-    setError('');
   };
 
   const handleSaveLink = async () => {
     if (!formData.title.trim() || !formData.url.trim()) {
-      setError('Title and URL are required');
+      showToast(isFr ? 'Titre et URL requis' : 'Title and URL are required', 'error');
       return;
     }
 
     try {
       if (selectedItem) {
-        // Update
         const result = await hubAPI.links.update({
           id: selectedItem.id,
           title: formData.title,
@@ -207,12 +202,11 @@ function Links() {
           await loadLinks(activeWorkspace.id);
           setIsEditing(false);
           setSelectedItem(null);
-          setError('');
+          showToast(isFr ? 'Lien mis à jour' : 'Link updated', 'success');
         } else {
-          setError(result.error || 'Failed to update link');
+          showToast(result.error || (isFr ? 'Erreur de mise à jour' : 'Failed to update link'), 'error');
         }
       } else {
-        // Create
         const result = await hubAPI.links.create({
           workspaceId: activeWorkspace.id,
           title: formData.title,
@@ -224,30 +218,29 @@ function Links() {
         if (result.success) {
           await loadLinks(activeWorkspace.id);
           setIsEditing(false);
-          setError('');
+          showToast(isFr ? 'Lien créé' : 'Link created', 'success');
         } else {
-          setError(result.error || 'Failed to create link');
+          showToast(result.error || (isFr ? 'Erreur de création' : 'Failed to create link'), 'error');
         }
       }
     } catch (err) {
       console.error('Failed to save link:', err);
-      setError('Failed to save link');
+      showToast(isFr ? 'Erreur de sauvegarde' : 'Failed to save link', 'error');
     }
   };
 
   const handleSaveFileRef = async () => {
     if (!fileFormData.name.trim() || !fileFormData.path.trim()) {
-      setError('Name and path are required');
+      showToast(isFr ? 'Nom et chemin requis' : 'Name and path are required', 'error');
       return;
     }
 
     try {
       if (selectedItem) {
-        // Update
         const result = await hubAPI.fileRefs.update({
           id: selectedItem.id,
           name: fileFormData.name,
-          path: fileFormData.path, // Changed from filePath to path
+          path: fileFormData.path,
           description: fileFormData.description
         });
 
@@ -255,31 +248,30 @@ function Links() {
           await loadFileRefs(activeWorkspace.id);
           setIsEditing(false);
           setSelectedItem(null);
-          setError('');
+          showToast(isFr ? 'Fichier mis à jour' : 'File reference updated', 'success');
         } else {
-          setError(result.error || 'Failed to update file reference');
+          showToast(result.error || (isFr ? 'Erreur de mise à jour' : 'Failed to update file reference'), 'error');
         }
       } else {
-        // Create
         const result = await hubAPI.fileRefs.create({
           workspaceId: activeWorkspace.id,
           name: fileFormData.name,
-          path: fileFormData.path, // Changed from filePath to path
-          type: fileFormData.type, // Use type from form (file or folder)
+          path: fileFormData.path,
+          type: fileFormData.type,
           description: fileFormData.description
         });
 
         if (result.success) {
           await loadFileRefs(activeWorkspace.id);
           setIsEditing(false);
-          setError('');
+          showToast(isFr ? 'Fichier créé' : 'File reference created', 'success');
         } else {
-          setError(result.error || 'Failed to create file reference');
+          showToast(result.error || (isFr ? 'Erreur de création' : 'Failed to create file reference'), 'error');
         }
       }
     } catch (err) {
       console.error('Failed to save file reference:', err);
-      setError('Failed to save file reference');
+      showToast(isFr ? 'Erreur de sauvegarde' : 'Failed to save file reference', 'error');
     }
   };
 
@@ -289,21 +281,23 @@ function Links() {
         const result = await hubAPI.links.delete({ id: deleteModal.id });
         if (result.success) {
           await loadLinks(activeWorkspace.id);
+          showToast(isFr ? 'Lien supprimé' : 'Link deleted', 'success');
         } else {
-          setError(result.error || 'Failed to delete link');
+          showToast(result.error || (isFr ? 'Erreur de suppression' : 'Failed to delete link'), 'error');
         }
       } else {
         const result = await hubAPI.fileRefs.delete({ id: deleteModal.id });
         if (result.success) {
           await loadFileRefs(activeWorkspace.id);
+          showToast(isFr ? 'Fichier supprimé' : 'File reference deleted', 'success');
         } else {
-          setError(result.error || 'Failed to delete file reference');
+          showToast(result.error || (isFr ? 'Erreur de suppression' : 'Failed to delete file reference'), 'error');
         }
       }
       setDeleteModal({ isOpen: false, id: null, title: '', type: '' });
     } catch (err) {
       console.error('Failed to delete:', err);
-      setError('Failed to delete item');
+      showToast(isFr ? 'Erreur de suppression' : 'Failed to delete item', 'error');
     }
   };
 
@@ -323,7 +317,7 @@ function Links() {
       await hubAPI.fileRefs.open({ id: fileRefId });
     } catch (err) {
       console.error('Failed to open file:', err);
-      setError('Failed to open file');
+      showToast(isFr ? 'Impossible d\'ouvrir le fichier' : 'Failed to open file', 'error');
     }
   };
 
@@ -332,7 +326,7 @@ function Links() {
       await hubAPI.fileRefs.showInFolder({ id: fileRefId });
     } catch (err) {
       console.error('Failed to show in folder:', err);
-      setError('Failed to show in folder');
+      showToast(isFr ? 'Impossible d\'afficher dans le dossier' : 'Failed to show in folder', 'error');
     }
   };
 
@@ -476,15 +470,6 @@ function Links() {
 
           {/* Editor/Content Area */}
           <div className="notes-content-area">
-            {error && (
-              <div className="alert alert-error flex-between">
-                <span>{error}</span>
-                <button onClick={() => setError('')} className="btn-icon-ghost btn-icon-danger">
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-
             {!isEditing ? (
               <EmptyState
                 icon={activeTab === 'links' ? LinkIcon : File}
@@ -499,7 +484,6 @@ function Links() {
                 onCancel={() => {
                   setIsEditing(false);
                   setSelectedItem(null);
-                  setError('');
                 }}
                 isNew={!selectedItem}
               />
@@ -511,7 +495,6 @@ function Links() {
                 onCancel={() => {
                   setIsEditing(false);
                   setSelectedItem(null);
-                  setError('');
                 }}
                 isNew={!selectedItem}
                 onPickFile={handlePickFile}

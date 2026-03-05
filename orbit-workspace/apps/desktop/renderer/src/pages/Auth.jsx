@@ -9,13 +9,13 @@ import { useI18n } from '../i18n';
 function Auth() {
   const navigate = useNavigate();
   const { setSession, setProfile, setUserSettings } = useAppStore();
+  const showToast = useAppStore((s) => s.showToast);
   const { t } = useI18n();
 
   const [mode, setMode] = useState('login'); // 'login', 'register', 'recover'
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [recoveryPrompt, setRecoveryPrompt] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -38,7 +38,6 @@ function Auth() {
       [name]: type === 'checkbox' ? checked : value
     }));
     if (error) setError('');
-    if (success) setSuccess('');
   };
 
   const handleLogin = async (e) => {
@@ -144,7 +143,6 @@ function Auth() {
       const result = await hubAPI.crypto.pickRecoveryFile();
       if (result) {
         setRecoveryFile(result);
-        if (error) setError('');
       }
     } catch (err) {
       setError(t('auth.recoveryOpenPickerFail'));
@@ -180,7 +178,7 @@ function Auth() {
 
       if (result.success) {
         setMode('login');
-        setSuccess(t('auth.recoveryResetSuccess'));
+        showToast(t('auth.recoveryResetSuccess'), 'success', 5000);
         setNewPassword('');
         setConfirmNewPassword('');
         setRecoveryFile(null);
@@ -216,7 +214,6 @@ function Auth() {
   const switchMode = (newMode) => {
     setMode(newMode);
     setError('');
-    setSuccess('');
     setFormData({ identifier: '', email: '', username: '', password: '', confirmPassword: '' });
     setNewPassword('');
     setConfirmNewPassword('');
@@ -266,12 +263,6 @@ function Auth() {
           <div className="auth-alert auth-alert-error">
             <AlertCircle size={16} />
             {error}
-          </div>
-        )}
-        {success && (
-          <div className="auth-alert auth-alert-success">
-            <ShieldCheck size={16} />
-            {success}
           </div>
         )}
 
@@ -439,7 +430,7 @@ function Auth() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder={t('auth.min8')}
                   value={newPassword}
-                  onChange={(e) => { setNewPassword(e.target.value); if (error) setError(''); }}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={8}
                   autoComplete="new-password"
@@ -459,7 +450,7 @@ function Auth() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder={t('auth.repeatNewPassword')}
                   value={confirmNewPassword}
-                  onChange={(e) => { setConfirmNewPassword(e.target.value); if (error) setError(''); }}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
                   required
                   minLength={8}
                   autoComplete="new-password"

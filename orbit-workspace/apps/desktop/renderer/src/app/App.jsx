@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import AppRoutes from './routes';
 import TitleBar from '../components/TitleBar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { ToastContainer } from '../components/Toast';
 import { useAppStore } from '../state/store';
 import hubAPI from '../api/hubApi';
 
 function App() {
-  const { setSession, setProfile, setOnline, setUserSettings, userSettings } = useAppStore();
+  const { setSession, setProfile, setOnline, setUserSettings, userSettings, toasts, closeToast } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -63,6 +64,7 @@ function App() {
     <>
       <TitleBar />
       <AppRoutes />
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </>
   );
 }
