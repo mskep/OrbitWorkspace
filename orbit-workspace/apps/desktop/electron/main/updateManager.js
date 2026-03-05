@@ -37,6 +37,7 @@ class UpdateManager {
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = false;
+    this._applyRuntimeAuthHeaders();
 
     autoUpdater.on('checking-for-update', () => {
       this._setState({
@@ -92,10 +93,11 @@ class UpdateManager {
     });
 
     autoUpdater.on('error', (error) => {
+      const normalizedError = this._normalizeUpdaterError(error);
       this._setState({
         status: 'error',
-        message: 'Update failed',
-        error: error?.message || String(error),
+        message: normalizedError.userMessage,
+        error: normalizedError.details,
       });
     });
 
@@ -124,12 +126,13 @@ class UpdateManager {
       await autoUpdater.checkForUpdates();
       return { success: true };
     } catch (error) {
+      const normalizedError = this._normalizeUpdaterError(error);
       this._setState({
         status: 'error',
-        message: 'Update check failed',
-        error: error?.message || String(error),
+        message: normalizedError.userMessage,
+        error: normalizedError.details,
       });
-      return { success: false, error: error?.message || 'Failed to check updates' };
+      return { success: false, error: normalizedError.userMessage };
     }
   }
 
@@ -146,12 +149,13 @@ class UpdateManager {
       await autoUpdater.downloadUpdate();
       return { success: true };
     } catch (error) {
+      const normalizedError = this._normalizeUpdaterError(error);
       this._setState({
         status: 'error',
-        message: 'Update download failed',
-        error: error?.message || String(error),
+        message: normalizedError.userMessage,
+        error: normalizedError.details,
       });
-      return { success: false, error: error?.message || 'Failed to download update' };
+      return { success: false, error: normalizedError.userMessage };
     }
   }
 
@@ -170,13 +174,52 @@ class UpdateManager {
       }, 100);
       return { success: true };
     } catch (error) {
+      const normalizedError = this._normalizeUpdaterError(error);
       this._setState({
         status: 'error',
-        message: 'Install update failed',
-        error: error?.message || String(error),
+        message: normalizedError.userMessage,
+        error: normalizedError.details,
       });
-      return { success: false, error: error?.message || 'Failed to install update' };
+      return { success: false, error: normalizedError.userMessage };
     }
+  }
+
+  _applyRuntimeAuthHeaders() {
+    const githubToken = process.env.ORBIT_UPDATER_TOKEN
+      || process.env.GH_TOKEN
+      || process.env.GITHUB_TOKEN;
+
+    if (!githubToken) return;
+
+    autoUpdater.requestHeaders = {
+      ...(autoUpdater.requestHeaders || {}),
+      Authorization: `token ${githubToken}`,
+    };
+  }
+
+  _normalizeUpdaterError(error) {
+    const raw = String(error?.message || error || 'Unknown updater error');
+    const condensed = raw
+      .replace(/\s+/g, ' ')
+      .replace(/\s*Headers:\s*\{.*$/i, '')
+      .trim();
+
+    const lower = condensed.toLowerCase();
+    if (
+      lower.includes('releases.atom')
+      && lower.includes('404')
+      && (lower.includes('token') || lower.includes('authentication'))
+    ) {
+      return {
+        userMessage: 'Updates unavailable: release feed is private. Make releases public or configure ORBIT_UPDATER_TOKEN.',
+        details: condensed,
+      };
+    }
+
+    return {
+      userMessage: 'Update failed. Try again in a moment.',
+      details: condensed,
+    };
   }
 
   _setState(patch) {

@@ -52,9 +52,7 @@ try {
 
 function createWindow() {
   isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  const icoIconPath = path.join(__dirname, '../assets/orbit-icon.ico');
-  const pngIconPath = path.join(__dirname, '../assets/orbit-icon.png');
-  const windowIconPath = fs.existsSync(icoIconPath) ? icoIconPath : pngIconPath;
+  const windowIconPath = resolveDesktopIconPath();
 
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -71,8 +69,12 @@ function createWindow() {
     show: false,
     backgroundColor: '#1a1a1a',
     titleBarStyle: 'hidden',
-    icon: windowIconPath
+    icon: windowIconPath || undefined
   });
+
+  if (windowIconPath && process.platform === 'win32') {
+    mainWindow.setIcon(windowIconPath);
+  }
 
   // Load the app
   if (isDev) {
@@ -110,6 +112,29 @@ function createWindow() {
   });
 
   return mainWindow;
+}
+
+function resolveDesktopIconPath() {
+  const iconFileNames = process.platform === 'win32'
+    ? ['orbit-icon.ico', 'orbit-icon.png']
+    : ['orbit-icon.png', 'orbit-icon.ico'];
+
+  const assetDirectories = [
+    path.join(process.resourcesPath || '', 'assets'),
+    path.join(__dirname, '../assets'),
+    path.join(process.resourcesPath || '', 'app.asar.unpacked', 'apps', 'desktop', 'electron', 'assets'),
+  ];
+
+  for (const assetDir of assetDirectories) {
+    for (const fileName of iconFileNames) {
+      const candidate = path.join(assetDir, fileName);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return null;
 }
 
 function focusMainWindow() {

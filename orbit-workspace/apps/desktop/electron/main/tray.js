@@ -9,12 +9,7 @@ class TrayManager {
   }
 
   create() {
-    const trayPngPath = path.join(__dirname, '../assets/orbit-tray.png');
-    const icoIconPath = path.join(__dirname, '../assets/orbit-icon.ico');
-    const pngIconPath = path.join(__dirname, '../assets/orbit-icon.png');
-    const iconPath = fs.existsSync(trayPngPath)
-      ? trayPngPath
-      : (fs.existsSync(icoIconPath) ? icoIconPath : pngIconPath);
+    const iconPath = this.resolveTrayIconPath();
 
     let icon;
     try {
@@ -43,6 +38,29 @@ class TrayManager {
     this.tray.on('double-click', () => {
       this.mainWindow.show();
     });
+  }
+
+  resolveTrayIconPath() {
+    const iconFileNames = process.platform === 'win32'
+      ? ['orbit-icon.ico', 'orbit-icon.png', 'orbit-tray.png']
+      : ['orbit-tray.png', 'orbit-icon.png', 'orbit-icon.ico'];
+
+    const assetDirectories = [
+      path.join(process.resourcesPath || '', 'assets'),
+      path.join(__dirname, '../assets'),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'apps', 'desktop', 'electron', 'assets'),
+    ];
+
+    for (const assetDir of assetDirectories) {
+      for (const fileName of iconFileNames) {
+        const candidate = path.join(assetDir, fileName);
+        if (fs.existsSync(candidate)) {
+          return candidate;
+        }
+      }
+    }
+
+    return null;
   }
 
   updateContextMenu(quickActions = []) {

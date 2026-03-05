@@ -15,6 +15,7 @@
     "build:electron": "electron-builder --config.win.signAndEditExecutable=false",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win --config.win.signAndEditExecutable=false",
+    "dist:release": "electron-builder --win --publish never",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/check-version-consistency.mjs",
     "preversion": "npm run version:check",
@@ -78,6 +79,17 @@
       "multiLanguageInstaller": true,
       "displayLanguageSelector": true
     },
+    "extraResources": [
+      {
+        "from": "apps/desktop/electron/assets",
+        "to": "assets",
+        "filter": [
+          "orbit-icon.ico",
+          "orbit-icon.png",
+          "orbit-tray.png"
+        ]
+      }
+    ],
     "files": [
       "apps/desktop/electron/**/*",
       "apps/desktop/renderer/dist/**/*",

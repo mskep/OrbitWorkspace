@@ -453,7 +453,7 @@ function Settings() {
     }
 
     if (updaterState === 'error') {
-      return updateStatus.error || (isFr ? 'Échec de la mise à jour.' : 'Update failed.');
+      return updateStatus.message || updateStatus.error || (isFr ? 'Échec de la mise à jour.' : 'Update failed.');
     }
 
     return updateStatus.message || (isFr ? 'Prêt à vérifier les mises à jour.' : 'Ready to check for updates.');
