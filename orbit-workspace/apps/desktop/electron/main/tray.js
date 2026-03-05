@@ -9,7 +9,12 @@ class TrayManager {
   }
 
   create() {
-    const iconPath = path.join(__dirname, '../../renderer/src/assets/v2.png');
+    const trayPngPath = path.join(__dirname, '../assets/orbit-tray.png');
+    const icoIconPath = path.join(__dirname, '../assets/orbit-icon.ico');
+    const pngIconPath = path.join(__dirname, '../assets/orbit-icon.png');
+    const iconPath = fs.existsSync(trayPngPath)
+      ? trayPngPath
+      : (fs.existsSync(icoIconPath) ? icoIconPath : pngIconPath);
 
     let icon;
     try {

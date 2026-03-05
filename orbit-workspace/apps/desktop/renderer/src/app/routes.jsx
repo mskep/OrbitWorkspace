@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from '../state/store';
 
 // Pages
@@ -47,6 +47,8 @@ function AdminRoute({ children }) {
 }
 
 function AppRoutes() {
+  const Router = window.location.protocol === 'file:' ? HashRouter : BrowserRouter;
+
   return (
     <Router>
       <Routes>

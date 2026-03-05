@@ -21,6 +21,21 @@ import orbitLogo from '../../assets/orbitlogo.png';
 import { useI18n } from '../../i18n';
 import { playNotificationSound } from '../../utils/notificationSound';
 
+function normalizeWorkspace(workspace) {
+  if (!workspace || typeof workspace !== 'object') return null;
+  if (!workspace.id) return null;
+  return workspace;
+}
+
+function mergeUniqueWorkspaces(base, candidate) {
+  const safeBase = Array.isArray(base) ? base.map(normalizeWorkspace).filter(Boolean) : [];
+  const safeCandidate = normalizeWorkspace(candidate);
+  if (!safeCandidate) return safeBase;
+  return safeBase.some((workspace) => workspace.id === safeCandidate.id)
+    ? safeBase
+    : [safeCandidate, ...safeBase];
+}
+
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,15 +71,31 @@ function Sidebar() {
 
   const loadWorkspaces = useCallback(async () => {
     try {
+      let nextWorkspaces = [];
+      let fetchedListSuccessfully = false;
+
       const result = await hubAPI.workspaces.getAll();
-      if (result.success) {
-        setWorkspaces(result.workspaces);
+      if (result?.success) {
+        fetchedListSuccessfully = true;
+        const list = Array.isArray(result.workspaces) ? result.workspaces : [];
+        nextWorkspaces = list.map(normalizeWorkspace).filter(Boolean);
       }
 
       const activeResult = await hubAPI.workspaces.getActive();
-      if (activeResult.success) {
-        setActiveWorkspace(activeResult.workspace);
+      if (activeResult?.success && activeResult.workspace) {
+        const normalizedActive = normalizeWorkspace(activeResult.workspace);
+        if (normalizedActive) {
+          setActiveWorkspace(normalizedActive);
+          nextWorkspaces = mergeUniqueWorkspaces(nextWorkspaces, normalizedActive);
+        }
       }
+
+      setWorkspaces((previous) => {
+        if (!fetchedListSuccessfully && nextWorkspaces.length === 0 && previous.length > 0) {
+          return previous;
+        }
+        return nextWorkspaces;
+      });
     } catch (err) {
       console.error('Failed to load workspaces:', err);
     }
@@ -74,6 +105,22 @@ function Sidebar() {
     loadWorkspaces();
     loadUnreadCount();
   }, [loadWorkspaces, loadUnreadCount]);
+
+  // If another page sets/refreshes active workspace after sidebar mount,
+  // keep the local list consistent instead of showing "No workspaces".
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+    setWorkspaces((previous) => mergeUniqueWorkspaces(previous, activeWorkspace));
+  }, [activeWorkspace]);
+
+  // Refresh workspace list when app regains focus (after sync/login transitions).
+  useEffect(() => {
+    const onFocus = () => {
+      loadWorkspaces();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadWorkspaces]);
 
   // Real-time inbox push listener
   useEffect(() => {

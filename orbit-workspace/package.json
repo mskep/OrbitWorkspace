@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "description": "Orbit - Premium desktop productivity hub for Windows",
   "main": "apps/desktop/electron/main/main.js",
-  "author": "Your Name",
+  "author": "Msk",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -12,9 +12,9 @@
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "build": "npm run version:sync && npm run version:check && npm run build:renderer && npm run build:electron",
     "build:renderer": "cd apps/desktop/renderer && npx vite build",
-    "build:electron": "electron-builder",
+    "build:electron": "electron-builder --config.win.signAndEditExecutable=false",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder --win",
+    "dist": "electron-builder --win --config.win.signAndEditExecutable=false",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/check-version-consistency.mjs",
     "preversion": "npm run version:check",
@@ -50,14 +50,25 @@
       "target": [
         "nsis"
       ],
-      "icon": "build/icon.ico"
+      "artifactName": "Orbit Setup ${version}.${ext}",
+      "executableName": "Orbit",
+      "icon": "apps/desktop/electron/assets/orbit-icon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Orbit"
+      "shortcutName": "Orbit",
+      "uninstallDisplayName": "Orbit",
+      "installerIcon": "apps/desktop/electron/assets/orbit-icon.ico",
+      "uninstallerIcon": "apps/desktop/electron/assets/orbit-icon.ico",
+      "installerLanguages": [
+        "fr_FR",
+        "en_US"
+      ],
+      "multiLanguageInstaller": true,
+      "displayLanguageSelector": true
     },
     "files": [
       "apps/desktop/electron/**/*",

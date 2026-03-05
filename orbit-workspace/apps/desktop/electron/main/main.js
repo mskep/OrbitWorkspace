@@ -31,6 +31,8 @@ let logManager;
 let syncManager;
 let isDev;
 
+app.setAppUserModelId('com.orbit.app');
+
 // Suppress Chromium GPU/disk cache errors on Windows
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-software-rasterizer');
@@ -48,6 +50,9 @@ try {
 
 function createWindow() {
   isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  const icoIconPath = path.join(__dirname, '../assets/orbit-icon.ico');
+  const pngIconPath = path.join(__dirname, '../assets/orbit-icon.png');
+  const windowIconPath = fs.existsSync(icoIconPath) ? icoIconPath : pngIconPath;
 
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -64,14 +69,14 @@ function createWindow() {
     show: false,
     backgroundColor: '#1a1a1a',
     titleBarStyle: 'hidden',
-    icon: path.join(__dirname, '../../renderer/src/assets/v2.png')
+    icon: windowIconPath
   });
 
   // Load the app
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../../../renderer/dist/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../../renderer/dist/index.html'));
   }
 
   mainWindow.once('ready-to-show', () => {
@@ -601,13 +606,33 @@ function setupIpcHandlers() {
 
       const repos = dbService.getRepositories();
       const settings = repos.userSettings.findByUserId(session.userId);
+      const userWorkspaces = repos.workspaces.findByUserId(session.userId);
+      const fallbackWorkspace = Array.isArray(userWorkspaces) ? userWorkspaces[0] : null;
 
-      if (!settings || !settings.active_workspace_id) {
-        return { success: false, error: 'No active workspace' };
+      // No settings row yet: restore a sane default if any workspace exists.
+      if (!settings) {
+        if (!fallbackWorkspace) {
+          return { success: false, error: 'No active workspace' };
+        }
+
+        repos.userSettings.create(session.userId, fallbackWorkspace.id);
+        return { success: true, workspace: fallbackWorkspace };
       }
 
-      const workspace = repos.workspaces.findById(settings.active_workspace_id);
-      return { success: true, workspace };
+      if (settings.active_workspace_id) {
+        const activeWorkspace = repos.workspaces.findById(settings.active_workspace_id);
+        if (activeWorkspace) {
+          return { success: true, workspace: activeWorkspace };
+        }
+      }
+
+      // Active workspace pointer is stale or missing: fallback to first owned workspace.
+      if (fallbackWorkspace) {
+        repos.userSettings.updateActiveWorkspace(session.userId, fallbackWorkspace.id);
+        return { success: true, workspace: fallbackWorkspace };
+      }
+
+      return { success: false, error: 'No active workspace' };
     } catch (error) {
       console.error('Get active workspace error:', error);
       return { success: false, error: 'Failed to get active workspace' };
