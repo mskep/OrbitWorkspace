@@ -1,3 +1,9 @@
+## [0.3.4](https://github.com/mskep/OrbitWorkspace/compare/v0.3.3...v0.3.4) (2026-03-05)
+
+### Bug Fixes
+
+* **updater:** improve windows icon handling and release installer build ([d4c2039](https://github.com/mskep/OrbitWorkspace/commit/d4c2039530a649ebd802edbf1cc84d53761565ea))
+
 ## [0.3.3](https://github.com/mskep/OrbitWorkspace/compare/v0.3.2...v0.3.3) (2026-03-05)
 
 ### Bug Fixes
