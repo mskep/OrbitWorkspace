@@ -1,3 +1,9 @@
+## [0.3.1](https://github.com/mskep/OrbitWorkspace/compare/v0.3.0...v0.3.1) (2026-03-05)
+
+### Bug Fixes
+
+* **installer:** new installer and update workflow ([0d6ec8a](https://github.com/mskep/OrbitWorkspace/commit/0d6ec8a5b5ae5784a720cba6a3ccf11f7eb6c7a3))
+
 ## 0.3.0 (2026-03-05)
 
 ### Notes
