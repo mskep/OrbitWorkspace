@@ -29,6 +29,7 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.6.2",
     "crypto-random-string": "^5.0.0",
+    "electron-updater": "^6.8.3",
     "uuid": "^13.0.0",
     "ws": "^8.19.0"
   },
@@ -42,6 +43,13 @@
   "build": {
     "appId": "com.orbit.app",
     "productName": "Orbit",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mskep",
+        "repo": "OrbitWorkspace"
+      }
+    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -50,7 +58,7 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "Orbit Setup ${version}.${ext}",
+      "artifactName": "Orbit-Setup-${version}.${ext}",
       "executableName": "Orbit",
       "icon": "apps/desktop/electron/assets/orbit-icon.ico"
     },

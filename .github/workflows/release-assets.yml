@@ -70,7 +70,8 @@ jobs:
           tag_name: ${{ inputs.tag_name || github.event.release.tag_name }}
           fail_on_unmatched_files: true
           files: |
-            orbit-workspace/dist/Orbit Setup *.exe
-            orbit-workspace/dist/Orbit Setup *.exe.blockmap
+            orbit-workspace/dist/*.exe
+            orbit-workspace/dist/*.exe.blockmap
+            orbit-workspace/dist/latest*.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

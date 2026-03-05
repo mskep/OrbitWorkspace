@@ -22,7 +22,13 @@ const IPC_CHANNELS = {
   FS_SAVE_FILE: 'fs:saveFile',
   FS_OPEN_PATH: 'fs:openPath',
   SYSTEM_GET_STATUS: 'system:getStatus',
+  SYSTEM_SET_AUTOLAUNCH: 'system:setAutoLaunch',
   SYSTEM_ONLINE_STATUS: 'system:onlineStatus',
+  SYSTEM_GET_UPDATE_STATUS: 'system:getUpdateStatus',
+  SYSTEM_CHECK_FOR_UPDATES: 'system:checkForUpdates',
+  SYSTEM_DOWNLOAD_UPDATE: 'system:downloadUpdate',
+  SYSTEM_INSTALL_UPDATE: 'system:installUpdate',
+  SYSTEM_UPDATE_STATUS_CHANGED: 'system:updateStatusChanged',
   LOGS_TAIL: 'logs:tail',
   LOGS_SEARCH: 'logs:search',
   WORKSPACE_GET_ALL: 'workspace:getAll',
@@ -139,9 +145,21 @@ contextBridge.exposeInMainWorld('hubAPI', {
   // System
   system: {
     getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_STATUS),
+    setAutoLaunch: (enabled) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SET_AUTOLAUNCH, enabled),
+    getUpdateStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_UPDATE_STATUS),
+    checkForUpdates: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_CHECK_FOR_UPDATES),
+    downloadUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_DOWNLOAD_UPDATE),
+    installUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_INSTALL_UPDATE),
     onOnlineStatus: (callback) => {
-      ipcRenderer.on(IPC_CHANNELS.SYSTEM_ONLINE_STATUS, (event, status) => callback(status));
-    }
+      const handler = (_event, status) => callback(status);
+      ipcRenderer.on(IPC_CHANNELS.SYSTEM_ONLINE_STATUS, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.SYSTEM_ONLINE_STATUS, handler);
+    },
+    onUpdateStatusChanged: (callback) => {
+      const handler = (_event, status) => callback(status);
+      ipcRenderer.on(IPC_CHANNELS.SYSTEM_UPDATE_STATUS_CHANGED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.SYSTEM_UPDATE_STATUS_CHANGED, handler);
+    },
   },
 
   // Logs

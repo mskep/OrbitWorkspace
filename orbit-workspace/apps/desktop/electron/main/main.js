@@ -10,6 +10,7 @@ const PermissionsManager = require('./permissions');
 const ToolRunner = require('./toolRunner');
 const NetworkMonitor = require('./netMonitor');
 const LogManager = require('./logManager');
+const UpdateManager = require('./updateManager');
 
 // Electron-dependent managers will be required after app is ready
 let TrayManager;
@@ -29,6 +30,7 @@ let networkMonitor;
 let autoLaunch;
 let logManager;
 let syncManager;
+let updateManager;
 let isDev;
 
 app.setAppUserModelId('com.orbit.app');
@@ -451,6 +453,30 @@ function setupIpcHandlers() {
     }
 
     return result;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_GET_UPDATE_STATUS, async () => {
+    return updateManager ? updateManager.getStatus() : {
+      enabled: false,
+      status: 'disabled',
+      message: 'Updater not initialized',
+      currentVersion: app.getVersion(),
+    };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_CHECK_FOR_UPDATES, async () => {
+    if (!updateManager) return { success: false, error: 'Updater not initialized' };
+    return updateManager.checkForUpdates();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_DOWNLOAD_UPDATE, async () => {
+    if (!updateManager) return { success: false, error: 'Updater not initialized' };
+    return updateManager.downloadUpdate();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_INSTALL_UPDATE, async () => {
+    if (!updateManager) return { success: false, error: 'Updater not initialized' };
+    return updateManager.installUpdate();
   });
 
   // ========================================
@@ -2465,6 +2491,8 @@ app.whenReady().then(async () => {
   await authService.restoreSession();
 
   createWindow();
+  updateManager = new UpdateManager();
+  updateManager.initialize(mainWindow);
 
   // Create tray (load TrayManager after app is ready)
   TrayManager = require('./tray');
@@ -2476,6 +2504,9 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+      if (updateManager) {
+        updateManager.setMainWindow(mainWindow);
+      }
     }
   });
 });

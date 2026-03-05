@@ -54,6 +54,8 @@ function SettingRow({ icon, gradient, label, description, children }) {
 function Settings() {
   const [systemStatus, setSystemStatus] = useState(null);
   const [autoLaunch, setAutoLaunch] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState(null);
+  const [updateActionLoading, setUpdateActionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toggleLoading, setToggleLoading] = useState(false);
 
@@ -84,14 +86,26 @@ function Settings() {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    if (!hubAPI.system?.onUpdateStatusChanged) return undefined;
+    const unsubscribe = hubAPI.system.onUpdateStatusChanged((nextStatus) => {
+      if (nextStatus) setUpdateStatus(nextStatus);
+    });
+    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
+  }, []);
+
   async function loadSettings() {
     try {
-      const [status, settingsRes] = await Promise.all([
+      const [status, settingsRes, updaterRes] = await Promise.all([
         hubAPI.system.getStatus(),
         hubAPI.settings.get(),
+        hubAPI.system?.getUpdateStatus?.(),
       ]);
       setSystemStatus(status);
       setAutoLaunch(status.autoLaunchEnabled);
+      if (updaterRes) {
+        setUpdateStatus(updaterRes);
+      }
       if (settingsRes?.success && settingsRes.settings) {
         setUserSettings(settingsRes.settings);
       }
@@ -99,6 +113,78 @@ function Settings() {
       console.error('Error loading settings:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCheckForUpdates() {
+    setUpdateActionLoading(true);
+    try {
+      const result = await hubAPI.system.checkForUpdates();
+      if (!result?.success && result?.error) {
+        setUpdateStatus((prev) => ({
+          ...(prev || {}),
+          status: 'error',
+          error: result.error,
+          message: result.error,
+        }));
+      }
+    } catch (error) {
+      setUpdateStatus((prev) => ({
+        ...(prev || {}),
+        status: 'error',
+        error: error?.message || 'Failed to check updates',
+        message: error?.message || 'Failed to check updates',
+      }));
+    } finally {
+      setUpdateActionLoading(false);
+    }
+  }
+
+  async function handleDownloadUpdate() {
+    setUpdateActionLoading(true);
+    try {
+      const result = await hubAPI.system.downloadUpdate();
+      if (!result?.success && result?.error) {
+        setUpdateStatus((prev) => ({
+          ...(prev || {}),
+          status: 'error',
+          error: result.error,
+          message: result.error,
+        }));
+      }
+    } catch (error) {
+      setUpdateStatus((prev) => ({
+        ...(prev || {}),
+        status: 'error',
+        error: error?.message || 'Failed to download update',
+        message: error?.message || 'Failed to download update',
+      }));
+    } finally {
+      setUpdateActionLoading(false);
+    }
+  }
+
+  async function handleInstallUpdate() {
+    setUpdateActionLoading(true);
+    try {
+      const result = await hubAPI.system.installUpdate();
+      if (!result?.success && result?.error) {
+        setUpdateStatus((prev) => ({
+          ...(prev || {}),
+          status: 'error',
+          error: result.error,
+          message: result.error,
+        }));
+      }
+    } catch (error) {
+      setUpdateStatus((prev) => ({
+        ...(prev || {}),
+        status: 'error',
+        error: error?.message || 'Failed to install update',
+        message: error?.message || 'Failed to install update',
+      }));
+    } finally {
+      setUpdateActionLoading(false);
     }
   }
 
@@ -327,6 +413,56 @@ function Settings() {
         created_at: null,
       }]
       : []);
+
+  const updaterState = updateStatus?.status || 'idle';
+  const updaterProgress = typeof updateStatus?.progressPercent === 'number'
+    ? Math.max(0, Math.min(100, Math.round(updateStatus.progressPercent)))
+    : null;
+
+  const updateDescription = (() => {
+    if (!updateStatus) return isFr ? 'Préparation du service de mise à jour...' : 'Preparing update service...';
+
+    if (updaterState === 'disabled') {
+      return isFr
+        ? 'Disponible uniquement sur l’application installée (.exe), pas en mode dev.'
+        : 'Available only in installed app builds (.exe), not in dev mode.';
+    }
+
+    if (updaterState === 'checking') {
+      return isFr ? 'Vérification des mises à jour...' : 'Checking for updates...';
+    }
+
+    if (updaterState === 'available') {
+      const version = updateStatus.availableVersion || '?';
+      return isFr ? `Mise à jour disponible: v${version}` : `Update available: v${version}`;
+    }
+
+    if (updaterState === 'downloading') {
+      if (updaterProgress !== null) {
+        return isFr ? `Téléchargement en cours: ${updaterProgress}%` : `Downloading update: ${updaterProgress}%`;
+      }
+      return isFr ? 'Téléchargement de la mise à jour...' : 'Downloading update...';
+    }
+
+    if (updaterState === 'downloaded') {
+      return isFr ? 'Mise à jour téléchargée. Redémarre pour installer.' : 'Update downloaded. Restart to install.';
+    }
+
+    if (updaterState === 'not-available') {
+      return isFr ? 'L’application est déjà à jour.' : 'App is already up to date.';
+    }
+
+    if (updaterState === 'error') {
+      return updateStatus.error || (isFr ? 'Échec de la mise à jour.' : 'Update failed.');
+    }
+
+    return updateStatus.message || (isFr ? 'Prêt à vérifier les mises à jour.' : 'Ready to check for updates.');
+  })();
+
+  const checkingOrDownloading = updaterState === 'checking' || updaterState === 'downloading';
+  const canCheckForUpdates = !updateActionLoading && !checkingOrDownloading && updaterState !== 'disabled';
+  const canDownloadUpdate = !updateActionLoading && updaterState === 'available';
+  const canInstallUpdate = !updateActionLoading && updaterState === 'downloaded';
 
   return (
     <div className="page">
@@ -673,7 +809,45 @@ function Settings() {
                   label={t('common.version')}
                   description={systemStatus.appVersion}
                 >
-                  <Badge variant="success">{t('common.latest')}</Badge>
+                  <Badge variant={updaterState === 'not-available' ? 'success' : 'default'}>
+                    {updaterState === 'not-available' ? t('common.latest') : `v${systemStatus.appVersion}`}
+                  </Badge>
+                </SettingRow>
+
+                <SettingRow
+                  icon={<RefreshCw size={20} color="#fff" />}
+                  gradient="linear-gradient(135deg, #3b82f6, #1d4ed8)"
+                  label={isFr ? 'Mises à jour' : 'Updates'}
+                  description={updateDescription}
+                >
+                  <div className="flex-center flex-gap-2" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button
+                      className="btn btn-secondary btn-sm flex-center flex-gap-2"
+                      onClick={handleCheckForUpdates}
+                      disabled={!canCheckForUpdates}
+                    >
+                      <RefreshCw size={14} style={checkingOrDownloading ? { animation: 'spin 1s linear infinite' } : undefined} />
+                      {isFr ? 'Vérifier' : 'Check for updates'}
+                    </button>
+
+                    {canDownloadUpdate && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={handleDownloadUpdate}
+                      >
+                        {isFr ? 'Télécharger' : 'Download update'}
+                      </button>
+                    )}
+
+                    {canInstallUpdate && (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleInstallUpdate}
+                      >
+                        {isFr ? 'Redémarrer et installer' : 'Restart & Install'}
+                      </button>
+                    )}
+                  </div>
                 </SettingRow>
 
                 <SettingRow

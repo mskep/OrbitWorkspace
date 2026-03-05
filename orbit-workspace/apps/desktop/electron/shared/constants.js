@@ -36,7 +36,13 @@ const IPC_CHANNELS = {
 
   // System
   SYSTEM_GET_STATUS: 'system:getStatus',
+  SYSTEM_SET_AUTOLAUNCH: 'system:setAutoLaunch',
   SYSTEM_ONLINE_STATUS: 'system:onlineStatus',
+  SYSTEM_GET_UPDATE_STATUS: 'system:getUpdateStatus',
+  SYSTEM_CHECK_FOR_UPDATES: 'system:checkForUpdates',
+  SYSTEM_DOWNLOAD_UPDATE: 'system:downloadUpdate',
+  SYSTEM_INSTALL_UPDATE: 'system:installUpdate',
+  SYSTEM_UPDATE_STATUS_CHANGED: 'system:updateStatusChanged',
 
   // Backup
   BACKUP_EXPORT: 'backup:export',
