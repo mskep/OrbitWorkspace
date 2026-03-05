@@ -1,4 +1,5 @@
 import { usersQueries } from '../db/queries/users.js';
+import { inboxQueries } from '../db/queries/inbox.js';
 import { ROLES, ROLE_LEVELS } from '../utils/constants.js';
 import { BadRequest, NotFound, Forbidden } from '../utils/errors.js';
 
@@ -16,7 +17,7 @@ export async function listUsers(pg) {
  * Cannot demote yourself. Cannot remove the last admin.
  * Entire operation runs in a transaction with row locking for atomicity.
  */
-export async function updateUserRole(pg, adminId, targetUserId, newRole) {
+export async function updateUserRole(pg, adminId, targetUserId, newRole, fastify = null) {
   if (!ROLES[newRole]) {
     throw new BadRequest(`Invalid role: ${newRole}`);
   }
@@ -26,6 +27,8 @@ export async function updateUserRole(pg, adminId, targetUserId, newRole) {
   }
 
   const client = await pg.connect();
+  let shouldNotifyRoleChange = false;
+  let roleChangeNotification = null;
   try {
     await client.query('BEGIN');
 
@@ -51,8 +54,31 @@ export async function updateUserRole(pg, adminId, targetUserId, newRole) {
       }
     }
 
+    const oldRole = target.role;
+    const { rows: [admin] } = await client.query(usersQueries.findById, [adminId]);
+    const changedBy = admin?.username || 'Admin';
+
     const { rows: [updated] } = await client.query(usersQueries.updateRole, [targetUserId, newRole]);
+
+    if (oldRole !== newRole) {
+      const title = 'Role Updated';
+      const message = `Your role has been changed from ${oldRole} to ${newRole} by ${changedBy}.`;
+      const metadata = JSON.stringify({ oldRole, newRole, changedBy });
+      await client.query(inboxQueries.create, [
+        targetUserId,
+        'role-changed',
+        title,
+        message,
+        metadata,
+      ]);
+      shouldNotifyRoleChange = true;
+      roleChangeNotification = { title, type: 'role-changed' };
+    }
+
     await client.query('COMMIT');
+    if (shouldNotifyRoleChange) {
+      _notifyUser(fastify, targetUserId, 'inbox_message', roleChangeNotification);
+    }
 
     return { user: updated };
   } catch (err) {
@@ -60,6 +86,23 @@ export async function updateUserRole(pg, adminId, targetUserId, newRole) {
     throw err;
   } finally {
     client.release();
+  }
+}
+
+function _notifyUser(fastify, userId, eventType, data) {
+  if (!fastify?.wsConnections) return;
+  const devices = fastify.wsConnections.get(userId);
+  if (!devices) return;
+
+  const payload = JSON.stringify({ type: eventType, data });
+  for (const [, socket] of devices) {
+    if (socket.readyState === 1) {
+      try {
+        socket.send(payload);
+      } catch {
+        // Non-critical — skip dead sockets
+      }
+    }
   }
 }
 

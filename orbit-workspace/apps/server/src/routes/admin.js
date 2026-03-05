@@ -77,6 +77,7 @@ export async function adminRoutes(fastify) {
       request.user.sub,
       request.params.id,
       request.body.role,
+      fastify,
     );
   });
 

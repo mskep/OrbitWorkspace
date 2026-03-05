@@ -5057,13 +5057,21 @@ input[type="checkbox"]:disabled {
   border: 1px solid var(--border-default);
   background-color: var(--bg-tertiary);
   min-height: 300px;
+  position: relative;
+}
+
+.note-blocknote-wrapper > div {
+  flex: 1;
+  display: flex;
+  min-height: 0;
 }
 
 /* BlockNote container: toolbar on top, editor below */
 .note-blocknote-wrapper .bn-container {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -5087,7 +5095,7 @@ input[type="checkbox"]:disabled {
 /* Editor area */
 .note-blocknote-wrapper .bn-editor {
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
   font-size: var(--text-sm);
   line-height: 1.7;
   color: var(--text-primary);
@@ -5107,6 +5115,10 @@ input[type="checkbox"]:disabled {
   flex-wrap: wrap;
   gap: 2px;
   justify-content: flex-start;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  order: -1;
 }
 
 /* Checklist styling */

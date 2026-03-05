@@ -2140,9 +2140,8 @@ function setupIpcHandlers() {
         const localUser = repos.users.findById(userId);
         if (localUser) {
           repos.users.updateRole(userId, role);
-          repos.inbox.createRoleChangedMessage(userId, localUser.role, role, session.username);
-          if (mainWindow?.webContents) mainWindow.webContents.send(IPC_CHANNELS.INBOX_NEW_MESSAGE);
         }
+        // Inbox notification is server-authoritative when connected
         return { success: true };
       }
 
