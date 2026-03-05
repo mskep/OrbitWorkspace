@@ -32,8 +32,27 @@ jobs:
       - name: Lint push commit messages
         if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
         run: |
-          npx -y -p @commitlint/cli -p @commitlint/config-conventional commitlint \
-            --config orbit-workspace/commitlint.config.cjs \
-            --from "${{ github.event.before }}" \
-            --to "${{ github.sha }}" \
-            --verbose
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          if git rev-parse "${BEFORE}^{commit}" >/dev/null 2>&1 && git merge-base --is-ancestor "${BEFORE}" "${AFTER}"; then
+            npx -y -p @commitlint/cli -p @commitlint/config-conventional commitlint \
+              --config orbit-workspace/commitlint.config.cjs \
+              --from "${BEFORE}" \
+              --to "${AFTER}" \
+              --verbose
+          else
+            echo "Invalid or rewritten push range (${BEFORE}..${AFTER}), linting latest commit only."
+            if git rev-parse "${AFTER}~1^{commit}" >/dev/null 2>&1; then
+              npx -y -p @commitlint/cli -p @commitlint/config-conventional commitlint \
+                --config orbit-workspace/commitlint.config.cjs \
+                --from "${AFTER}~1" \
+                --to "${AFTER}" \
+                --verbose
+            else
+              npx -y -p @commitlint/cli -p @commitlint/config-conventional commitlint \
+                --config orbit-workspace/commitlint.config.cjs \
+                --last \
+                --verbose
+            fi
+          fi
