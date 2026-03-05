@@ -10,11 +10,18 @@
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:electron\"",
     "dev:renderer": "cd apps/desktop/renderer && npx vite",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
-    "build": "npm run build:renderer && npm run build:electron",
+    "build": "npm run version:sync && npm run version:check && npm run build:renderer && npm run build:electron",
     "build:renderer": "cd apps/desktop/renderer && npx vite build",
     "build:electron": "electron-builder",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/check-version-consistency.mjs",
+    "preversion": "npm run version:check",
+    "version": "npm run version:sync",
+    "postversion": "npm run version:check",
+    "release": "npx -y -p semantic-release -p @semantic-release/commit-analyzer -p @semantic-release/release-notes-generator -p @semantic-release/changelog -p @semantic-release/exec -p @semantic-release/git -p @semantic-release/github semantic-release",
+    "release:dry": "npx -y -p semantic-release -p @semantic-release/commit-analyzer -p @semantic-release/release-notes-generator -p @semantic-release/changelog -p @semantic-release/exec -p @semantic-release/git -p @semantic-release/github semantic-release --dry-run --no-ci"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.2.8",

@@ -1,0 +1,39 @@
+name: Commit Lint
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+  push:
+    branches:
+      - main
+
+jobs:
+  lint-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Lint PR commit messages
+        if: github.event_name == 'pull_request'
+        run: |
+          npx -y -p @commitlint/cli -p @commitlint/config-conventional commitlint \
+            --config orbit-workspace/commitlint.config.cjs \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to "${{ github.event.pull_request.head.sha }}" \
+            --verbose
+
+      - name: Lint push commit messages
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: |
+          npx -y -p @commitlint/cli -p @commitlint/config-conventional commitlint \
+            --config orbit-workspace/commitlint.config.cjs \
+            --from "${{ github.event.before }}" \
+            --to "${{ github.sha }}" \
+            --verbose
