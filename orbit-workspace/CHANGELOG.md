@@ -1,3 +1,9 @@
+## [0.3.2](https://github.com/mskep/OrbitWorkspace/compare/v0.3.1...v0.3.2) (2026-03-05)
+
+### Bug Fixes
+
+* **ci:** remove fragile node cache in release-assets workflow ([73f60f4](https://github.com/mskep/OrbitWorkspace/commit/73f60f4dee6886ef8b81d8f36f686080d8cd9bc8))
+
 ## [0.3.1](https://github.com/mskep/OrbitWorkspace/compare/v0.3.0...v0.3.1) (2026-03-05)
 
 ### Bug Fixes
