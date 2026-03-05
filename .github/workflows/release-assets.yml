@@ -47,6 +47,15 @@ jobs:
             npm install --no-audit --no-fund
           }
 
+      - name: Install renderer dependencies
+        run: |
+          Set-Location apps/desktop/renderer
+          if (Test-Path package-lock.json) {
+            npm ci
+          } else {
+            npm install --no-audit --no-fund
+          }
+
       - name: Build renderer
         run: npm run build:renderer
 
