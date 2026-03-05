@@ -20,8 +20,8 @@
     "preversion": "npm run version:check",
     "version": "npm run version:sync",
     "postversion": "npm run version:check",
-    "release": "npx -y -p semantic-release -p @semantic-release/commit-analyzer -p @semantic-release/release-notes-generator -p @semantic-release/changelog -p @semantic-release/exec -p @semantic-release/git -p @semantic-release/github semantic-release",
-    "release:dry": "npx -y -p semantic-release -p @semantic-release/commit-analyzer -p @semantic-release/release-notes-generator -p @semantic-release/changelog -p @semantic-release/exec -p @semantic-release/git -p @semantic-release/github semantic-release --dry-run --no-ci"
+    "release": "npx -y -p semantic-release -p conventional-changelog-conventionalcommits -p @semantic-release/commit-analyzer -p @semantic-release/release-notes-generator -p @semantic-release/changelog -p @semantic-release/exec -p @semantic-release/git -p @semantic-release/github semantic-release",
+    "release:dry": "npx -y -p semantic-release -p conventional-changelog-conventionalcommits -p @semantic-release/commit-analyzer -p @semantic-release/release-notes-generator -p @semantic-release/changelog -p @semantic-release/exec -p @semantic-release/git -p @semantic-release/github semantic-release --dry-run --no-ci"
   },
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
