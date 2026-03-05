@@ -1,3 +1,9 @@
+## [0.3.5](https://github.com/mskep/OrbitWorkspace/compare/v0.3.4...v0.3.5) (2026-03-05)
+
+### Bug Fixes
+
+* **updater:** enable auto-download and restart-to-install flow ([815365f](https://github.com/mskep/OrbitWorkspace/commit/815365fd386568e1d21584e59b7957738cc39d7f))
+
 ## [0.3.4](https://github.com/mskep/OrbitWorkspace/compare/v0.3.3...v0.3.4) (2026-03-05)
 
 ### Bug Fixes

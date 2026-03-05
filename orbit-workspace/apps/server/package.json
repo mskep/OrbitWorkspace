@@ -1,6 +1,6 @@
 {
   "name": "orbit-server",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Orbit sync server — E2EE encrypted blob relay",
   "main": "src/index.js",
   "type": "module",
