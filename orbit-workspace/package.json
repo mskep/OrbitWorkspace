@@ -1,6 +1,6 @@
 {
   "name": "orbit",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Orbit - Premium desktop productivity hub for Windows",
   "main": "apps/desktop/electron/main/main.js",
   "author": "Msk",

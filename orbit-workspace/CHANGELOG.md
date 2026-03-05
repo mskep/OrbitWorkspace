@@ -1,3 +1,9 @@
+## [0.3.3](https://github.com/mskep/OrbitWorkspace/compare/v0.3.2...v0.3.3) (2026-03-05)
+
+### Bug Fixes
+
+* **updater:** add electron auto-update and settings update action ([72e1d86](https://github.com/mskep/OrbitWorkspace/commit/72e1d8694901470567c429330aa7021e85f8f4ea))
+
 ## [0.3.2](https://github.com/mskep/OrbitWorkspace/compare/v0.3.1...v0.3.2) (2026-03-05)
 
 ### Bug Fixes
