@@ -140,30 +140,6 @@ function Settings() {
     }
   }
 
-  async function handleDownloadUpdate() {
-    setUpdateActionLoading(true);
-    try {
-      const result = await hubAPI.system.downloadUpdate();
-      if (!result?.success && result?.error) {
-        setUpdateStatus((prev) => ({
-          ...(prev || {}),
-          status: 'error',
-          error: result.error,
-          message: result.error,
-        }));
-      }
-    } catch (error) {
-      setUpdateStatus((prev) => ({
-        ...(prev || {}),
-        status: 'error',
-        error: error?.message || 'Failed to download update',
-        message: error?.message || 'Failed to download update',
-      }));
-    } finally {
-      setUpdateActionLoading(false);
-    }
-  }
-
   async function handleInstallUpdate() {
     setUpdateActionLoading(true);
     try {
@@ -434,7 +410,9 @@ function Settings() {
 
     if (updaterState === 'available') {
       const version = updateStatus.availableVersion || '?';
-      return isFr ? `Mise à jour disponible: v${version}` : `Update available: v${version}`;
+      return isFr
+        ? `Mise à jour disponible: v${version} (téléchargement automatique...)`
+        : `Update available: v${version} (auto-downloading...)`;
     }
 
     if (updaterState === 'downloading') {
@@ -461,7 +439,6 @@ function Settings() {
 
   const checkingOrDownloading = updaterState === 'checking' || updaterState === 'downloading';
   const canCheckForUpdates = !updateActionLoading && !checkingOrDownloading && updaterState !== 'disabled';
-  const canDownloadUpdate = !updateActionLoading && updaterState === 'available';
   const canInstallUpdate = !updateActionLoading && updaterState === 'downloaded';
 
   return (
@@ -829,15 +806,6 @@ function Settings() {
                       <RefreshCw size={14} style={checkingOrDownloading ? { animation: 'spin 1s linear infinite' } : undefined} />
                       {isFr ? 'Vérifier' : 'Check for updates'}
                     </button>
-
-                    {canDownloadUpdate && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={handleDownloadUpdate}
-                      >
-                        {isFr ? 'Télécharger' : 'Download update'}
-                      </button>
-                    )}
 
                     {canInstallUpdate && (
                       <button

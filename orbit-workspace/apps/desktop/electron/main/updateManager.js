@@ -34,7 +34,7 @@ class UpdateManager {
       return;
     }
 
-    autoUpdater.autoDownload = false;
+    autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.allowPrerelease = false;
     this._applyRuntimeAuthHeaders();
@@ -53,7 +53,7 @@ class UpdateManager {
     autoUpdater.on('update-available', (info) => {
       this._setState({
         status: 'available',
-        message: `Update available: ${info?.version || 'unknown'}`,
+        message: `Update available: ${info?.version || 'unknown'} (downloading...)`,
         availableVersion: info?.version || null,
         error: null,
         progressPercent: null,
@@ -141,8 +141,12 @@ class UpdateManager {
       return { success: false, error: 'Auto-update works only in packaged app' };
     }
 
-    if (this.state.status !== 'available') {
-      return { success: false, error: 'No update available to download' };
+    if (this.state.status === 'downloaded') {
+      return { success: true };
+    }
+
+    if (this.state.status === 'available' || this.state.status === 'downloading') {
+      return { success: true, message: 'Download already started automatically' };
     }
 
     try {
